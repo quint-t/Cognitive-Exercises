@@ -69,6 +69,7 @@ function loadSettings() {
         "st3_operations": "1-2",
         "st3_subtracting_mode": combo_st3_subtracting_mode.Enable,
         "st3_number": "1-2",
+        "st3_hard_mode": combo_st3_hard_mode.Disable,
         "st4_attributes": "3",
         "st4_objects": "3",
         "st4_riddle_level": "1-20",
@@ -1076,6 +1077,7 @@ function state3() {
                 1 <= xv[0] && xv[0] <= 10 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 10);
         }],
+        ["st3_hard_mode", "Hard mode", "combobox", Object.values(combo_st3_hard_mode)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1126,32 +1128,115 @@ function* state3_generator(taskArea) {
     let st3_operations = toIntOrIntRange(settings['st3_operations']);
     let st3_subtracting_mode = settings['st3_subtracting_mode'];
     let st3_number = toIntOrIntRange(settings['st3_number']);
+    let st3_hard_mode = settings['st3_hard_mode'];
     let st3_min_operations = st3_operations[0];
     let st3_max_operations = st3_operations.length == 2 ? st3_operations[1] : st3_min_operations;
     let st3_min_number = st3_number[0];
     let st3_max_number = st3_number.length == 2 ? st3_number[1] : st3_min_number;
     let clearBefore = true;
     let dict = new Object();
+    let str_coord = '(';
+    if (st3_max_x > 0) {
+        str_coord += 'X';
+    }
+    if (st3_max_y > 0) {
+        str_coord += ', Y';
+    }
+    if (st3_max_z > 0) {
+        str_coord += ', Z';
+    }
+    str_coord += ')';
     addHistoryItem(['Values']);
+    let queue = [], tmpX = [], tmpY = [], tmpZ = [];
+    for (let x = 1; x <= st3_max_x; ++x) {
+        tmpX.push([x]);
+    }
+    for (let y = 1; y <= st3_max_y; ++y) {
+        tmpY.push([y]);
+    }
+    for (let z = 1; z <= st3_max_z; ++z) {
+        tmpZ.push([z]);
+    }
+    if (tmpX.length > 0 && tmpY.length > 0 && tmpZ.length > 0) {
+        for (let i = 0, n = tmpX.length; i < n; ++i) {
+            for (let j = 0, m = tmpY.length; j < m; ++j) {
+                for (let k = 0, h = tmpZ.length; k < h; ++k) {
+                    let str_xyz = '(' + tmpX[i] + ', ' + tmpY[j] + ', ' + tmpZ[k] + ')';
+                    queue.push(str_xyz)
+                }
+            }
+        }
+    }
+    else if (tmpX.length > 0 && tmpY.length > 0) {
+        for (let i = 0, n = tmpX.length; i < n; ++i) {
+            for (let j = 0, m = tmpY.length; j < m; ++j) {
+                let str_xyz = '(' + tmpX[i] + ', ' + tmpY[j] + ')';
+                queue.push(str_xyz)
+            }
+        }
+    }
+    else if (tmpX.length > 0 && tmpZ.length > 0) {
+        for (let i = 0, n = tmpX.length; i < n; ++i) {
+            for (let k = 0, h = tmpZ.length; k < h; ++k) {
+                let str_xyz = '(' + tmpX[i] + ', ' + tmpZ[k] + ')';
+                queue.push(str_xyz)
+            }
+        }
+    }
+    else if (tmpY.length > 0 && tmpZ.length > 0) {
+        for (let j = 0, m = tmpY.length; j < m; ++j) {
+            for (let k = 0, h = tmpZ.length; k < h; ++k) {
+                let str_xyz = '(' + tmpY[j] + ', ' + tmpZ[k] + ')';
+                queue.push(str_xyz)
+            }
+        }
+    }
+    else if (tmpX.length > 0) {
+        for (let i = 0, n = tmpX.length; i < n; ++i) {
+            let str_xyz = '(' + tmpX[i] + ')';
+            queue.push(str_xyz)
+        }
+    }
+    else if (tmpY.length > 0) {
+        for (let j = 0, m = tmpY.length; j < m; ++j) {
+            let str_xyz = '(' + tmpY[j] + ')';
+            queue.push(str_xyz)
+        }
+    }
+    else if (tmpZ.length > 0) {
+        for (let k = 0, h = tmpZ.length; k < h; ++k) {
+            let str_xyz = '(' + tmpZ[k] + ')';
+            queue.push(str_xyz)
+        }
+    }
+    else {
+        return;
+    }
+    console.log(queue);
+
     while (true) {
-        let x = randomInt(1, st3_max_x);
-        let y = st3_max_y > 0 ? randomInt(1, st3_max_y) : null;
-        let z = st3_max_z > 0 ? randomInt(1, st3_max_z) : null;
-        let str_xyz = '(', str_coord = '(';
-        if (x != null) {
-            str_xyz += x;
-            str_coord += 'X';
+        let x = null, y = null, z = null;
+        let str_xyz = null;
+        if (st3_hard_mode === combo_st3_hard_mode.Enable) {
+            x = randomInt(1, st3_max_x);
+            y = st3_max_y > 0 ? randomInt(1, st3_max_y) : null;
+            z = st3_max_z > 0 ? randomInt(1, st3_max_z) : null;
+            str_xyz = '(';
+            if (x != null) {
+                str_xyz += x;
+            }
+            if (y != null) {
+                str_xyz += ', ' + y;
+            }
+            if (z != null) {
+                str_xyz += ', ' + z;
+            }
+            str_xyz += ')';
         }
-        if (y != null) {
-            str_xyz += ', ' + y;
-            str_coord += ', Y';
+        else {
+            str_xyz = queue.pop(0);
+            queue.push(str_xyz);
         }
-        if (z != null) {
-            str_xyz += ', ' + z;
-            str_coord += ', Z';
-        }
-        str_xyz += ')';
-        str_coord += ')';
         if (dict[str_xyz] == undefined) {
             dict[str_xyz] = 0;
         }
@@ -2160,6 +2245,10 @@ let combo_st2_triangular_mode = {
     Hard: "Hard"
 };
 let combo_st3_subtracting_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st3_hard_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
