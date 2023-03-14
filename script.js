@@ -60,6 +60,7 @@ function loadSettings() {
         "st1_identical_mode": combo_st1_identical_mode.OneIdenticalWord,
         "st1_max_words": 20,
         "st1_keyboard" : combo_st1_keyboard.QWERTY,
+        "st1_hard_mode" : combo_st1_hard_mode.Disable,
         "st2_triangular_mode": combo_st2_triangular_mode.Easy,
         "st2_triangular_level": "4-5",
         "st3_max_x": 3,
@@ -670,6 +671,7 @@ function state1() {
             return 3 <= xv && xv <= permutations && xv <= 1000;
         }],
         ["st1_keyboard", "Keyboard", "combobox", Object.values(combo_st1_keyboard)],
+        ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -743,6 +745,7 @@ function* state1_generator(taskArea) {
     let st1_identical_mode = settings['st1_identical_mode'];
     let st1_max_words = parseInt(settings['st1_max_words']);
     let st1_keyboard = settings['st1_keyboard'];
+    let st1_hard_mode = settings['st1_hard_mode'];
     let gmode = st1_direction_mode === combo_st1_direction_mode.Forward
         || st1_direction_mode === combo_st1_direction_mode.Backward
         ? st1_direction_mode : (
@@ -873,6 +876,9 @@ function* state1_generator(taskArea) {
                 }
                 let status = actual === expected;
                 if (status) {
+                    if (st1_hard_mode === combo_st1_hard_mode.Enable) {
+                        appendText(taskArea, '', clearBefore);
+                    }
                     k += 1;
                     if (k > i) {
                         break;
@@ -2143,6 +2149,10 @@ let combo_st1_identical_mode = {
 let combo_st1_keyboard = {
     QWERTY: "QWERTY",
     Symbols: "Symbols"
+};
+let combo_st1_hard_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
 };
 let combo_st2_triangular_mode = {
     Easy: "Easy",
