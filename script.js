@@ -69,7 +69,7 @@ function loadSettings() {
         "st3_operations": "1-2",
         "st3_subtracting_mode": combo_st3_subtracting_mode.Enable,
         "st3_number": "1-2",
-        "st3_hard_mode": combo_st3_hard_mode.Disable,
+        "st3_sequence_mode": combo_st3_sequence_mode.Enable,
         "st4_attributes": "3",
         "st4_objects": "3",
         "st4_riddle_level": "1-20",
@@ -102,11 +102,10 @@ function isInt(n) {
     return Number(n) === n && n % 1 === 0;
 }
 
-function checkAnswer(inputBox) {
-    if (inputBox.value !== '') {
-        currentGenerator.next(inputBox.value);
+function checkAnswer(inputBoxValue) {
+    if (inputBoxValue !== '') {
+        currentGenerator.next(inputBoxValue);
     }
-    inputBox.value = '';
     let enterButton = document.getElementById('enterButton');
     if (enterButton != null) {
         enterButton.innerHTML = getScoredText('Enter');
@@ -314,7 +313,8 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
     inputBox.type = "text";
     inputBox.onkeydown = function (event) {
         if (event.code.toLowerCase() === "enter" || event.key === 13 || event.keyCode === 13 || event.which === 13) {
-            checkAnswer(inputBox);
+            checkAnswer(inputBox.value);
+            inputBox.value = '';
         }
     };
     let keyboardDiv = document.createElement("div");
@@ -324,7 +324,8 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
         inputBox.value += event.innerHTML;
     };
     let enterButtonAction = function (event) {
-        checkAnswer(inputBox);
+        checkAnswer(inputBox.value);
+        inputBox.value = '';
     };
     let backButtonAction = function (event) {
         if (confirm("Are you sure you want to go back?")) {
@@ -1077,7 +1078,7 @@ function state3() {
                 1 <= xv[0] && xv[0] <= 10 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 10);
         }],
-        ["st3_hard_mode", "Hard mode", "combobox", Object.values(combo_st3_hard_mode)],
+        ["st3_sequence_mode", "Sequence mode", "combobox", Object.values(combo_st3_sequence_mode)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1105,10 +1106,14 @@ function state3_start() {
     let taskDiv = task[0];
     let taskArea = task[1];
     addWidget(taskDiv);
-    addWidget(createKeyboard(asciiDigits, state3, {
-        'Answer': () => { currentGenerator.next('-ANSWER-') },
-        'Values': () => { currentGenerator.next('-VALUES-') },
-    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30']}), {})));
+    let exButtons = {};
+    if (settings['st3_sequence_mode'] === combo_st3_sequence_mode.Enable) {
+        exButtons['Retry'] = () => { currentGenerator.next('-RETRY-') };
+    }
+    exButtons['Answer'] = () => { currentGenerator.next('-ANSWER-') };
+    exButtons['Values'] = () => { currentGenerator.next('-VALUES-') };
+    addWidget(createKeyboard(asciiDigits, state3, exButtons,
+        ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30']}), {})));
     currentGenerator = state3_generator(taskArea);
     currentGenerator.next();
 }
@@ -1128,7 +1133,8 @@ function* state3_generator(taskArea) {
     let st3_operations = toIntOrIntRange(settings['st3_operations']);
     let st3_subtracting_mode = settings['st3_subtracting_mode'];
     let st3_number = toIntOrIntRange(settings['st3_number']);
-    let st3_hard_mode = settings['st3_hard_mode'];
+    let st3_sequence_mode = settings['st3_sequence_mode'];
+    let sequence_mode = (st3_sequence_mode === combo_st3_sequence_mode.Enable);
     let st3_min_operations = st3_operations[0];
     let st3_max_operations = st3_operations.length == 2 ? st3_operations[1] : st3_min_operations;
     let st3_min_number = st3_number[0];
@@ -1212,30 +1218,15 @@ function* state3_generator(taskArea) {
     else {
         return;
     }
-    console.log(queue);
-
+    let originalQueue = queue.slice();
     while (true) {
-        let x = null, y = null, z = null;
         let str_xyz = null;
-        if (st3_hard_mode === combo_st3_hard_mode.Enable) {
-            x = randomInt(1, st3_max_x);
-            y = st3_max_y > 0 ? randomInt(1, st3_max_y) : null;
-            z = st3_max_z > 0 ? randomInt(1, st3_max_z) : null;
-            str_xyz = '(';
-            if (x != null) {
-                str_xyz += x;
-            }
-            if (y != null) {
-                str_xyz += ', ' + y;
-            }
-            if (z != null) {
-                str_xyz += ', ' + z;
-            }
-            str_xyz += ')';
-        }
-        else {
+        if (sequence_mode) {
             str_xyz = queue.pop(0);
             queue.push(str_xyz);
+        }
+        else {
+            str_xyz = queue[randomInt(0, queue.length - 1)];
         }
         if (dict[str_xyz] == undefined) {
             dict[str_xyz] = 0;
@@ -1254,11 +1245,12 @@ function* state3_generator(taskArea) {
                 dict[str_xyz] += diffNumber;
             }
         }
+        updateLastHistoryItem([formatXYZ(dict)]);
         let expected = '' + dict[str_xyz];
-        let mistakeFlag = true;
-        while (mistakeFlag) {
+        let sequenceModeMistake = false;
+        let tries = 1;
+        while (true) {
             appendText(taskArea, "Result> ");
-            updateLastHistoryItem([formatXYZ(dict)]);
             let actual = (yield).toUpperCase();
             appendText(taskArea, actual + '\n');
             if (actual === '-ANSWER-') {
@@ -1269,15 +1261,39 @@ function* state3_generator(taskArea) {
                 appendText(taskArea, formatXYZ(dict) + '\n');
                 continue;
             }
+            if (actual === "-RETRY-") {
+                if (sequence_mode) {
+                    actual = expected;
+                    sequenceModeMistake = true;
+                }
+            }
             let status = actual === expected;
             if (status) {
-                addScore('st3');
-                mistakeFlag = false;
+                if (tries <= 1 && sequenceModeMistake === false) {
+                    break;
+                }
+                if (sequenceModeMistake === true) {
+                    sequenceModeMistake = false;
+                    tries = queue.length;
+                    queue = originalQueue.slice();
+                    appendText(taskArea, "Retry all\n", clearBefore);
+                }
+                else {
+                    --tries;
+                }
+                str_xyz = queue.pop(0);
+                queue.push(str_xyz);
+                appendText(taskArea, str_coord + ' = ' + str_xyz + '\n');
+                expected = '' + dict[str_xyz];
             }
             else {
                 appendText(taskArea, 'No, retry\n');
+                if (sequence_mode) {
+                    sequenceModeMistake = true;
+                }
             }
         }
+        addScore('st3');
     }
 }
 
@@ -2248,7 +2264,7 @@ let combo_st3_subtracting_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
-let combo_st3_hard_mode = {
+let combo_st3_sequence_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
