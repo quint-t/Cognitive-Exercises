@@ -101,22 +101,20 @@ textarea {
 }
 
 .modern_select {
+    width: -moz-available;          /* WebKit-based browsers will ignore this. */
+    width: -webkit-fill-available;  /* Mozilla-based browsers will ignore this. */
+    width: fill-available;
     text-align-last: center;
-    border: solid hsl(45, 100%, 50%) 2px;
     padding: 8px 8px 8px 10px;
-    width: 100%;
 }
 
 .modern_select .selection {
     text-decoration: none;
     padding: 0 16px 0 0;
     color: hsl(45, 100%, 50%);
-    ;
 }
 
 .modern_select .arrow:after {
-    content: '';
-    display: block;
     margin: 0 0 0 2px;
     background-repeat: no-repeat;
     background-position: center;

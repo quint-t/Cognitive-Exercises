@@ -59,12 +59,12 @@ function loadSettings() {
         "st1_direction_mode": combo_st1_direction_mode.ByWord,
         "st1_identical_mode": combo_st1_identical_mode.OneIdenticalWord,
         "st1_max_words": 20,
-        "st1_keyboard" : combo_st1_keyboard.QWERTY,
-        "st1_hard_mode" : combo_st1_hard_mode.Disable,
+        "st1_keyboard": combo_st1_keyboard.QWERTY,
+        "st1_hard_mode": combo_st1_hard_mode.Disable,
         "st2_triangular_mode": combo_st2_triangular_mode.Easy,
         "st2_triangular_level": "4-5",
         "st3_max_x": 3,
-        "st3_max_y": 3,
+        "st3_max_y": 2,
         "st3_max_z": 0,
         "st3_operations": "1-2",
         "st3_subtracting_mode": combo_st3_subtracting_mode.Enable,
@@ -305,7 +305,7 @@ function createInputElems() {
     return [taskDiv, taskArea];
 }
 
-function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols=null, buttonsClasses=null) {
+function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols = null, buttonsClasses = null) {
     let inputDiv = document.createElement("div");
     inputDiv.id = "inputDiv";
     let inputBox = document.createElement("input");
@@ -365,7 +365,7 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
         }
     }
     let hr = document.createElement("hr");
-    hr.style.color = 'gray';
+    hr.style.borderColor = 'gray';
     let enterButton = createActionButton(getScoredText('Enter'), enterButtonAction);
     let delButton = createActionButton("Delete", delButtonAction);
     let clearButton = createActionButton("Clear", clearButtonAction);
@@ -392,6 +392,109 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
         inputDiv.appendChild(backButton);
     }
     return inputDiv;
+}
+
+function createTableOfSelects(stateN, additionalButtons = null) {
+    let inputDiv = document.createElement("div");
+    inputDiv.id = "inputDiv";
+    let enterButtonAction = function (event) {
+        let tableRows = document.getElementById('inputTable').rows;
+        let answer = [];
+        for (let i = 1; i < tableRows.length; i++) {
+            let row = tableRows[i].cells;
+            for (let j = 1, m = row.length; j < m; ++j) {
+                answer.push(row[j].children[0].value);
+            }
+        }
+        answer = answer.join('_');
+        if (answer !== '') {
+            updateTableOfSelects(currentGenerator.next(answer).value);
+        }
+        event.target.innerHTML = getScoredText('Enter');
+    };
+    let backButtonAction = function (event) {
+        if (confirm("Are you sure you want to go back?")) {
+            stateN();
+        }
+    };
+    let table = document.createElement('table');
+    table.id = 'inputTable';
+    let tableDiv = document.createElement('div');
+    tableDiv.appendChild(table);
+    tableDiv.style.overflow = 'auto';
+    tableDiv.style.whiteSpace = 'nowrap';
+    let additionalDiv = null;
+    if (additionalButtons != null) {
+        for (const key in additionalButtons) {
+            const value = additionalButtons[key];
+            let button = document.createElement('button');
+            button.classList.add("blackButton");
+            button.innerHTML = key;
+            button.onmouseup = value;
+            if (additionalDiv == null) {
+                additionalDiv = document.createElement('div');
+            }
+            additionalDiv.appendChild(button);
+        }
+    }
+    let hr = document.createElement("hr");
+    hr.style.borderColor = 'gray';
+    let enterButton = createActionButton(getScoredText('Enter'), enterButtonAction);
+    let backButton = createActionButton("Back", backButtonAction);
+    enterButton.id = "enterButton";
+    enterButton.classList.add("blackButton");
+    enterButton.classList.add("w60");
+    backButton.classList.add("blackButton");
+    inputDiv.appendChild(tableDiv);
+    inputDiv.appendChild(enterButton);
+    inputDiv.appendChild(hr);
+    if (additionalDiv != null) {
+        additionalDiv.prepend(backButton);
+        inputDiv.appendChild(additionalDiv);
+    }
+    else {
+        inputDiv.appendChild(backButton);
+    }
+    return inputDiv;
+}
+
+function updateTableOfSelects(cellValues) {
+    let table = document.getElementById('inputTable');
+    if (table != null && cellValues.length > 0) {
+        table.innerHTML = '';
+        let headerRow = document.createElement('tr');
+        cellValues[0].forEach((headerText) => {
+            let headerCell = document.createElement('th');
+            headerCell.textContent = headerText;
+            headerRow.appendChild(headerCell);
+        });
+        table.appendChild(headerRow);
+        for (let i = 1; i < cellValues.length; i++) {
+            let dataRow = document.createElement('tr');
+            cellValues[i].forEach((cellValue) => {
+                let dataCell = document.createElement('td');
+                if (Array.isArray(cellValue)) {
+                    let select = document.createElement('select');
+                    select.classList.add("modern_select");
+                    cellValue.forEach((option) => {
+                        let optionElem = document.createElement('option');
+                        optionElem.value = option;
+                        optionElem.text = option;
+                        select.appendChild(optionElem);
+                    });
+                    select.value = select.childNodes[0].value;
+                    dataCell.appendChild(select);
+                }
+                else {
+                    let stringTag = document.createElement('p');
+                    stringTag.innerHTML = cellValue.toString();
+                    dataCell.appendChild(stringTag);
+                }
+                dataRow.appendChild(dataCell);
+            });
+            table.appendChild(dataRow);
+        }
+    }
 }
 
 function createParameters(parameters) {
@@ -566,7 +669,6 @@ function state0() {
     clearScoresButton.classList.add('blackButton');
     clearScoresButton.classList.add('w100');
     addWidget(clearScoresButton);
-    
     addWidget(document.createElement('br'));
     addWidget(document.createElement('br'));
     let link = document.createElement('a');
@@ -640,7 +742,7 @@ function state1() {
         }],
         ["st1_removal_mode", "Removal Mode", "combobox", Object.values(combo_st1_removal_mode)],
         ["st1_direction_mode", "Direction Mode", "combobox", Object.values(combo_st1_direction_mode)],
-        ["st1_identical_mode", "Identical Mode", "combobox", Object.values(combo_st1_identical_mode), function (xv) {
+        ["st1_identical_mode", "Identical words", "combobox", Object.values(combo_st1_identical_mode), function (xv) {
             let length_of_word = document.getElementById("st1_length_of_word").innerHTML;
             if (xv === combo_st1_identical_mode.OneIdenticalWord) {
                 let element = document.getElementById("st1_max_words");
@@ -708,8 +810,8 @@ function state1_start() {
         'Hint': () => { currentGenerator.next('-HINT-') },
         'Sequence': () => { currentGenerator.next('-SEQUENCE-') },
     }, st1_keyboard === combo_st1_keyboard.QWERTY ? ['P', 'L'] : [],
-    Array.from(st1_keyboard === combo_st1_keyboard.QWERTY ? asciiUppercase : asciiSymbols)
-    .reduce((a, v) => ({ ...a, [v]: ['w10']}), {})));
+        Array.from(st1_keyboard === combo_st1_keyboard.QWERTY ? asciiUppercase : asciiSymbols)
+            .reduce((a, v) => ({ ...a, [v]: ['w10'] }), {})));
     currentGenerator = state1_generator(taskArea);
     currentGenerator.next();
 }
@@ -951,7 +1053,7 @@ function state2_start() {
     addWidget(createKeyboard(asciiDigits, state2, {
         'Skip': () => { currentGenerator.next('-SKIP-') },
         'Answer': () => { currentGenerator.next('-ANSWER-') },
-    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30']}), {})));
+    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
     currentGenerator = state2_generator(taskArea);
     currentGenerator.next();
 }
@@ -1113,7 +1215,7 @@ function state3_start() {
     exButtons['Answer'] = () => { currentGenerator.next('-ANSWER-') };
     exButtons['Values'] = () => { currentGenerator.next('-VALUES-') };
     addWidget(createKeyboard(asciiDigits, state3, exButtons,
-        ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30']}), {})));
+        ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
     currentGenerator = state3_generator(taskArea);
     currentGenerator.next();
 }
@@ -1284,6 +1386,9 @@ function* state3_generator(taskArea) {
                 str_xyz = queue.pop(0);
                 queue.push(str_xyz);
                 appendText(taskArea, str_coord + ' = ' + str_xyz + '\n');
+                if (dict[str_xyz] == undefined) {
+                    dict[str_xyz] = 0;
+                }
                 expected = '' + dict[str_xyz];
             }
             else {
@@ -1358,19 +1463,19 @@ function state4_start() {
     let taskDiv = task[0];
     let taskArea = task[1];
     addWidget(taskDiv);
-    addWidget(createKeyboard(asciiDigits, state4, {
+    addWidget(createTableOfSelects(state4, {
         'Skip': () => {
             taskArea.innerHTML = 'Generating...\n';
-            setTimeout(function() {
-                currentGenerator.next('-SKIP-');
+            setTimeout(function () {
+                updateTableOfSelects(currentGenerator.next('-SKIP-').value);
             }, 50);
         },
         'Answer': () => { currentGenerator.next('-ANSWER-') },
-    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30']}), {})));
+    }));
     taskArea.innerHTML = 'Generating...\n';
-    setTimeout(function() {
+    setTimeout(function () {
         currentGenerator = state4_generator(taskArea);
-        currentGenerator.next();
+        updateTableOfSelects(currentGenerator.next().value);
     }, 50);
 }
 
@@ -2121,34 +2226,21 @@ function* state4_generator(taskArea) {
             }
             break;
         }
-        let chosenKinds = randomShuffle(kinds.slice());
-        chosenKinds = chosenKinds.slice(0, n_attributes).sort();
-        let table = [];
-        let tmp_exp = [], dict = {}, dict_length = 0;
+        let header = [''].concat(range(1, m_objects + 1).map(x => '' + x));
+        let chosenKinds = randomShuffle(kinds).slice(0, n_attributes).sort();
+        let table = [], htmlTable = [header], expected = [];
         chosenKinds.forEach(kind => {
             let first = [kind];
             let other = randomShuffle(kinds_dict[kind]).slice(0, m_objects);
-            let other_sorted = other.slice().sort();
-            for (let x of other_sorted) {
-                x = kind.concat(':').concat(x);
-                dict_length += 1;
-                dict[x] = dict_length;
+            expected.push(...other);
+            let row = [kind], sortedVars = other.slice().sort();
+            for (let i = 0; i < m_objects; ++i) {
+                row.push(sortedVars);
             }
-            for (let i = 0, n = other.length; i < n; ++i) {
-                tmp_exp.push(dict[kind.concat(':').concat(other[i])]);
-            }
+            htmlTable.push(row);
             table.push(first.concat(other));
-            
         });
-        let expected = [];
-        for (let i = 0, n = m_objects; i < n; ++i) {
-            let exp = [];
-            for (let j = 0, m = n_attributes; j < m; ++j) {
-                exp.push(tmp_exp[i + j * n]);
-            }
-            expected.push(exp.join('-'));
-        }
-        expected = expected.join('_');
+        expected = expected.join('_').toUpperCase();
         let best_premises = null;
         let timestamp = window.performance.now();
         for (let i = 0, n = hard_mode ? 10 : 1; i < n; ++i) {
@@ -2165,8 +2257,7 @@ function* state4_generator(taskArea) {
         let puzzle_text = '.:: Puzzle ' + n_attributes + 'x' + m_objects + ' level=' + level + ' ::.\n';
         table.forEach(row => {
             puzzle_text = puzzle_text.concat(row[0] + ': ' +
-                row.slice(1, row.length).sort().map(x => x.concat(' [').
-                concat(dict[row[0].concat(':').concat(x)]).concat(']')).join(', ') + '\n');
+                row.slice(1, row.length).sort().join(', ') + '\n');
         });
         let premises = best_premises;
         let pad = ('' + premises.length).length;
@@ -2175,17 +2266,17 @@ function* state4_generator(taskArea) {
             puzzle_text = puzzle_text.concat(i + '. ' + premise + '\n');
         });
         appendText(taskArea, puzzle_text + '\n', clearBefore);
-        addHistoryItem([puzzle_text + '\n' + "Answer:\n" + answer + '\nExpected: ' + expected]);
+        addHistoryItem([puzzle_text + '\n' + "Answer:\n" + answer]);
         let mistakeFlag = true;
+        taskArea.scrollTop = 0;
+        taskArea.scrollLeft = 0;
         while (mistakeFlag) {
-            appendText(taskArea, 'Result>');
-            let actual = (yield).toUpperCase();
-            appendText(taskArea, actual + '\n');
+            let actual = (yield htmlTable).toUpperCase();
             if (actual === '-SKIP-') {
                 break;
             }
             if (actual === '-ANSWER-') {
-                appendText(taskArea, "Answer:\n" + answer + '\nExpected: ' + expected + '\n');
+                appendText(taskArea, "Answer:\n" + answer + '\n');
                 continue;
             }
             let status = actual === expected;
@@ -2244,8 +2335,8 @@ let combo_st1_direction_mode = {
     ByWord: "By Word"
 };
 let combo_st1_identical_mode = {
-    OneIdenticalWord: "One identical word",
-    MultipleIdenticalWords: "Multiple identical words"
+    OneIdenticalWord: "One",
+    MultipleIdenticalWords: "Multiple"
 };
 let combo_st1_keyboard = {
     QWERTY: "QWERTY",
