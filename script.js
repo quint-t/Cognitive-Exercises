@@ -2310,12 +2310,6 @@ let statesToNames = {
     st3: 'XYZ',
     st4: 'Puzzle-Solving'
 };
-let combo_st1_length_of_word = {
-    Start: "Start",
-    End: "End",
-    Both: "Both",
-    Any: "Any"
-};
 let combo_st1_addition_mode = {
     Start: "Start",
     End: "End",
