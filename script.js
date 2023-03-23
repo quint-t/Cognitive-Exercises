@@ -53,14 +53,11 @@ function loadHistory() {
 function loadSettings() {
     let defParameters = {
         "st1_length_of_word": 1,
-        "st1_addition_mode": combo_st1_addition_mode.Any,
+        "st1_complexity": 10,
         "st1_remove_freq": 5,
-        "st1_removal_mode": combo_st1_removal_mode.Any,
-        "st1_direction_mode": combo_st1_direction_mode.ByWord,
         "st1_identical_mode": combo_st1_identical_mode.OneIdenticalWord,
-        "st1_max_words": 20,
+        "st1_max_words": 8,
         "st1_keyboard": combo_st1_keyboard.QWERTY,
-        "st1_hard_mode": combo_st1_hard_mode.Disable,
         "st2_triangular_mode": combo_st2_triangular_mode.Easy,
         "st2_triangular_level": "4-5",
         "st3_max_x": 3,
@@ -709,6 +706,30 @@ function stateHistory() {
     });
 }
 
+function getStrDateTime() {
+    return new Date().toLocaleString();
+}
+
+function formatHistoryElem(historyElem) {
+    let stateName = statesToNames['st' + state];
+    return getStrDateTime() + '. ' + stateName + '\n' + historyElem;
+}
+
+function addHistoryItem(historyElem) {
+    historyElem = historyElem.join('\n');
+    exHistory.unshift(formatHistoryElem(historyElem));
+    if (exHistory.length > 25) {
+        exHistory = exHistory.slice(0, 25);
+    }
+    localStorage.setItem('exHistory', JSON.stringify(exHistory));
+}
+
+function updateLastHistoryItem(historyElem) {
+    historyElem = historyElem.join('\n');
+    exHistory[0] = formatHistoryElem(historyElem);
+    localStorage.setItem('exHistory', JSON.stringify(exHistory));
+}
+
 function state1() {
     currentGenerator = null;
     state = 1;
@@ -736,12 +757,12 @@ function state1() {
             }
             return 1 <= xv && xv <= 10;
         }],
-        ["st1_addition_mode", "Addition Mode", "combobox", Object.values(combo_st1_addition_mode)],
+        ["st1_complexity", "Complexity of graph (1-100%)", "integer", function (x) {
+            return 1 <= x && x <= 100;
+        }],
         ["st1_remove_freq", "Remove word every N additions (0|2-100)", "integer", function (x) {
             return x === 0 || 2 <= x && x <= 100;
         }],
-        ["st1_removal_mode", "Removal Mode", "combobox", Object.values(combo_st1_removal_mode)],
-        ["st1_direction_mode", "Direction Mode", "combobox", Object.values(combo_st1_direction_mode)],
         ["st1_identical_mode", "Identical words", "combobox", Object.values(combo_st1_identical_mode), function (xv) {
             let length_of_word = document.getElementById("st1_length_of_word").innerHTML;
             if (xv === combo_st1_identical_mode.OneIdenticalWord) {
@@ -775,7 +796,6 @@ function state1() {
             return 3 <= xv && xv <= permutations && xv <= 1000;
         }],
         ["st1_keyboard", "Keyboard", "combobox", Object.values(combo_st1_keyboard)],
-        ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -801,81 +821,37 @@ function state1_start() {
     let task = createInputElems();
     let taskDiv = task[0];
     let taskArea = task[1];
-    let st1_keyboard = settings['st1_keyboard'];
     addWidget(createCaption(statesToNames.st1));
     addWidget(taskDiv);
-    addWidget(createKeyboard(st1_keyboard === combo_st1_keyboard.QWERTY ? asciiUppercase : asciiSymbols,
-        state1, {
+    addWidget(createKeyboard(asciiDigits, state1, {
         'Redo': () => { currentGenerator.next('-REDO-') },
         'Hint': () => { currentGenerator.next('-HINT-') },
-        'Sequence': () => { currentGenerator.next('-SEQUENCE-') },
-    }, st1_keyboard === combo_st1_keyboard.QWERTY ? ['P', 'L'] : [],
-        Array.from(st1_keyboard === combo_st1_keyboard.QWERTY ? asciiUppercase : asciiSymbols)
-            .reduce((a, v) => ({ ...a, [v]: ['w10'] }), {})));
+        'Graph': () => { currentGenerator.next('-GRAPH-') },
+    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
     currentGenerator = state1_generator(taskArea);
     currentGenerator.next();
 }
 
-function getStrDateTime() {
-    return new Date().toLocaleString();
-}
-
-function formatHistoryElem(historyElem) {
-    let stateName = statesToNames['st' + state];
-    return getStrDateTime() + '. ' + stateName + '\n' + historyElem;
-}
-
-function addHistoryItem(historyElem) {
-    historyElem = historyElem.join('\n');
-    exHistory.unshift(formatHistoryElem(historyElem));
-    if (exHistory.length > 25) {
-        exHistory = exHistory.slice(0, 25);
-    }
-    localStorage.setItem('exHistory', JSON.stringify(exHistory));
-}
-
-function updateLastHistoryItem(historyElem) {
-    historyElem = historyElem.join('\n');
-    exHistory[0] = formatHistoryElem(historyElem);
-    localStorage.setItem('exHistory', JSON.stringify(exHistory));
-}
-
 function* state1_generator(taskArea) {
     let st1_length_of_word = parseInt(settings['st1_length_of_word']);
-    let st1_addition_mode = settings['st1_addition_mode'];
+    let st1_complexity = parseInt(settings['st1_complexity']);
     let st1_remove_freq = parseInt(settings['st1_remove_freq']);
-    let st1_removal_mode = settings['st1_removal_mode'];
-    let st1_direction_mode = settings['st1_direction_mode'];
     let st1_identical_mode = settings['st1_identical_mode'];
     let st1_max_words = parseInt(settings['st1_max_words']);
     let st1_keyboard = settings['st1_keyboard'];
-    let st1_hard_mode = settings['st1_hard_mode'];
-    let gmode = st1_direction_mode === combo_st1_direction_mode.Forward
-        || st1_direction_mode === combo_st1_direction_mode.Backward
-        ? st1_direction_mode : (
-            Math.random() < 0.5
-                ? combo_st1_direction_mode.Forward
-                : combo_st1_direction_mode.Backward
-        );
     let clearBefore = true;
     while (true) {
         let words_generator = wordsGenerator(
             st1_keyboard === combo_st1_keyboard.QWERTY ? asciiUppercase : asciiSymbols,
             st1_length_of_word);
         let removed_words = [];
-        appendText(taskArea, "[New] sequence\n", clearBefore);
-        let sequence = [];
-        let sequence_mt = st1_remove_freq;
-        let i = 0;
-        if (st1_direction_mode === combo_st1_direction_mode.BySequence) {
-            gmode = gmode != combo_st1_direction_mode.Forward
-                ? combo_st1_direction_mode.Forward
-                : combo_st1_direction_mode.Backward;
-        }
-        addHistoryItem(['Sequence']);
+        appendText(taskArea, "[New] graph\n", clearBefore);
+        let graph_dict = new Map();
+        let graph_mt = st1_remove_freq;
+        addHistoryItem(['Graph']);
         let mistakeFlag = false;
         while (true) {
-            if (i >= st1_max_words) {
+            if (mistakeFlag === false && graph_dict.size >= st1_max_words) {
                 appendText(taskArea, "Completed!\n", clearBefore);
                 appendText(taskArea, "==========\n\n");
                 break;
@@ -886,105 +862,238 @@ function* state1_generator(taskArea) {
             }
             else {
                 let word = null;
-                if (sequence.length > 0 && st1_remove_freq > 0 &&
-                    sequence.length % sequence_mt === 0) {
-                    sequence_mt += st1_remove_freq;
-                    let positions = [];
-                    if (st1_removal_mode === combo_st1_removal_mode.Start ||
-                        st1_removal_mode === combo_st1_removal_mode.Both) {
-                        positions.push(0);
+                if (graph_dict.size >= 3 && st1_remove_freq > 0 && graph_dict.size % graph_mt === 0) {
+                    graph_mt = graph_dict.size + st1_remove_freq;
+                    let word_to_del = randomChoice([...graph_dict.keys()]);
+                    let new_graph_dict = new Map();
+                    let in_conn = new Set(), out_conn = new Set();
+                    for (let [v1, vd] of graph_dict) {
+                        if (v1 !== word_to_del) {
+                            new_graph_dict.set(v1, new Map());
+                        }
+                        for (let [v2, cost] of vd) {
+                            if (v2 === word_to_del) {
+                                in_conn.add(v1 + "!#%" + cost);
+                            }
+                            else if (v1 === word_to_del) {
+                                out_conn.add(v2 + "!#%" + cost);
+                            }
+                            else {
+                                new_graph_dict.get(v1).set(v2, cost);
+                            }
+                        }
                     }
-                    if (st1_removal_mode === combo_st1_removal_mode.End ||
-                        st1_removal_mode === combo_st1_removal_mode.Both) {
-                        positions.push(sequence.length - 1);
+                    if (in_conn.size === 0) {
+                        in_conn = out_conn;
                     }
-                    if (st1_removal_mode === combo_st1_removal_mode.Any) {
-                        positions = range(0, sequence.length);
+                    else if (out_conn.size === 0) {
+                        out_conn = in_conn;
                     }
-                    let pos = randomChoice(positions);
-                    let x = sequence.pop(pos);
-                    removed_words.push(x);
+                    let edges_history = [];
+                    for (let xd1 of in_conn) {
+                        let [x1, d1] = xd1.split('!#%');
+                        d1 = parseInt(d1);
+                        for (let xd2 of out_conn) {
+                            let [x2, d2] = xd2.split('!#%');
+                            d2 = parseInt(d2);
+                            if (x1 !== x2 && new_graph_dict.get(x2).has(x1) === false) {
+                                let cost = d1 < d2 ? d2 : d1;
+                                if (new_graph_dict.has(x1) === false) {
+                                    new_graph_dict.set(x1, new Map())
+                                }
+                                new_graph_dict.get(x1).set(x2, cost);
+                                edges_history.push(x1 + '-' + cost + '-' + x2);
+                            }
+                        }
+                    }
+                    graph_dict = new_graph_dict;
                     appendText(taskArea, '[Remove] word\n');
-                    appendText(taskArea, 'Removed #' + (pos + 1) + ': ' + x + '\n');
-                    i -= 1;
-                }
-                if (st1_identical_mode === combo_st1_identical_mode.MultipleIdenticalWords &&
-                    Math.random() < 0.1) {
-                    word = randomChoice(sequence);
+                    appendText(taskArea, 'Removed ' + word_to_del + '\n');
+                    if (edges_history.length > 0) {
+                        appendText(taskArea, '[New] edge' + (edges_history.length >= 2 ? 's' : '') + '\n');
+                        for (let x of edges_history) {
+                            appendText(taskArea, x + '\n');
+                        }
+                    }
                 }
                 else {
-                    let wordObject = words_generator.next();
-                    if (wordObject.value == null || wordObject.done) {
-                        if (removed_words.length > 0) {
-                            word = removed_words.pop(0);
+                    if (st1_identical_mode === combo_st1_identical_mode.MultipleIdenticalWords &&
+                        Math.random() < 0.1) {
+                        word = randomChoice([...graph_dict.keys()]);
+                    }
+                    else {
+                        let wordObject = words_generator.next();
+                        if (wordObject.value == null || wordObject.done) {
+                            if (removed_words.length > 0) {
+                                word = removed_words.pop(0);
+                            }
+                            else if (st1_identical_mode === combo_st1_identical_mode.MultipleIdenticalWords) {
+                                word = randomChoice([...graph_dict.keys()]);
+                            }
                         }
-                        else if (st1_identical_mode === combo_st1_identical_mode.MultipleIdenticalWords) {
-                            word = randomChoice(sequence);
+                        else {
+                            word = wordObject.value;
+                        }
+                    }
+                    if (word == null) {
+                        break;
+                    }
+                    let conn = [];
+                    for (let [v1, vd1] of graph_dict) {
+                        for (let [v2, vd2] of graph_dict) {
+                            if (v1 !== v2 && vd2.has(v1) === false && vd1.has(v2) === false) {
+                                conn.push([v1, v2]);
+                                conn.push([v2, v1]);
+                            }
+                        }
+                    }
+                    let cost = randomInt(1, 9);
+                    let next_word = null;
+                    if (conn.length >= 1 && Math.random() < st1_complexity / 100) {
+                        [word, next_word] = randomChoice(conn);
+                        if (graph_dict.has(word) === false) {
+                            graph_dict.set(word, new Map());
+                        }
+                        graph_dict.get(word).set(next_word, cost);
+                    }
+                    else if (graph_dict.size >= 2) {
+                        next_word = randomChoice([...graph_dict.keys()]);
+                        graph_dict.set(word, new Map());
+                        graph_dict.get(word).set(next_word, cost);
+                    }
+                    else {
+                        next_word = words_generator.next().value;
+                        let tmp = new Map();
+                        tmp.set(next_word, cost);
+                        graph_dict.set(word, tmp);
+                        graph_dict.set(next_word, new Map());
+                    }
+                    appendText(taskArea, '[New] edge\n');
+                    appendText(taskArea, word + '-' + cost + '-' + next_word + '\n');
+                }
+            }
+            let sorted_items = [...graph_dict.keys()].sort().reverse();
+            let floatInfinity = Number.POSITIVE_INFINITY;
+            let table = [], table_bk = [];
+            for (let _ of range(0, sorted_items.length)) {
+                let row = [], row_bk = [];
+                for (let j of range(0, sorted_items.length)) {
+                    row.push(floatInfinity);
+                    row_bk.push(j);
+                }
+                table.push(row);
+                table_bk.push(row_bk);
+            }
+            sorted_items.forEach((v1, i) => {
+                sorted_items.forEach((v2, j) => {
+                    if (v1 !== v2) {
+                        if (graph_dict.get(v1).has(v2)) {
+                            table[i][j] = table[j][i] = graph_dict.get(v1).get(v2);
+                        }
+                        else if (graph_dict.get(v2).has(v1)) {
+                            table[i][j] = table[j][i] = graph_dict.get(v2).get(v1);
                         }
                     }
                     else {
-                        word = wordObject.value;
+                        table[i][j] = 0;
+                    }
+                });
+            });
+            for (let k = 0, n = table.length; k < n; ++k) {
+                for (let i = 0; i < n; ++i) {
+                    for (let j = 0; j < n; ++j) {
+                        if (k != i && i != j && k != j) {
+                            let x = table[i][k] + table[k][j];
+                            let y = table[i][j];
+                            if (x < y) {
+                                table[i][j] = x;
+                                table_bk[i][j] = table_bk[i][k];
+                            }
+                        }
                     }
                 }
-                if (word == null) {
+            }
+            let pairs = [];
+            for (let i = 0, n = table.length; i < n; ++i) {
+                for (let j = 0; j < n; ++j) {
+                    if (i != j) {
+                        pairs.push([table[i][j], i, j]);
+                    }
+                }
+            }
+            pairs = randomShuffle(pairs).sort().reverse();
+            let used = new Set();
+            let unique_pairs = [];
+            for (let [cost, i, j] of pairs) {
+                if (used.has(i) || used.has(j)) {
+                    continue;
+                }
+                used.add(i);
+                used.add(j);
+                unique_pairs.push([cost, i, j]);
+            }
+            for (let i = 0, n = table.length; i < n; ++i) {
+                if (used.has(i) === false) {
+                    let j = i;
+                    while (i === j) {
+                        j = randomInt(0, table.length - 1);
+                    }
+                    unique_pairs.push([table[i][j], i, j]);
                     break;
                 }
-                let positions = [];
-                if (st1_addition_mode === combo_st1_addition_mode.Start ||
-                    st1_addition_mode === combo_st1_addition_mode.Both) {
-                    positions.push(0);
+            }
+            unique_pairs = randomShuffle(unique_pairs);
+            let questions = [], answers = [], detailed_answers = [];
+            for (let [cost, i, j] of unique_pairs) {
+                questions.push([sorted_items[i], sorted_items[j]]);
+                answers.push(cost);
+                let x = i, ds = [sorted_items[i]];
+                while (x !== j) {
+                    let prev_x = x;
+                    x = table_bk[x][j];
+                    let t = graph_dict.get(sorted_items[prev_x]).get(sorted_items[x]);
+                    if (t == null) {
+                        t = graph_dict.get(sorted_items[x]).get(sorted_items[prev_x]);
+                    }
+                    ds.push('' + t);
+                    ds.push(sorted_items[x]);
                 }
-                if (st1_addition_mode === combo_st1_addition_mode.End ||
-                    st1_addition_mode === combo_st1_addition_mode.Both) {
-                    positions.push(sequence.length);
-                }
-                if (st1_addition_mode === combo_st1_addition_mode.Any) {
-                    positions = range(0, sequence.length + 1);
-                }
-                let pos = randomChoice(positions);
-                sequence.insert(pos, word);
-                let w_previous = pos > 0 ? sequence[pos - 1] + ' -> ' : '';
-                let w_next = pos < sequence.length - 1 ? ' -> ' + sequence[pos + 1] : '';
-                appendText(taskArea, '[New] word\n');
-                appendText(taskArea, '#' + (pos + 1) + ': ' + w_previous + '[' + sequence[pos] + ']' + w_next + '\n');
-                if (st1_direction_mode === combo_st1_direction_mode.ByWord) {
-                    gmode = gmode !== combo_st1_direction_mode.Forward
-                        ? combo_st1_direction_mode.Forward
-                        : combo_st1_direction_mode.Backward;
+                detailed_answers.push(ds.join('-'));
+            }
+            let graph_string = 'Graph (' + graph_dict.size + '/' + st1_max_words + '):\n';
+            for (let [v1, vd1] of graph_dict) {
+                for (let [v2, cost] of vd1) {
+                    graph_string = graph_string.concat(v1 + '-' + cost + '-' + v2 + '\n');
                 }
             }
             let k = 0;
             while (true) {
-                let expected = gmode === combo_st1_direction_mode.Forward
-                    ? sequence[k]
-                    : sequence[i - k];
-                let inputText = gmode === combo_st1_direction_mode.Forward
-                    ? combo_st1_direction_mode.Forward
-                    : combo_st1_direction_mode.Backward;
-                inputText += ' #' + (k + 1) + '> ';
-                updateLastHistoryItem(['Sequence (' + sequence.length + '/' + st1_max_words + '): ' + sequence.join(' ')]);
+                let expected = '' + answers[k];
+                let [v1, v2] = questions[k];
+                let inputText = 'Min cost for ' + v1 + '-?-' + v2 + ':>';
+                updateLastHistoryItem([graph_string]);
                 appendText(taskArea, inputText);
                 let actual = (yield).toUpperCase();
                 appendText(taskArea, actual + '\n');
                 if (actual === '-HINT-') {
                     appendText(taskArea, "Expected: " + expected + '\n');
+                    appendText(taskArea, "Detailed: " + detailed_answers[k] + '\n');
                     continue;
                 }
                 if (actual === '-REDO-') {
                     mistakeFlag = true;
                     break;
                 }
-                if (actual === '-SEQUENCE-') {
-                    appendText(taskArea, 'Sequence (' + sequence.length + '/' + st1_max_words + '): ' + sequence.join(' ') + '\n');
+                if (actual === '-GRAPH-') {
+                    appendText(taskArea, graph_string);
                     continue;
                 }
                 let status = actual === expected;
                 if (status) {
-                    if (st1_hard_mode === combo_st1_hard_mode.Enable) {
-                        appendText(taskArea, '', clearBefore);
+                    if (k + 1 < questions.length) {
+                        k += 1;
                     }
-                    k += 1;
-                    if (k > i) {
+                    else {
                         break;
                     }
                 }
@@ -994,7 +1103,6 @@ function* state1_generator(taskArea) {
                 }
             }
             if (mistakeFlag === false) {
-                i += 1;
                 addScore('st1');
                 appendText(taskArea, '', clearBefore);
             }
@@ -2305,28 +2413,10 @@ asciiSymbols = asciiSymbols.slice(0, asciiUppercase.length); //!
 
 let asciiDigits = '123456789-0_';
 let statesToNames = {
-    st1: 'Incremental',
+    st1: 'Graph',
     st2: 'Triangular',
     st3: 'XYZ',
     st4: 'Puzzle-Solving'
-};
-let combo_st1_addition_mode = {
-    Start: "Start",
-    End: "End",
-    Both: "Both",
-    Any: "Any"
-};
-let combo_st1_removal_mode = {
-    Start: "Start",
-    End: "End",
-    Both: "Both",
-    Any: "Any"
-};
-let combo_st1_direction_mode = {
-    Forward: "Forward",
-    Backward: "Backward",
-    BySequence: "By Sequence",
-    ByWord: "By Word"
 };
 let combo_st1_identical_mode = {
     OneIdenticalWord: "One",
@@ -2335,10 +2425,6 @@ let combo_st1_identical_mode = {
 let combo_st1_keyboard = {
     QWERTY: "QWERTY",
     Symbols: "Symbols"
-};
-let combo_st1_hard_mode = {
-    Enable: "Enable",
-    Disable: "Disable"
 };
 let combo_st2_triangular_mode = {
     Easy: "Easy",
