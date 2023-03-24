@@ -2407,10 +2407,16 @@ function* state4_generator(taskArea) {
     }
 }
 
-let version = localStorage.getItem('VERSION');
-if (version == null) {
-    version = '1.00';
-    localStorage.setItem('VERSION', version);
+function checkVersion() {
+    if (version === '1.00') {
+        stateN_defaults('st1');
+        stateN_clear_score('st1');
+        version = null;
+    }
+    if (version == null) {
+        version = '2.00';
+        localStorage.setItem('VERSION', version);
+    }
 }
 
 let state = 0;
@@ -2454,3 +2460,4 @@ let combo_st4_hard_mode = {
 let settings = loadSettings();
 let scores = loadScores();
 let exHistory = loadHistory();
+let version = localStorage.getItem('VERSION');
