@@ -457,7 +457,7 @@ function createTableOfSelects(stateN, additionalButtons = null) {
 
 function updateTableOfSelects(cellValues) {
     let table = document.getElementById('inputTable');
-    if (table != null && cellValues.length > 0) {
+    if (table != null && cellValues != null && cellValues.length > 0) {
         table.innerHTML = '';
         let headerRow = document.createElement('tr');
         cellValues[0].forEach((headerText) => {
@@ -2375,11 +2375,19 @@ function* state4_generator(taskArea) {
         });
         appendText(taskArea, puzzle_text + '\n', clearBefore);
         addHistoryItem([puzzle_text + '\n' + "Answer:\n" + answer]);
-        let mistakeFlag = true;
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
-        while (mistakeFlag) {
-            let actual = (yield htmlTable).toUpperCase();
+        let first = true;
+        while (true) {
+            let actual = '';
+            if (first) {
+                actual = yield htmlTable;
+                first = false;
+            }
+            else {
+                actual = yield;
+            }
+            actual = actual.toUpperCase();
             if (actual === '-SKIP-') {
                 break;
             }
@@ -2390,7 +2398,7 @@ function* state4_generator(taskArea) {
             let status = actual === expected;
             if (status) {
                 addScore('st4');
-                mistakeFlag = false;
+                break;
             }
             else {
                 appendText(taskArea, 'No, retry\n');
