@@ -55,7 +55,6 @@ function loadSettings() {
         "st1_length_of_word": 1,
         "st1_complexity": 10,
         "st1_remove_freq": 5,
-        "st1_identical_mode": combo_st1_identical_mode.OneIdenticalWord,
         "st1_max_words": 8,
         "st1_keyboard": combo_st1_keyboard.QWERTY,
         "st2_triangular_mode": combo_st2_triangular_mode.Easy,
@@ -747,14 +746,11 @@ function state1() {
         ],
         ["st1_length_of_word", "Length of Word [1-10]", "integer", function (xv) {
             let element = document.getElementById("st1_max_words");
-            let identicalModeElem = document.getElementById("st1_identical_mode").value;
-            if (identicalModeElem === combo_st1_identical_mode.OneIdenticalWord) {
-                let permutations = calculate_permutations(asciiUppercase.length, xv);
-                let currentValue = parseInt(element.innerHTML);
-                let newValue = '' + Math.min(permutations, currentValue);
-                element.innerHTML = newValue;
-                localStorage.setItem('st1_max_words', newValue);
-            }
+            let permutations = calculate_permutations(asciiUppercase.length, xv);
+            let currentValue = parseInt(element.innerHTML);
+            let newValue = '' + Math.min(permutations, currentValue);
+            element.innerHTML = newValue;
+            localStorage.setItem('st1_max_words', newValue);
             return 1 <= xv && xv <= 10;
         }],
         ["st1_complexity", "Complexity of graph (1-100%)", "integer", function (x) {
@@ -763,31 +759,17 @@ function state1() {
         ["st1_remove_freq", "Remove word every N additions (0|2-100)", "integer", function (x) {
             return x === 0 || 2 <= x && x <= 100;
         }],
-        ["st1_identical_mode", "Identical words", "combobox", Object.values(combo_st1_identical_mode), function (xv) {
-            let length_of_word = document.getElementById("st1_length_of_word").innerHTML;
-            if (xv === combo_st1_identical_mode.OneIdenticalWord) {
-                let element = document.getElementById("st1_max_words");
-                let permutations = calculate_permutations(asciiUppercase.length, length_of_word);
-                let currentValue = parseInt(element.innerHTML);
-                let newValue = '' + Math.min(permutations, currentValue);
-                element.innerHTML = newValue;
-                localStorage.setItem('st1_max_words', newValue);
-            }
-        }],
         ["st1_max_words", "Max number of words<br>(depends on word length)", "integer", function (xv) {
             let permutations = 1000;
-            let identicalModeElem = document.getElementById("st1_identical_mode").value;
-            if (identicalModeElem === combo_st1_identical_mode.OneIdenticalWord) {
-                let value = parseInt(document.getElementById("st1_length_of_word").innerHTML);
-                permutations = calculate_permutations(asciiUppercase.length, value);
-                if (xv < 3) {
-                    alert("Max number of words must be greater than or equal to 3");
-                    return false;
-                }
-                else if (xv > permutations) {
-                    alert("Max number of words must be less than or equal to " + permutations);
-                    return false;
-                }
+            let value = parseInt(document.getElementById("st1_length_of_word").innerHTML);
+            permutations = calculate_permutations(asciiUppercase.length, value);
+            if (xv < 3) {
+                alert("Max number of words must be greater than or equal to 3");
+                return false;
+            }
+            else if (xv > permutations) {
+                alert("Max number of words must be less than or equal to " + permutations);
+                return false;
             }
             if (xv > 1000) {
                 alert("Max number of words must be less than or equal to 1000");
@@ -795,7 +777,7 @@ function state1() {
             }
             return 3 <= xv && xv <= permutations && xv <= 1000;
         }],
-        ["st1_keyboard", "Keyboard", "combobox", Object.values(combo_st1_keyboard)],
+        ["st1_keyboard", "Alphabet", "combobox", Object.values(combo_st1_keyboard)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -836,7 +818,6 @@ function* state1_generator(taskArea) {
     let st1_length_of_word = parseInt(settings['st1_length_of_word']);
     let st1_complexity = parseInt(settings['st1_complexity']);
     let st1_remove_freq = parseInt(settings['st1_remove_freq']);
-    let st1_identical_mode = settings['st1_identical_mode'];
     let st1_max_words = parseInt(settings['st1_max_words']);
     let st1_keyboard = settings['st1_keyboard'];
     let clearBefore = true;
@@ -917,23 +898,14 @@ function* state1_generator(taskArea) {
                     }
                 }
                 else {
-                    if (st1_identical_mode === combo_st1_identical_mode.MultipleIdenticalWords &&
-                        Math.random() < 0.1) {
-                        word = randomChoice([...graph_dict.keys()]);
+                    let wordObject = words_generator.next();
+                    if (wordObject.value == null || wordObject.done) {
+                        if (removed_words.length > 0) {
+                            word = removed_words.pop(0);
+                        }
                     }
                     else {
-                        let wordObject = words_generator.next();
-                        if (wordObject.value == null || wordObject.done) {
-                            if (removed_words.length > 0) {
-                                word = removed_words.pop(0);
-                            }
-                            else if (st1_identical_mode === combo_st1_identical_mode.MultipleIdenticalWords) {
-                                word = randomChoice([...graph_dict.keys()]);
-                            }
-                        }
-                        else {
-                            word = wordObject.value;
-                        }
+                        word = wordObject.value;
                     }
                     if (word == null) {
                         break;
@@ -2431,10 +2403,6 @@ let statesToNames = {
     st2: 'Triangular',
     st3: 'XYZ',
     st4: 'Puzzle-Solving'
-};
-let combo_st1_identical_mode = {
-    OneIdenticalWord: "One",
-    MultipleIdenticalWords: "Multiple"
 };
 let combo_st1_keyboard = {
     QWERTY: "QWERTY",
