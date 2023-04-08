@@ -69,9 +69,11 @@ function loadSettings() {
         "st4_attributes": "3",
         "st4_objects": "3",
         "st4_riddle_level": "1-20",
+        "st4_auto_increase": 1,
         "st4_hard_mode": combo_st4_hard_mode.Disable,
         "st4_max_seconds": 20,
-        "st4_max_solutions": 1
+        "st4_max_solutions": 1,
+        "st4_font_size": 15
     };
     let parameters = {};
     Object.keys(defParameters).forEach((param) => {
@@ -1513,6 +1515,9 @@ function state4() {
                 1 <= xv[0] && xv[0] <= 20 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 20);
         }],
+        ["st4_auto_increase", "Increase level every K successful solved puzzles [0|1-100]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 100;
+        }],
         ["st4_hard_mode", "Hard mode", "combobox", Object.values(combo_st4_hard_mode)],
         ["st4_max_seconds", "Max seconds to wait for generation [0-600]", "integer", function (xv) {
             return 0 <= xv && xv <= 600;
@@ -1546,6 +1551,8 @@ function state4_start() {
     let task = createInputElems();
     let taskDiv = task[0];
     let taskArea = task[1];
+    let fs = parseInt(settings['st4_font_size']);
+    taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(taskDiv);
     addWidget(createTableOfSelects(state4, {
         'Skip': () => {
@@ -1555,6 +1562,22 @@ function state4_start() {
             }, 50);
         },
         'Answer': () => { currentGenerator.next('-ANSWER-') },
+        '+': () => {
+            let fs = parseInt(taskArea.style.fontSize);
+            fs = isFinite(fs) ? fs : 16;
+            let newValue = Math.min(20, Math.max(9, fs + 1));
+            settings['st4_font_size'] = newValue;
+            localStorage.setItem('st4_font_size', newValue);
+            taskArea.style.fontSize = newValue + 'px';
+        },
+        '-': () => {
+            let fs = parseInt(taskArea.style.fontSize);
+            fs = isFinite(fs) ? fs : 16;
+            let newValue = Math.min(20, Math.max(9, fs - 1));
+            settings['st4_font_size'] = newValue;
+            localStorage.setItem('st4_font_size', newValue);
+            taskArea.style.fontSize = newValue + 'px';
+        },
     }));
     taskArea.innerHTML = 'Generating...\n';
     setTimeout(function () {
@@ -2221,6 +2244,7 @@ function* state4_generator(taskArea) {
     let st4_riddle_level = toIntOrIntRange(settings['st4_riddle_level']);
     let st4_min_riddle_level = st4_riddle_level[0];
     let st4_max_riddle_level = st4_riddle_level.length === 2 ? st4_riddle_level[1] : st4_min_riddle_level;
+    let st4_auto_increase = parseInt(settings['st4_auto_increase']);
     let st4_hard_mode = settings['st4_hard_mode'];
     let st4_max_seconds = parseInt(settings['st4_max_seconds']);
     let st4_max_solutions = parseInt(settings['st4_max_solutions']);
@@ -2307,12 +2331,15 @@ function* state4_generator(taskArea) {
     let kinds = Array.from(Object.keys(kinds_dict));
     let n_attributes = 0;
     let m_objects = 0;
-    let level = 0;
+    let level = st4_min_riddle_level;
+    let auto_increase_counter = 0;
     while (true) {
         while (true) {
             n_attributes = randomInt(st4_min_attributes, st4_max_attributes);
             m_objects = randomInt(st4_min_objects, st4_max_objects);
-            level = randomInt(st4_min_riddle_level, st4_max_riddle_level);
+            if (st4_auto_increase === 0) {
+                level = randomInt(st4_min_riddle_level, st4_max_riddle_level);
+            }
             if (level >= 19 && m_objects <= 2) {
                 continue;
             }
@@ -2372,6 +2399,7 @@ function* state4_generator(taskArea) {
             puzzle_text = puzzle_text.concat(row[0] + ': ' +
                 row.slice(1, row.length).sort().join(', ') + '\n');
         });
+        puzzle_text += '\n';
         let premises = best_premises;
         let pad = ('' + premises.length).length;
         premises.forEach((premise, index) => {
@@ -2383,6 +2411,7 @@ function* state4_generator(taskArea) {
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
         let first = true;
+        let mistake = false;
         while (true) {
             let actual = '';
             if (first) {
@@ -2412,6 +2441,7 @@ function* state4_generator(taskArea) {
                     else {
                         expected_array[i][0] = true;
                         addScore('st4');
+                        auto_increase_counter += 1;
                         appendText(taskArea, 'Solution accept.\n');
                     }
                     break;
@@ -2419,6 +2449,7 @@ function* state4_generator(taskArea) {
             }
             if (solution_found === false) {
                 appendText(taskArea, 'No, retry\n');
+                mistake = true;
             }
             let break_condition = true;
             for (let i = 0, n = expected_array.length; i < n; ++i) {
@@ -2431,6 +2462,10 @@ function* state4_generator(taskArea) {
             if (break_condition) {
                 break;
             }
+        }
+        if (mistake === false && st4_auto_increase >= 1 && auto_increase_counter >= st4_auto_increase) {
+            auto_increase_counter = 0;
+            level = Math.min(18 + 2 * (st4_max_objects > 2), level + 1);
         }
     }
 }
