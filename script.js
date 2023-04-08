@@ -70,7 +70,8 @@ function loadSettings() {
         "st4_objects": "3",
         "st4_riddle_level": "1-20",
         "st4_hard_mode": combo_st4_hard_mode.Disable,
-        "st4_max_seconds": 20
+        "st4_max_seconds": 20,
+        "st4_max_solutions": 1
     };
     let parameters = {};
     Object.keys(defParameters).forEach((param) => {
@@ -1516,6 +1517,9 @@ function state4() {
         ["st4_max_seconds", "Max seconds to wait for generation [0-600]", "integer", function (xv) {
             return 0 <= xv && xv <= 600;
         }],
+        ["st4_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
+            return 1 <= xv && xv <= 10;
+        }],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1743,7 +1747,8 @@ function generateRiddle(
     level,
     minimal_conditions = false,
     max_seconds_for_minimizing = 0,
-    tries = 10) {
+    tries = 10,
+    max_solutions = 1) {
     if (level < 1 || level > 20) {
         return null;
     }
@@ -1887,8 +1892,10 @@ function generateRiddle(
     }
     let is_minimized = false;
     let time_elapsed = false;
+    let min_solutions = [];
     let min_relations = null;
     let relations = [];
+    let solutions = [];
     while (true) {
         let ranges = [];
         table_wo_left.forEach(item => {
@@ -1899,6 +1906,7 @@ function generateRiddle(
             ranges.push(rng);
         });
         relations = [];
+        solutions = [];
         let fail = false;
         while (fail === false) {
             let needs_clarification = [];
@@ -1922,10 +1930,12 @@ function generateRiddle(
                     break;
                 }
             }
+            solutions = [ranges];
             if (solved || min_relations != null && relations.length >= min_relations.length) {
                 tries -= 1;
                 if (min_relations == null || relations.length < min_relations.length) {
                     min_relations = relations;
+                    min_solutions = solutions;
                 }
                 if (tries > 0) {
                     fail = true;
@@ -1934,6 +1944,7 @@ function generateRiddle(
             }
             if (tries <= 0) {
                 relations = min_relations;
+                solutions = min_solutions;
                 if (minimal_conditions === false) {
                     break;
                 }
@@ -1988,7 +1999,7 @@ function generateRiddle(
                             if (solved) {
                                 if (possible_solutions.findIndex(x => isDeepEqualLLS(x, current_ranges)) === -1) {
                                     possible_solutions.push(deepCloneLLS(current_ranges));
-                                    if (possible_solutions.length >= 2) {
+                                    if (possible_solutions.length > max_solutions) {
                                         break;
                                     }
                                 }
@@ -2018,11 +2029,12 @@ function generateRiddle(
                                 }
                             }
                         }
-                        if (possible_solutions.length === 1) {
+                        if (1 <= possible_solutions.length && possible_solutions.length <= max_solutions) {
                             let number_of_relations_after = new_relations.length;
                             if (number_of_relations_min > number_of_relations_after) {
                                 number_of_relations_min = number_of_relations_after;
                                 relations = new_relations;
+                                solutions = possible_solutions;
                                 main_q.push(new_relations);
                             }
                         }
@@ -2041,7 +2053,6 @@ function generateRiddle(
                     time_elapsed === false;
                 break;
             }
-
             if (no_solutions || needs_clarification.length === 0) {
                 fail = true;
                 continue;
@@ -2167,7 +2178,7 @@ function generateRiddle(
     }
     let premises = relations.map(t => t[t.length - 1]);
     randomShuffle(premises);
-    return premises;
+    return [solutions, premises];
 }
 
 function padCenter(str, width) {
@@ -2212,6 +2223,7 @@ function* state4_generator(taskArea) {
     let st4_max_riddle_level = st4_riddle_level.length === 2 ? st4_riddle_level[1] : st4_min_riddle_level;
     let st4_hard_mode = settings['st4_hard_mode'];
     let st4_max_seconds = parseInt(settings['st4_max_seconds']);
+    let st4_max_solutions = parseInt(settings['st4_max_solutions']);
     let hard_mode = st4_hard_mode === combo_st4_hard_mode.Enable;
     let clearBefore = true;
     if (st4_max_objects <= 2 && st4_min_riddle_level >= 19) {
@@ -2308,11 +2320,10 @@ function* state4_generator(taskArea) {
         }
         let header = [''].concat(range(1, m_objects + 1).map(x => '' + x));
         let chosenKinds = randomShuffle(kinds).slice(0, n_attributes).sort();
-        let table = [], htmlTable = [header], expected = [];
+        let table = [], htmlTable = [header];
         chosenKinds.forEach(kind => {
             let first = [kind];
             let other = randomShuffle(kinds_dict[kind]).slice(0, m_objects);
-            expected.push(...other);
             let row = [kind], sortedVars = other.slice().sort();
             for (let i = 0; i < m_objects; ++i) {
                 row.push(sortedVars);
@@ -2320,20 +2331,42 @@ function* state4_generator(taskArea) {
             htmlTable.push(row);
             table.push(first.concat(other));
         });
-        expected = expected.join('_').toUpperCase();
+        let best_solutions = null;
         let best_premises = null;
         let timestamp = window.performance.now();
         for (let i = 0, n = hard_mode ? 10 : 1; i < n; ++i) {
-            let premises = generateRiddle(table, level, st4_max_seconds > 0, st4_max_seconds,
-                hard_mode ? 1 : 20);
+            let [solutions, premises] = generateRiddle(table, level, st4_max_seconds > 0, st4_max_seconds,
+                hard_mode ? 1 : 20, st4_max_solutions);
             if (best_premises == null || (hard_mode ? best_premises.length < premises.length : best_premises.length > premises.length)) {
                 best_premises = premises;
+                best_solutions = solutions;
             }
             if (timestamp + st4_max_seconds * 1000 < window.performance.now()) {
                 break;
             }
         }
-        let answer = formatTable([''].concat(range(1, table[0].length).map(i => '' + i)), table);
+        let solutions = best_solutions;
+        let solutions_strings = [];
+        let expected_array = [];
+        header = [''].concat(range(1, table[0].length).map(i => '' + i));
+        solutions.forEach((solution) => {
+            let tmp_table = [];
+            let i = 0;
+            let tmp_expected = [];
+            for (let row of solution) {
+                let tmp_row = [table[i][0]];
+                for (let set_of_item of row) {
+                    let item = [...set_of_item][0];
+                    tmp_row.push(item);
+                    tmp_expected.push(item);
+                }
+                tmp_table.push(tmp_row);
+                i += 1;
+            }
+            expected_array.push([false, tmp_expected.join('_')]);
+            solutions_strings.push(formatTable(header, tmp_table));
+        });
+        let answer = solutions_strings.join('\n');
         let puzzle_text = '.:: Puzzle ' + n_attributes + 'x' + m_objects + ' level=' + level + ' ::.\n';
         table.forEach(row => {
             puzzle_text = puzzle_text.concat(row[0] + ': ' +
@@ -2364,16 +2397,39 @@ function* state4_generator(taskArea) {
                 break;
             }
             if (actual === '-ANSWER-') {
-                appendText(taskArea, "Answer:\n" + answer + '\n');
+                appendText(taskArea, "Answer (" + (solutions.length === 1 ? '1 solution' : solutions.length + ' solutions') + "):\n" + answer + '\n');
                 continue;
             }
-            let status = actual === expected;
-            if (status) {
-                addScore('st4');
-                break;
+            let solution_found = false;
+            for (let i = 0, n = expected_array.length; i < n; ++i) {
+                let [sol_status, solution] = expected_array[i];
+                solution = solution.toUpperCase();
+                if (actual === solution) {
+                    solution_found = true;
+                    if (sol_status === true) {
+                        appendText(taskArea, 'This solution has already been accepted before. Please enter a different one.\n');
+                    }
+                    else {
+                        expected_array[i][0] = true;
+                        addScore('st4');
+                        appendText(taskArea, 'Solution accept.\n');
+                    }
+                    break;
+                }
             }
-            else {
+            if (solution_found === false) {
                 appendText(taskArea, 'No, retry\n');
+            }
+            let break_condition = true;
+            for (let i = 0, n = expected_array.length; i < n; ++i) {
+                let [sol_status, solution] = expected_array[i];
+                if (sol_status === false) {
+                    break_condition = false;
+                    break;
+                }
+            }
+            if (break_condition) {
+                break;
             }
         }
     }
