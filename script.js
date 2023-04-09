@@ -73,7 +73,7 @@ function loadSettings() {
         "st4_hard_mode": combo_st4_hard_mode.Disable,
         "st4_max_seconds": 20,
         "st4_max_solutions": 1,
-        "st4_font_size": 15
+        "st4_font_size": 16
     };
     let parameters = {};
     Object.keys(defParameters).forEach((param) => {
@@ -1515,7 +1515,7 @@ function state4() {
                 1 <= xv[0] && xv[0] <= 20 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 20);
         }],
-        ["st4_auto_increase", "Increase level every K successful solved puzzles [0|1-100]", "integer", function (xv) {
+        ["st4_auto_increase", "Increase level every K successful solved puzzles<br>[0|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
         ["st4_hard_mode", "Hard mode", "combobox", Object.values(combo_st4_hard_mode)],
