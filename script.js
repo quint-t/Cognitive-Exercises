@@ -756,10 +756,10 @@ function state1() {
             localStorage.setItem('st1_max_words', newValue);
             return 1 <= xv && xv <= 10;
         }],
-        ["st1_complexity", "Complexity of graph (1-100%)", "integer", function (x) {
+        ["st1_complexity", "Complexity of graph [1-100]", "integer", function (x) {
             return 1 <= x && x <= 100;
         }],
-        ["st1_remove_freq", "Remove word every N additions (0|2-100)", "integer", function (x) {
+        ["st1_remove_freq", "Remove word every N additions [0|2-100]", "integer", function (x) {
             return x === 0 || 2 <= x && x <= 100;
         }],
         ["st1_max_words", "Max number of words<br>(depends on word length)", "integer", function (xv) {
