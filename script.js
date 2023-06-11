@@ -100,10 +100,7 @@ function loadSettings() {
         "st1_auto_mode": 2,
         "st1_words": 3,
         "st1_edges": 2,
-        "st1_minmax_edges": "2-20",
         "st1_remove_freq": 5,
-        "st1_length_of_word": 1,
-        "st1_keyboard": combo_st1_keyboard.Letters,
         "st2_auto_mode": 5,
         "st2_current_level": 2,
         "st2_triangle_mode": combo_st2_triangle_mode.Easy,
@@ -326,6 +323,47 @@ function* wordsGenerator(alphabet, length) {
             generated.push(word);
             yield (word);
         }
+    }
+    return null;
+}
+
+function* wordsGetter() {
+    let words = [
+        "7up", "accountant", "action", "adventure", "airplane",
+        "almond-milk", "ambient", "analyst", "animation", "apple",
+        "apricot", "architect", "artichoke", "asparagus", "avocado",
+        "badminton", "baking", "banana", "bartender", "baseball",
+        "basketball", "biathlon", "bird", "blueberry", "boat", "broccoli",
+        "bus", "cabbage", "camping", "car", "carrot", "cat", "cauliflower",
+        "chef", "cherry", "chess", "chinchilla", "classical", "climbing",
+        "coach", "coffee", "cola", "collecting", "comedy", "cooking", "corn",
+        "country", "cranberry", "cricket", "crime", "cucumber", "cycling",
+        "d&b", "dancer", "designer", "disaster", "disco", "doctor",
+        "documentary", "dog", "drama", "drawing", "dressmaker", "dubstep",
+        "eggplant", "electronic", "engineer", "entrepreneur", "epic", "family",
+        "fanta", "fantasy", "ferret", "filmmaking", "firefighter", "fish",
+        "freelancer", "frog", "gardening", "garlic", "goat", "goldfish",
+        "golf", "gospel", "grapefruit", "hamster", "handball", "hedgehog",
+        "helicopter", "hiking", "hip-hop", "horror", "horse", "hot-chocolate",
+        "house", "ice-hockey", "indie", "jazz", "jet-ski", "journalist", "juice",
+        "kale", "kiwi", "lacrosse", "lawyer", "lemonade", "lettuce", "librarian",
+        "lime", "lizard", "magic-tricks", "manager", "mango", "martial-arts",
+        "mechanic", "metal", "milk", "mirinda", "motorbike", "musician", "mystery",
+        "nectarine", "onion", "orange", "papaya", "paramedic", "parkour", "pear",
+        "pepper", "photographer", "pilot", "pineapple", "plum", "police-officer",
+        "pomegranate", "pop", "potato", "project-manager", "pumpkin", "puzzles",
+        "r&b", "rabbit", "raspberry", "reading", "reggae", "rock", "roller",
+        "romance", "rowing", "rugby", "sailing", "salsa", "satire", "scientist",
+        "scooter", "security-guard", "ship", "singing", "skateboard", "skiing",
+        "skydiving", "snake", "snowmobile", "social-worker", "soccer",
+        "software-developer", "soul", "soy-milk", "spinach", "sprite", "spy",
+        "strawberry", "subway", "sudoku", "superhero", "surfing", "swimming",
+        "taxi", "tea", "teacher", "techno", "tennis", "thriller", "time-travel",
+        "tomato", "train", "tram", "turtle", "video-games", "volleyball", "water",
+        "western", "writer"
+    ];
+    for (let w of randomShuffle(words)) {
+        yield (w);
     }
     return null;
 }
@@ -814,9 +852,8 @@ function state1() {
             function (event) {
                 let st1_words = parseInt(settings['st1_words']);
                 let st1_edges = parseInt(settings['st1_edges']);
-                let st1_minmax_edges = toIntOrIntRange(settings['st1_minmax_edges']);
-                let st1_min_edges = st1_minmax_edges[0];
-                let st1_max_edges = st1_minmax_edges.length === 2 ? st1_minmax_edges[1] : st1_min_edges;
+                let st1_min_edges = 2;
+                let st1_max_edges = 100;
                 st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
                 let next_edges = st1_edges, next_vertices = st1_words;
                 for (let n_edges = st1_edges; n_edges <= st1_edges + 1; ++n_edges) {
@@ -844,9 +881,8 @@ function state1() {
             function (event) {
                 let st1_words = parseInt(settings['st1_words']);
                 let st1_edges = parseInt(settings['st1_edges']);
-                let st1_minmax_edges = toIntOrIntRange(settings['st1_minmax_edges']);
-                let st1_min_edges = st1_minmax_edges[0];
-                let st1_max_edges = st1_minmax_edges.length === 2 ? st1_minmax_edges[1] : st1_min_edges;
+                let st1_min_edges = 2;
+                let st1_max_edges = 100;
                 st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
                 let next_edges = st1_edges, next_vertices = st1_words;
                 for (let n_edges = st1_edges - 1; n_edges <= st1_edges; ++n_edges) {
@@ -866,48 +902,18 @@ function state1() {
                 state1();
             },
         ],
-        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved tasks<br>[0:disable|1-100]", "integer", function (xv) {
+        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved graphs<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st1_words", "<b>Auto mode</b><br>Current number of vertices<br>(max depends on word length)", "integer", function (xv) {
-            let permutations = 100;
-            let value = parseInt(document.getElementById("st1_length_of_word").innerHTML);
-            permutations = calculate_permutations(asciiUppercase.length, value);
-            if (xv < 3) {
-                alert("Current number of words must be greater than or equal to 3");
-                return false;
-            }
-            else if (xv > permutations) {
-                alert("Current number of words must be less than or equal to " + permutations);
-                return false;
-            }
-            if (xv > 100) {
-                alert("Current number of words must be less than or equal to 100");
-                return false;
-            }
+        ["st1_words", "<b>Auto mode</b><br>Current number of vertices<br>[3-100]", "integer", function (xv) {
             return 3 <= xv && xv <= permutations && xv <= 100;
         }],
-        ["st1_edges", "<b>Auto mode</b><br>Current number of edges<br>(depends on number of vertices)", "integer", function (x) {
+        ["st1_edges", "<b>Auto mode</b><br>Current number of edges<br>[2-100]", "integer", function (x) {
             return 2 <= x && x <= 100;
-        }],
-        ["st1_minmax_edges", "Min-Max edges [2-100]", "range", function (xv) {
-            return xv != null &&
-                2 <= xv[0] && xv[0] <= 100 &&
-                (xv.length == 1 || 2 <= xv[1] && xv[1] <= 100);
         }],
         ["st1_remove_freq", "Remove vertex every N graph changes [0|2-100]", "integer", function (x) {
             return x === 0 || 2 <= x && x <= 100;
         }],
-        ["st1_length_of_word", "Length of word of vertex<br>[1-10]", "integer", function (xv) {
-            let element = document.getElementById("st1_words");
-            let permutations = calculate_permutations(asciiUppercase.length, xv);
-            let currentValue = parseInt(element.innerHTML);
-            let newValue = '' + Math.min(permutations, currentValue);
-            element.innerHTML = newValue;
-            localStorage.setItem('st1_words', newValue);
-            return 1 <= xv && xv <= 10;
-        }],
-        ["st1_keyboard", "Alphabet", "combobox", Object.values(combo_st1_keyboard)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -960,19 +966,13 @@ function* state1_generator(taskArea) {
     let st1_auto_mode = parseInt(settings['st1_auto_mode']);
     let st1_words = parseInt(settings['st1_words']);
     let st1_edges = parseInt(settings['st1_edges']);
-    let st1_minmax_edges = toIntOrIntRange(settings['st1_minmax_edges']);
     let st1_remove_freq = parseInt(settings['st1_remove_freq']);
-    let st1_length_of_word = parseInt(settings['st1_length_of_word']);
-    let st1_keyboard = settings['st1_keyboard'];
-    let st1_min_edges = st1_minmax_edges[0];
-    let st1_max_edges = st1_minmax_edges.length === 2 ? st1_minmax_edges[1] : st1_min_edges;
+    let st1_min_edges = 2, st1_max_edges = 100;
     st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
     let auto_increase_counter = 0;
     let clearBefore = true;
     while (true) {
-        let words_generator = wordsGenerator(
-            st1_keyboard === combo_st1_keyboard.Letters ? asciiUppercase : asciiSymbols,
-            st1_length_of_word);
+        let words_generator = wordsGetter();
         let removed_words = [];
         appendText(taskArea, "[New] graph (" + st1_words + " vertices" + ", " + st1_edges + " edges)\n", clearBefore);
         let graph_dict = new Map();
@@ -1066,7 +1066,7 @@ function* state1_generator(taskArea) {
                                     new_graph_dict.set(x1, new Map())
                                 }
                                 new_graph_dict.get(x1).set(x2, cost);
-                                edges_history.push(x1 + '-' + cost + '-' + x2);
+                                edges_history.push(x1 + ' - ' + cost + ' - ' + x2);
                             }
                         }
                     }
@@ -1124,7 +1124,7 @@ function* state1_generator(taskArea) {
                         graph_dict.set(next_word, new Map());
                     }
                     appendText(taskArea, '[New] edge\n');
-                    appendText(taskArea, word + '-' + cost + '-' + next_word + '\n');
+                    appendText(taskArea, word + ' - ' + cost + ' - ' + next_word + '\n');
                 }
             }
             let sorted_items = [...graph_dict.keys()].sort().reverse();
@@ -1184,7 +1184,7 @@ function* state1_generator(taskArea) {
                         ds.push(sorted_items[x]);
                         path.push(x);
                     }
-                    paths.push([path, ds.join('-')]);
+                    paths.push([path, ds.join(' - ')]);
                 }
             }
             paths.sort((a, b) => b[0].length - a[0].length);
@@ -1221,21 +1221,23 @@ function* state1_generator(taskArea) {
             let graph_string = 'Graph (' + "Vertices: " + graph_dict.size + '/' + st1_words + ", Edges: " + edges_count + '/' + st1_edges + '):\n';
             for (let [v1, vd1] of graph_dict) {
                 for (let [v2, cost] of vd1) {
-                    graph_string = graph_string.concat(v1 + '-' + cost + '-' + v2 + '\n');
+                    graph_string = graph_string.concat(v1 + ' - ' + cost + ' - ' + v2 + '\n');
                 }
             }
+            graph_string += '\n';
+            appendText(taskArea, '\n');
             let k = 0;
             while (true) {
                 let expected = '' + answers[k];
                 let [v1, v2] = questions[k];
-                let inputText = 'Min cost for ' + v1 + '-?-' + v2 + ':>';
+                let inputText = ((k + 1) + '. ') + v1 + ' - ? - ' + v2 + ':> ';
                 updateLastHistoryItem([graph_string]);
                 appendText(taskArea, inputText);
                 let actual = (yield).toUpperCase();
                 appendText(taskArea, actual + '\n');
                 if (actual === '-HINT-') {
                     appendText(taskArea, "Expected: " + expected + '\n');
-                    appendText(taskArea, "Detailed: " + detailed_answers[k] + '\n');
+                    appendText(taskArea, "Detailed: " + detailed_answers[k] + '\n\n');
                     continue;
                 }
                 if (actual === '-REDO-') {
@@ -3827,12 +3829,7 @@ function* state4_generator(taskArea) {
 }
 
 function checkVersion() {
-    if (version === '1.00') {
-        stateN_defaults('st1');
-        stateN_clear_score('st1');
-        version = null;
-    }
-    if (version === '2.00') {
+    if (version < '3.00') {
         stateN_defaults('st1');
         stateN_clear_score('st1');
         stateN_defaults('st2');
@@ -3843,17 +3840,19 @@ function checkVersion() {
         stateN_clear_score('st4');
         version = null;
     }
+    else if (version === '3.00') {
+        stateN_defaults('st1');
+        stateN_clear_score('st1');
+        version = null;
+    }
     if (version == null) {
-        version = '3.00';
+        version = '3.10';
         localStorage.setItem('VERSION', version);
     }
 }
 
 let state = 0;
 let currentGenerator = null;
-let asciiUppercase = 'QWERTYUIOPASDFGHJKLZXCVBNM';
-let asciiSymbols = "!\"#`%'()*+,-./@:;=?\\^_{|}~";
-asciiSymbols = asciiSymbols.slice(0, asciiUppercase.length); //!
 
 let asciiDigits = '123456789-0_';
 let statesToNames = {
@@ -3861,10 +3860,6 @@ let statesToNames = {
     st2: 'Triangle',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
-};
-let combo_st1_keyboard = {
-    Letters: "Letters",
-    Symbols: "Symbols"
 };
 let combo_st2_triangle_mode = {
     Easy: "Easy",
