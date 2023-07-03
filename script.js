@@ -102,9 +102,10 @@ function loadSettings() {
         "st1_edges": 2,
         "st1_remove_freq": 5,
         "st2_auto_mode": 5,
-        "st2_current_level": 2,
-        "st2_triangle_mode": combo_st2_triangle_mode.Easy,
-        "st2_triangle_level": "2-20",
+        "st2_boxes": 2,
+        "st2_operations": 1,
+        "st2_minmax_operations": "1-5",
+        "st2_minmax_number": "1-5",
         "st3_auto_mode": 3,
         "st3_stn": 4,
         "st3_current_level": 1,
@@ -327,41 +328,7 @@ function* wordsGenerator(alphabet, length) {
     return null;
 }
 
-function* wordsGetter() {
-    let words = [
-        "7up", "accountant", "action", "adventure", "airplane",
-        "almond-milk", "ambient", "analyst", "animation", "apple",
-        "apricot", "architect", "artichoke", "asparagus", "avocado",
-        "badminton", "baking", "banana", "bartender", "baseball",
-        "basketball", "biathlon", "bird", "blueberry", "boat", "broccoli",
-        "bus", "cabbage", "camping", "car", "carrot", "cat", "cauliflower",
-        "chef", "cherry", "chess", "chinchilla", "classical", "climbing",
-        "coach", "coffee", "cola", "collecting", "comedy", "cooking", "corn",
-        "country", "cranberry", "cricket", "crime", "cucumber", "cycling",
-        "d&b", "dancer", "designer", "disaster", "disco", "doctor",
-        "documentary", "dog", "drama", "drawing", "dressmaker", "dubstep",
-        "eggplant", "electronic", "engineer", "entrepreneur", "epic", "family",
-        "fanta", "fantasy", "ferret", "filmmaking", "firefighter", "fish",
-        "freelancer", "frog", "gardening", "garlic", "goat", "goldfish",
-        "golf", "gospel", "grapefruit", "hamster", "handball", "hedgehog",
-        "helicopter", "hiking", "hip-hop", "horror", "horse", "hot-chocolate",
-        "house", "ice-hockey", "indie", "jazz", "jet-ski", "journalist", "juice",
-        "kale", "kiwi", "lacrosse", "lawyer", "lemonade", "lettuce", "librarian",
-        "lime", "lizard", "magic-tricks", "manager", "mango", "martial-arts",
-        "mechanic", "metal", "milk", "mirinda", "motorbike", "musician", "mystery",
-        "nectarine", "onion", "orange", "papaya", "paramedic", "parkour", "pear",
-        "pepper", "photographer", "pilot", "pineapple", "plum", "police-officer",
-        "pomegranate", "pop", "potato", "project-manager", "pumpkin", "puzzles",
-        "r&b", "rabbit", "raspberry", "reading", "reggae", "rock", "roller",
-        "romance", "rowing", "rugby", "sailing", "salsa", "satire", "scientist",
-        "scooter", "security-guard", "ship", "singing", "skateboard", "skiing",
-        "skydiving", "snake", "snowmobile", "social-worker", "soccer",
-        "software-developer", "soul", "soy-milk", "spinach", "sprite", "spy",
-        "strawberry", "subway", "sudoku", "superhero", "surfing", "swimming",
-        "taxi", "tea", "teacher", "techno", "tennis", "thriller", "time-travel",
-        "tomato", "train", "tram", "turtle", "video-games", "volleyball", "water",
-        "western", "writer"
-    ];
+function* wordsGetter(words) {
     for (let w of randomShuffle(words)) {
         yield (w);
     }
@@ -969,10 +936,44 @@ function* state1_generator(taskArea) {
     let st1_remove_freq = parseInt(settings['st1_remove_freq']);
     let st1_min_edges = 2, st1_max_edges = 100;
     st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
+    let words = [
+        "7up", "accountant", "action", "adventure", "airplane",
+        "almond-milk", "ambient", "analyst", "animation", "apple",
+        "apricot", "architect", "artichoke", "asparagus", "avocado",
+        "badminton", "baking", "banana", "bartender", "baseball",
+        "basketball", "biathlon", "bird", "blueberry", "boat", "broccoli",
+        "bus", "cabbage", "camping", "car", "carrot", "cat", "cauliflower",
+        "chef", "cherry", "chess", "chinchilla", "classical", "climbing",
+        "coach", "coffee", "cola", "collecting", "comedy", "cooking", "corn",
+        "country", "cranberry", "cricket", "crime", "cucumber", "cycling",
+        "d&b", "dancer", "designer", "disaster", "disco", "doctor",
+        "documentary", "dog", "drama", "drawing", "dressmaker", "dubstep",
+        "eggplant", "electronic", "engineer", "entrepreneur", "epic", "family",
+        "fanta", "fantasy", "ferret", "filmmaking", "firefighter", "fish",
+        "freelancer", "frog", "gardening", "garlic", "goat", "goldfish",
+        "golf", "gospel", "grapefruit", "hamster", "handball", "hedgehog",
+        "helicopter", "hiking", "hip-hop", "horror", "horse", "hot-chocolate",
+        "house", "ice-hockey", "indie", "jazz", "jet-ski", "journalist", "juice",
+        "kale", "kiwi", "lacrosse", "lawyer", "lemonade", "lettuce", "librarian",
+        "lime", "lizard", "magic-tricks", "manager", "mango", "martial-arts",
+        "mechanic", "metal", "milk", "mirinda", "motorbike", "musician", "mystery",
+        "nectarine", "onion", "orange", "papaya", "paramedic", "parkour", "pear",
+        "pepper", "photographer", "pilot", "pineapple", "plum", "police-officer",
+        "pomegranate", "pop", "potato", "project-manager", "pumpkin", "puzzles",
+        "r&b", "rabbit", "raspberry", "reading", "reggae", "rock", "roller",
+        "romance", "rowing", "rugby", "sailing", "salsa", "satire", "scientist",
+        "scooter", "security-guard", "ship", "singing", "skateboard", "skiing",
+        "skydiving", "snake", "snowmobile", "social-worker", "soccer",
+        "software-developer", "soul", "soy-milk", "spinach", "sprite", "spy",
+        "strawberry", "subway", "sudoku", "superhero", "surfing", "swimming",
+        "taxi", "tea", "teacher", "techno", "tennis", "thriller", "time-travel",
+        "tomato", "train", "tram", "turtle", "video-games", "volleyball", "water",
+        "western", "writer"
+    ];
     let auto_increase_counter = 0;
     let clearBefore = true;
     while (true) {
-        let words_generator = wordsGetter();
+        let words_generator = wordsGetter(words);
         let removed_words = [];
         appendText(taskArea, "[New] graph (" + st1_words + " vertices" + ", " + st1_edges + " edges)\n", clearBefore);
         let graph_dict = new Map();
@@ -1288,59 +1289,58 @@ function state2() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st2_current_level = parseInt(settings['st2_current_level']);
-                let st2_triangle_mode = settings['st2_triangle_mode'];
-                let st2_triangle_level = toIntOrIntRange(settings['st2_triangle_level']);
-                let st2_triangle_min_level = st2_triangle_level[0];
-                let st2_triangle_max_level = st2_triangle_level.length === 2 ? st2_triangle_level[1] : st2_triangle_min_level;
-                let level = Math.min(st2_triangle_max_level, Math.max(st2_triangle_min_level, st2_current_level));
-                if (st2_triangle_mode == combo_st2_triangle_mode.Easy) {
-                    st2_triangle_mode = combo_st2_triangle_mode.Normal;
+                let st2_boxes = parseInt(settings['st2_boxes']);
+                let st2_operations = parseInt(settings['st2_operations']);
+                let st2_minmax_operations = toIntOrIntRange(settings['st2_minmax_operations']);
+                let st2_min_operations = st2_minmax_operations[0];
+                let st2_max_operations = st2_minmax_operations.length == 2 ? st2_minmax_operations[1] : st2_min_operations;
+                if (st2_operations < st2_max_operations) {
+                    st2_operations += 1;
                 }
-                else if (st2_triangle_mode == combo_st2_triangle_mode.Normal) {
-                    st2_triangle_mode = combo_st2_triangle_mode.Hard;
+                else if (st2_boxes < 30) {
+                    st2_operations = st2_min_operations;
+                    st2_boxes = st2_boxes + 1;
                 }
-                else if (level < st2_triangle_max_level) {
-                    st2_triangle_mode = combo_st2_triangle_mode.Easy;
-                    level += 1;
-                }
-                setSetting('st2_current_level', level);
-                setSetting('st2_triangle_mode', st2_triangle_mode);
+                setSetting('st2_boxes', st2_boxes);
+                setSetting('st2_operations', st2_operations);
                 state2();
             },
             function (event) {
-                let st2_current_level = parseInt(settings['st2_current_level']);
-                let st2_triangle_mode = settings['st2_triangle_mode'];
-                let st2_triangle_level = toIntOrIntRange(settings['st2_triangle_level']);
-                let st2_triangle_min_level = st2_triangle_level[0];
-                let st2_triangle_max_level = st2_triangle_level.length === 2 ? st2_triangle_level[1] : st2_triangle_min_level;
-                let level = Math.min(st2_triangle_max_level, Math.max(st2_triangle_min_level, st2_current_level));
-                if (st2_triangle_mode == combo_st2_triangle_mode.Hard) {
-                    st2_triangle_mode = combo_st2_triangle_mode.Normal;
+                let st2_boxes = parseInt(settings['st2_boxes']);
+                let st2_operations = parseInt(settings['st2_operations']);
+                let st2_minmax_operations = toIntOrIntRange(settings['st2_minmax_operations']);
+                let st2_min_operations = st2_minmax_operations[0];
+                let st2_max_operations = st2_minmax_operations.length == 2 ? st2_minmax_operations[1] : st2_min_operations;
+                if (st2_operations > st2_min_operations) {
+                    st2_operations -= 1;
                 }
-                else if (st2_triangle_mode == combo_st2_triangle_mode.Normal) {
-                    st2_triangle_mode = combo_st2_triangle_mode.Easy;
+                else if (st2_boxes > 2) {
+                    st2_operations = st2_max_operations;
+                    st2_boxes = st2_boxes - 1;
                 }
-                else if (level > st2_triangle_min_level) {
-                    st2_triangle_mode = combo_st2_triangle_mode.Hard;
-                    level -= 1;
-                }
-                setSetting('st2_current_level', level);
-                setSetting('st2_triangle_mode', st2_triangle_mode);
+                setSetting('st2_boxes', st2_boxes);
+                setSetting('st2_operations', st2_operations);
                 state2();
             },
         ],
-        ["st2_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved tasks<br>[0:disable|1-100]", "integer", function (xv) {
+        ["st2_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully completed iterations<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st2_current_level", "<b>Auto mode</b><br>Current level [2-20]", "integer", function (xv) {
-            return 2 <= xv && xv <= 20;
+        ["st2_boxes", "<b>Auto mode</b><br>Number of boxes [2-25]", "integer", function (xv) {
+            return 2 <= xv && xv <= 25;
         }],
-        ["st2_triangle_mode", "<b>Auto mode</b><br>Current mode", "combobox", Object.values(combo_st2_triangle_mode)],
-        ["st2_triangle_level", "Min-Max level [2-20]", "range", function (xv) {
+        ["st2_operations", "<b>Auto mode</b><br>Number of operations [1-5]", "integer", function (xv) {
+            return 1 <= xv && xv <= 5;
+        }],
+        ["st2_minmax_operations", "Min-Max operations [1-5]", "range", function (xv) {
             return xv != null &&
-                2 <= xv[0] && xv[0] <= 20 &&
-                (xv.length == 1 || 2 <= xv[1] && xv[1] <= 20);
+                1 <= xv[0] && xv[0] <= 5 &&
+                (xv.length === 1 || 1 <= xv[1] && xv[1] <= 5);
+        }],
+        ["st2_minmax_number", "Min-Max number of item to add/subtract [1-10]", "range", function (xv) {
+            return xv != null &&
+                1 <= xv[0] && xv[0] <= 10 &&
+                (xv.length === 1 || 1 <= xv[1] && xv[1] <= 10);
         }],
         [
             "Default settings", "Clear score", "buttons",
@@ -1369,118 +1369,142 @@ function state2_start() {
     let taskDiv = task[0];
     let taskArea = task[1];
     addWidget(taskDiv);
-    addWidget(createKeyboard(asciiDigits, state2, {
-        'Skip': () => { currentGenerator.next('-SKIP-') },
-        'Answer': () => { currentGenerator.next('-ANSWER-') },
-    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
+    let exButtons = {};
+    exButtons['Retry'] = () => { currentGenerator.next('-RETRY-') };
+    exButtons['Answer'] = () => { currentGenerator.next('-ANSWER-') };
+    exButtons['Values'] = () => { currentGenerator.next('-VALUES-') };
+    addWidget(createKeyboard(asciiDigits, state2, exButtons,
+        ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
     currentGenerator = state2_generator(taskArea);
     currentGenerator.next();
 }
 
+function formatSt2(dict) {
+    let lst = [];
+    for (const key in dict) {
+        lst.push(key + ' of ' + dict[key][1] + ': ' + dict[key][0]);
+    }
+    return lst.sort().join('\n');
+}
+
 function* state2_generator(taskArea) {
     let st2_auto_mode = parseInt(settings['st2_auto_mode']);
-    let st2_current_level = parseInt(settings['st2_current_level']);
-    let st2_triangle_mode = settings['st2_triangle_mode'];
-    let st2_triangle_level = toIntOrIntRange(settings['st2_triangle_level']);
-    let st2_triangle_min_level = st2_triangle_level[0];
-    let st2_triangle_max_level = st2_triangle_level.length === 2 ? st2_triangle_level[1] : st2_triangle_min_level;
-    let clearBefore = true;
-    let level = Math.min(st2_triangle_max_level, Math.max(st2_triangle_min_level, st2_current_level));
-    let auto_increase_counter = 0;
+    let st2_boxes = parseInt(settings['st2_boxes']);
+    let st2_operations = parseInt(settings['st2_operations']);
+    let st2_minmax_operations = toIntOrIntRange(settings['st2_minmax_operations']);
+    let st2_minmax_number = toIntOrIntRange(settings['st2_minmax_number']);
+    let st2_min_operations = st2_minmax_operations[0];
+    let st2_max_operations = st2_minmax_operations.length == 2 ? st2_minmax_operations[1] : st2_min_operations;
+    let st2_min_number = st2_minmax_number[0];
+    let st2_max_number = st2_minmax_number.length == 2 ? st2_minmax_number[1] : st2_min_number;
+    st2_operations = Math.min(Math.max(st2_operations, st2_min_operations), st2_max_operations);
+    let clearBefore = true, first = true;
+    let words = [
+        "apples", "apricots", "avocados", "bananas", "blueberries", "broccolis", "cabbages",
+        "carrots", "cauliflowers", "cherries", "corns", "cucumbers", "grapefruits", "grapes",
+        "juices", "kiwis", "lemons", "lettuces", "limes", "mangos", "onions", "oranges", "papayas",
+        "peaches", "pears", "peas", "peppers", "pineapples", "plums", "pomegranates", "potatoes",
+        "pumpkins", "radishes", "raspberries", "strawberries", "teas", "tomatoes", "watermelons"
+    ];
+    let words_generator = wordsGetter(words);
+    let dict = new Object();
+    let queue = [], iteration = 0;
+    for (let i = 1; i <= st2_boxes; ++i) {
+        queue.push('Box #' + i);
+    }
+    let originalQueue = queue.slice();
+    appendText(taskArea, "[New] " + st2_boxes + ' boxes, ' + st2_operations + ' operation' + (st2_operations > 1 ? 's' : '') + '\n', clearBefore);
     while (true) {
-        let lst = null;
-        if (st2_triangle_mode === combo_st2_triangle_mode.Hard) {
-            lst = range(0, level).map((elem, index) => {
-                return randomInt(1, 10);
-            });
+        let string_elem = queue.pop(0);
+        queue.push(string_elem);
+        if (dict[string_elem] == undefined) {
+            dict[string_elem] = [0, words_generator.next().value];
+        }
+        appendText(taskArea, string_elem + ' of ' + dict[string_elem][1] + '\n');
+        for (let i = 0; i < st2_operations; ++i) {
+            let diffNumber = randomInt(st2_min_number, st2_max_number);
+            if (dict[string_elem][0] - diffNumber >= 0 && randomInt(1, 6) === 1) {
+                appendText(taskArea, '> Remove ' + diffNumber + '\n');
+                dict[string_elem][0] -= diffNumber;
+            }
+            else {
+                appendText(taskArea, '> Add ' + diffNumber + '\n');
+                dict[string_elem][0] += diffNumber;
+            }
+        }
+        if (first) {
+            addHistoryItem([formatSt2(dict)]);
+            first = false;
         }
         else {
-            lst = range(0, level).map((elem, index) => {
-                if (index % 2 === 0) {
-                    return randomInt(5, 10);
-                }
-                return randomInt(1, 5);
-            });
-            if (st2_triangle_mode === combo_st2_triangle_mode.Easy) {
-                let anotherLst = lst.slice().sort((a, b) => b - a); // reversed sort
-                let a1 = [], a2 = [];
-                anotherLst.forEach((elem, index) => {
-                    if (index % 2 === 0) {
-                        a1.push(elem);
-                    }
-                    else {
-                        a2.push(elem);
-                    }
-                });
-                lst = [];
-                for (let i = 0, i1 = 0, i2 = 0, n = Math.max(a1.length, a2.length); i < n; ++i) {
-                    if (i1 < a1.length) {
-                        lst.push(a1[i1++]);
-                    }
-                    if (i2 < a2.length) {
-                        lst.push(a2[i2++]);
-                    }
-                }
-            }
+            updateLastHistoryItem([formatSt2(dict)]);
         }
-        let answer = [];
-        let r = lst;
-        answer.push(r.join(' '));
-        while (r.length > 1) {
-            let next_r = [];
-            for (let i = 0, n = r.length - 1; i < n; ++i) {
-                next_r.push(r[i] + r[i + 1] * Math.pow(-1, i));
-            }
-            r = next_r;
-            answer.push(r.join(' '));
-        }
-        let expected = '' + r[0];
-        addHistoryItem(['L' + level + '-' + st2_triangle_mode + ': ' + lst.join(' ') + ' -> ' + expected]);
-        appendText(taskArea, 'L' + level + '-' + st2_triangle_mode + ':\n  ' + lst.join(' ') + '\n', clearBefore);
-        let mistake = false;
+        let expected = '' + dict[string_elem][0];
+        let sequenceModeMistake = false;
+        let tries = 1, mistake = false;
         while (true) {
-            appendText(taskArea, "Result> ");
+            appendText(taskArea, "Number> ");
             let actual = (yield).toUpperCase();
             appendText(taskArea, actual + '\n');
-            if (actual === '-SKIP-') {
-                break;
-            }
             if (actual === '-ANSWER-') {
-                appendText(taskArea, "Recursive pattern:\n  A+B B-C C+D D-E ...\nAnswer:\n" + answer.join('\n') + '\n');
+                appendText(taskArea, "Expected: " + expected + '\n');
                 continue;
+            }
+            if (actual === '-VALUES-') {
+                appendText(taskArea, formatSt2(dict) + '\n');
+                continue;
+            }
+            if (actual === "-RETRY-") {
+                actual = expected;
+                sequenceModeMistake = true;
             }
             let status = actual === expected;
             if (status) {
-                addScore('st2', answer.length - 1);
-                auto_increase_counter += 1;
-                break;
+                if (tries <= 1 && sequenceModeMistake === false) {
+                    if (mistake === false && string_elem == 'Box #' + st2_boxes) {
+                        iteration += 1;
+                        addScore('st2', st2_boxes - 1 + st2_operations - 1);
+                    }
+                    if (st2_auto_mode !== 0 && iteration >= st2_auto_mode) {
+                        iteration = 0;
+                        if (st2_operations < st2_max_operations) {
+                            st2_operations += 1;
+                        }
+                        else if (st2_boxes < 30) {
+                            st2_operations = st2_min_operations;
+                            st2_boxes = st2_boxes + 1;
+                        }
+                        setSetting('st2_boxes', st2_boxes);
+                        setSetting('st2_operations', st2_operations);
+                        yield* state2_generator(taskArea);
+                        return;
+                    }
+                    break;
+                }
+                if (sequenceModeMistake === true) {
+                    mistake = true;
+                    sequenceModeMistake = false;
+                    tries = queue.length;
+                    queue = originalQueue.slice();
+                    appendText(taskArea, "Retry all\n", clearBefore);
+                }
+                else {
+                    --tries;
+                }
+                string_elem = queue.pop(0);
+                queue.push(string_elem);
+                if (dict[string_elem] == undefined) {
+                    break;
+                }
+                appendText(taskArea, string_elem + ' of ' + dict[string_elem][1] + '\n');
+                expected = '' + dict[string_elem][0];
             }
             else {
                 appendText(taskArea, 'No, retry\n');
-                mistake = true;
+                sequenceModeMistake = true;
             }
         }
-        if (mistake === false && st2_auto_mode >= 1 && auto_increase_counter >= st2_auto_mode) {
-            if (st2_triangle_mode == combo_st2_triangle_mode.Easy) {
-                st2_triangle_mode = combo_st2_triangle_mode.Normal;
-            }
-            else if (st2_triangle_mode == combo_st2_triangle_mode.Normal) {
-                st2_triangle_mode = combo_st2_triangle_mode.Hard;
-            }
-            else if (level < st2_triangle_max_level) {
-                st2_triangle_mode = combo_st2_triangle_mode.Easy;
-                level += 1;
-            }
-            auto_increase_counter = 0;
-            setSetting('st2_current_level', level);
-            setSetting('st2_triangle_mode', st2_triangle_mode);
-        }
-        else if (st2_auto_mode === 0) {
-            level = randomInt(st2_triangle_min_level, st2_triangle_max_level);
-        }
-        else if (mistake === true) {
-            auto_increase_counter = Math.max(0, auto_increase_counter - 1);
-        }
+        appendText(taskArea, '', clearBefore);
     }
 }
 
@@ -2629,7 +2653,7 @@ function* state3_generator(taskArea) {
                     }
                     else {
                         expected_array[i][0] = true;
-                        addScore('st3', n_statements - 1);
+                        addScore('st3', n_statements - 1 + Math.floor(level / 3));
                         auto_increase_counter += 1;
                         appendText(taskArea, 'Solution accept.\n');
                     }
@@ -3845,8 +3869,13 @@ function checkVersion() {
         stateN_clear_score('st1');
         version = null;
     }
+    else if (version === '3.10') {
+        stateN_defaults('st2');
+        stateN_clear_score('st2');
+        version = null;
+    }
     if (version == null) {
-        version = '3.10';
+        version = '4.00';
         localStorage.setItem('VERSION', version);
     }
 }
@@ -3857,14 +3886,9 @@ let currentGenerator = null;
 let asciiDigits = '123456789-0_';
 let statesToNames = {
     st1: 'Graph',
-    st2: 'Triangle',
+    st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
-};
-let combo_st2_triangle_mode = {
-    Easy: "Easy",
-    Normal: "Normal",
-    Hard: "Hard"
 };
 let combo_st4_hard_mode = {
     Enable: "Enable",

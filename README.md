@@ -1,8 +1,8 @@
-# Cognitive-Exercises v3
+# Cognitive-Exercises v4
 
 ## Exercises
 1. Graph: using short-term memory and working memory to search for the least cost paths between vertices.
-2. Triangle: using short-term memory and working memory to solve a multi-step arithmetic task.
+2. Boxes: using short-term memory and working memory to count different things in boxes.
 3. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
 4. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
 
@@ -11,7 +11,6 @@ Notes:
 2. Auto mode is initially enabled. This means that nothing needs to be changed at the very beginning.
 3. The longer a person trains, the longer the effects last. If a person skips a week of intellectual activity, there will be a decline.
 4. It is better to perform exercises in the evening and only when not tired. If exercises are done earlier, the brain may tire more quickly and the person will feel tired for the entire day.
-5. Recursive-Solving and Puzzle-Solving exercises will be present in all subsequent versions, but Graph and Triangle may be replaced in the future.
 
 ## Motivation
 
@@ -210,9 +209,9 @@ Look at many judgments about intelligence from a critical point of view.
 Website with a lot of interesting information: https://supermemo.guru/wiki/SuperMemo_Guru
 
 Games:
-- Thinking: [Patrick's Parabox](https://store.steampowered.com/app/1260520/Patricks_Parabox/), [Understand](https://store.steampowered.com/app/1299400/Understand/), [Baba Is You](https://store.steampowered.com/app/736260/Baba_Is_You/), [Recursed](https://store.steampowered.com/app/497780/Recursed/), [Stephen's Sausage Roll](https://store.steampowered.com/app/353540/Stephens_Sausage_Roll/), [Magrunner: Dark Pulse](https://store.steampowered.com/app/209630/Magrunner_Dark_Pulse/), [The Talos Principle](https://store.steampowered.com/app/257510/The_Talos_Principle/), [Antichamber](https://store.steampowered.com/app/219890/Antichamber/), [Railbound](https://store.steampowered.com/app/1967510/Railbound/), [Re:Touring](https://store.steampowered.com/app/2318920/ReTouring/), [Human Resource Machine](https://store.steampowered.com/app/375820/Human_Resource_Machine/), [7 Billion Humans](https://store.steampowered.com/app/792100/7_Billion_Humans/), [Turing Complete](https://store.steampowered.com/app/1444480/Turing_Complete/), [NandGame](https://nandgame.com/).
-- Reaction: [Open Hexagon](https://store.steampowered.com/app/1358090/Open_Hexagon/), [Super Hexagon](https://store.steampowered.com/app/221640/Super_Hexagon/), [ZigZag](https://vladimirslepnev.itch.io/zigzag).
-- 3D: [.projekt](https://store.steampowered.com/app/759000/projekt/), [Portal](https://store.steampowered.com/app/400/Portal/), [Portal 2](https://store.steampowered.com/app/620/Portal_2/), [Thinking with Time Machine](https://store.steampowered.com/app/286080/Thinking_with_Time_Machine/), [Portal Reloaded](https://store.steampowered.com/app/1255980/Portal_Reloaded/), [Security Hole](https://store.steampowered.com/app/503460/Security_Hole/).
+- Thinking: [Patrick's Parabox](https://store.steampowered.com/app/1260520/Patricks_Parabox/), [Understand](https://store.steampowered.com/app/1299400/Understand/), [Baba Is You](https://store.steampowered.com/app/736260/Baba_Is_You/), [Recursed](https://store.steampowered.com/app/497780/Recursed/), [Stephen's Sausage Roll](https://store.steampowered.com/app/353540/Stephens_Sausage_Roll/), [Magrunner: Dark Pulse](https://store.steampowered.com/app/209630/Magrunner_Dark_Pulse/), [The Talos Principle](https://store.steampowered.com/app/257510/The_Talos_Principle/), [Antichamber](https://store.steampowered.com/app/219890/Antichamber/), [Railbound](https://store.steampowered.com/app/1967510/Railbound/), [Re:Touring](https://store.steampowered.com/app/2318920/ReTouring/), [Human Resource Machine](https://store.steampowered.com/app/375820/Human_Resource_Machine/), [7 Billion Humans](https://store.steampowered.com/app/792100/7_Billion_Humans/), [Turing Complete](https://store.steampowered.com/app/1444480/Turing_Complete/), [Memory Land Extreme](https://store.steampowered.com/app/2299840/Memory_Land_Extreme/), [Infinifactory](https://store.steampowered.com/app/300570/Infinifactory/), [NandGame](https://nandgame.com/).
+- Reaction: [Super Hexagon](https://store.steampowered.com/app/221640/Super_Hexagon/), [Open Hexagon](https://store.steampowered.com/app/1358090/Open_Hexagon/), [ZigZag](https://vladimirslepnev.itch.io/zigzag), [Twin Edge](https://store.steampowered.com/app/1926440/Twin_Edge/).
+- 3D: [.projekt](https://store.steampowered.com/app/759000/projekt/), [Security Hole](https://store.steampowered.com/app/503460/Security_Hole/), [Portal](https://store.steampowered.com/app/400/Portal/), [Portal 2](https://store.steampowered.com/app/620/Portal_2/), [Portal 2: Reloaded](https://store.steampowered.com/app/1255980/Portal_Reloaded/).
 
 Search:  
 - https://www.reddit.com/r/puzzles/  
