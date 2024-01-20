@@ -2624,7 +2624,7 @@ function* state3_generator(taskArea) {
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
         let first = true;
-        let mistake = false;
+        let mistake = false, cnt = 1;
         while (true) {
             let actual = '';
             if (first) {
@@ -2654,7 +2654,8 @@ function* state3_generator(taskArea) {
                     else {
                         expected_array[i][0] = true;
                         addScore('st3', n_statements - 1 + Math.floor(level / 3));
-                        auto_increase_counter += 1;
+                        auto_increase_counter += cnt;
+                        cnt = 0;
                         appendText(taskArea, 'Solution accept.\n');
                     }
                     break;
@@ -3766,7 +3767,7 @@ function* state4_generator(taskArea) {
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
         let first = true;
-        let mistake = false;
+        let mistake = false, cnt = 1;
         while (true) {
             let actual = '';
             if (first) {
@@ -3796,7 +3797,8 @@ function* state4_generator(taskArea) {
                     else {
                         expected_array[i][0] = true;
                         addScore('st4', n_attributes * m_objects + Math.floor(level / 4));
-                        auto_increase_counter += 1;
+                        auto_increase_counter += cnt;
+                        cnt = 0;
                         appendText(taskArea, 'Solution accept.\n');
                     }
                     break;
