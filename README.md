@@ -1,10 +1,8 @@
 # Cognitive-Exercises v4
 
 ## Exercises
-1. Graph: using short-term memory and working memory to search for the least cost paths between vertices.
-2. Boxes: using short-term memory and working memory to count different things in boxes.
-3. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
-4. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
+1. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
+2. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
 
 Notes:
 1. There are no instructions, but there are `hint`/`answer` buttons.

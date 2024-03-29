@@ -715,8 +715,10 @@ function state0() {
     clearWidgets();
     addWidget(createCaption('Cognitive Exercises'));
 
+    /*
     addWidget(createMenuButton(getScoredText(statesToNames.st1, 1), state1));
     addWidget(createMenuButton(getScoredText(statesToNames.st2, 2), state2));
+    */
     addWidget(createMenuButton(getScoredText(statesToNames.st3, 3), state3));
     addWidget(createMenuButton(getScoredText(statesToNames.st4, 4), state4));
 
