@@ -1,8 +1,11 @@
 # Cognitive-Exercises v4
 
+Repository size: ~110 MB.
+
 ## Exercises
-1. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
-2. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
+1. N-Image-Back: using short-term memory and working memory to classify images in N-Back mode.
+2. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
+3. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
 
 Notes:
 1. There are no instructions, but there are `hint`/`answer` buttons.

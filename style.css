@@ -88,7 +88,7 @@ textarea {
     white-space: pre;
 }
 
-.blackButton:hover {
+.blackButton:not(.no-hover):hover {
     color: #000000;
     background-color: hsl(45, 100%, 75%);
 }
@@ -185,4 +185,11 @@ a {
 
 a:hover {
     color: hsl(45, 100%, 50%);
+}
+
+#imgTask {
+    max-width: 355px;
+    height: 250px;
+    object-position: center;
+    object-fit: contain;
 }
