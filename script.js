@@ -97,10 +97,11 @@ function loadHistory() {
 
 function loadSettings() {
     let defParameters = {
-        "st1_auto_mode": 2,
-        "st1_words": 3,
-        "st1_edges": 2,
-        "st1_remove_freq": 5,
+        "st1_auto_mode": 10,
+        "st1_n": 0,
+        "st1_options": 4,
+        "st1_category_element_mode": combo_st1_category_element_mode.Disable,
+        "st1_hard_mode": combo_st1_hard_mode.Disable,
         "st2_auto_mode": 5,
         "st2_boxes": 2,
         "st2_operations": 1,
@@ -335,6 +336,54 @@ function* wordsGetter(words) {
     return null;
 }
 
+function* imageGetter(dictionary, options, hard_mode) {
+    let list = [];
+    for (const [category1, val1] of Object.entries(dictionary)) {
+        for (const [category2, val2] of Object.entries(val1)) {
+            for (const image of val2) {
+                let filename = '';
+                let title = '';
+                if (Array.isArray(image)) {
+                    filename = image[0];
+                    title = image[1];
+                }
+                else {
+                    filename = title = image;
+                }
+                list.push([category1, category2, filename, title, []]);
+            }
+        }
+    }
+    for (let w1 of randomShuffle(list)) {
+        if (hard_mode) {
+            for (let w2 of randomShuffle(list)) {
+                if (w1[w1.length - 1].length >= options - 1) {
+                    break;
+                }
+                if (w1[0] == w2[0] && w1[1] == w2[1] && w1[2] != w2[2] &&
+                    w1[3].toLowerCase().includes(w2[3].toLowerCase()) === false &&
+                    w2[3].toLowerCase().includes(w1[3].toLowerCase()) === false) {
+                    w1[w1.length - 1].push(w2[3]);
+                }
+            }
+        }
+        for (let w2 of randomShuffle(list)) {
+            if (w1[w1.length - 1].length >= options - 1) {
+                break;
+            }
+            if (w1[0] != w2[0] && w1[1] != w2[1] &&
+                w1[3].toLowerCase().includes(w2[3].toLowerCase()) === false &&
+                w2[3].toLowerCase().includes(w1[3].toLowerCase()) === false) {
+                w1[w1.length - 1].push(w2[3]);
+            }
+        }
+    }
+    for (let w of randomShuffle(list)) {
+        yield (w);
+    }
+    return null;
+}
+
 function range(start, stop, step = 1) {
     let a = [], b = start;
     if (step > 0) {
@@ -461,6 +510,78 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
         inputDiv.appendChild(backButton);
     }
     return inputDiv;
+}
+
+function createChooser(stateN, options, additionalButtons) {
+    let inputDiv = document.createElement("div");
+    inputDiv.id = "inputDiv";
+    let chooserDiv = document.createElement("div");
+    chooserDiv.id = "chooserDiv";
+    let eachButtonAction = function (event) {
+        checkAnswer(event.target.innerHTML);
+    };
+    for (let i = 0; i < options; ++i) {
+        let button = document.createElement('button');
+        button.classList.add("blackButton");
+        button.classList.add("no-hover");
+        button.innerHTML = '...';
+        button.onmouseup = eachButtonAction;
+        chooserDiv.appendChild(button);
+    }
+    let imageDiv = document.createElement('div');
+    imageDiv.id = 'imageDiv';
+    let img = document.createElement('img');
+    img.id = 'imgTask';
+    imageDiv.appendChild(img);
+    let backButtonAction = function (event) {
+        if (confirm("Are you sure you want to go back?")) {
+            stateN();
+        }
+    };
+    let additionalDiv = null;
+    if (additionalButtons != null) {
+        for (const key in additionalButtons) {
+            const value = additionalButtons[key];
+            let button = document.createElement('button');
+            button.classList.add("blackButton");
+            button.innerHTML = key;
+            button.onmouseup = value;
+            if (additionalDiv == null) {
+                additionalDiv = document.createElement('div');
+            }
+            additionalDiv.appendChild(button);
+        }
+    }
+    let hr = document.createElement("hr");
+    hr.style.borderColor = 'gray';
+    let backButton = createActionButton("Back", backButtonAction);
+    backButton.classList.add("blackButton");
+    inputDiv.appendChild(imageDiv);
+    inputDiv.appendChild(chooserDiv);
+    inputDiv.appendChild(hr);
+    if (additionalDiv != null) {
+        additionalDiv.prepend(backButton);
+        inputDiv.appendChild(additionalDiv);
+    }
+    else {
+        inputDiv.appendChild(backButton);
+    }
+    return inputDiv;
+}
+
+function updateChooser(image_path, options) {
+    let chooserDiv = document.getElementById("chooserDiv");
+    let children = chooserDiv.children;
+    for (let i = 0, k = 0; i < children.length; i++) {
+        if (children[i].nodeName == 'BUTTON') {
+            children[i].innerHTML = options[k];
+            k += 1;
+        }
+    }
+    let imageDiv = document.getElementById('imageDiv');
+    let img = imageDiv?.firstChild;
+    img.src = image_path;
+    img.alt = image_path;
 }
 
 function createTableOfSelects(stateN, additionalButtons = null) {
@@ -715,8 +836,8 @@ function state0() {
     clearWidgets();
     addWidget(createCaption('Cognitive Exercises'));
 
-    /*
     addWidget(createMenuButton(getScoredText(statesToNames.st1, 1), state1));
+    /*
     addWidget(createMenuButton(getScoredText(statesToNames.st2, 2), state2));
     */
     addWidget(createMenuButton(getScoredText(statesToNames.st3, 3), state3));
@@ -819,70 +940,29 @@ function state1() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st1_words = parseInt(settings['st1_words']);
-                let st1_edges = parseInt(settings['st1_edges']);
-                let st1_min_edges = 2;
-                let st1_max_edges = 100;
-                st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
-                let next_edges = st1_edges, next_vertices = st1_words;
-                for (let n_edges = st1_edges; n_edges <= st1_edges + 1; ++n_edges) {
-                    let n_v = Math.floor((Math.sqrt(8 * n_edges + 1) + 1) / 2);
-                    let break_condition = false;
-                    while (n_v - 1 <= n_edges) {
-                        if (n_edges <= n_v * (n_v - 1) / 2 && st1_min_edges <= n_edges && n_edges <= st1_max_edges && (st1_edges < n_edges || st1_edges == n_edges && st1_words < n_v)) {
-                            next_edges = n_edges;
-                            next_vertices = n_v;
-                            break_condition = true;
-                            break;
-                        }
-                        n_v += 1;
-                    }
-                    if (break_condition === true) {
-                        break;
-                    }
-                }
-                st1_edges = next_edges;
-                st1_words = next_vertices;
-                setSetting('st1_edges', st1_edges);
-                setSetting('st1_words', st1_words);
+                let st1_n = parseInt(settings['st1_n']);
+                st1_n = Math.min(Math.max(st1_n + 1, 0), 10);
+                setSetting('st1_n', st1_n);
                 state1();
             },
             function (event) {
-                let st1_words = parseInt(settings['st1_words']);
-                let st1_edges = parseInt(settings['st1_edges']);
-                let st1_min_edges = 2;
-                let st1_max_edges = 100;
-                st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
-                let next_edges = st1_edges, next_vertices = st1_words;
-                for (let n_edges = st1_edges - 1; n_edges <= st1_edges; ++n_edges) {
-                    let n_v = Math.floor((Math.sqrt(8 * n_edges + 1) + 1) / 2);
-                    while (n_v - 1 <= n_edges) {
-                        if (n_edges <= n_v * (n_v - 1) / 2 && st1_min_edges <= n_edges && n_edges <= st1_max_edges && (st1_edges > n_edges || st1_edges == n_edges && st1_words > n_v)) {
-                            next_edges = n_edges;
-                            next_vertices = n_v;
-                        }
-                        n_v += 1;
-                    }
-                }
-                st1_edges = next_edges;
-                st1_words = next_vertices;
-                setSetting('st1_edges', st1_edges);
-                setSetting('st1_words', st1_words);
+                let st1_n = parseInt(settings['st1_n']);
+                st1_n = Math.min(Math.max(st1_n - 1, 0), 10);
+                setSetting('st1_n', st1_n);
                 state1();
             },
         ],
-        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved graphs<br>[0:disable|1-100]", "integer", function (xv) {
+        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully classified images<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st1_words", "<b>Auto mode</b><br>Current number of vertices<br>[3-100]", "integer", function (xv) {
-            return 3 <= xv && xv <= permutations && xv <= 100;
+        ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-10]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 10;
         }],
-        ["st1_edges", "<b>Auto mode</b><br>Current number of edges<br>[2-100]", "integer", function (x) {
-            return 2 <= x && x <= 100;
+        ["st1_options", "Options<br>[2|4|6|8|10|12]", "integer", function (xv) {
+            return xv == 2 || xv == 4 || xv == 6 || xv == 8 || xv == 10 || xv == 12;
         }],
-        ["st1_remove_freq", "Remove vertex every N graph changes [0|2-100]", "integer", function (x) {
-            return x === 0 || 2 <= x && x <= 100;
-        }],
+        ["st1_category_element_mode", "Category↔Element mode", "combobox", Object.values(combo_st1_category_element_mode)],
+        ["st1_hard_mode", "Hard mode<br>(similar elements)", "combobox", Object.values(combo_st1_hard_mode)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -908,13 +988,20 @@ function state1_start() {
     let task = createInputElems();
     let taskDiv = task[0];
     let taskArea = task[1];
+    taskDiv.style.height = '150px';
+    taskArea.style.height = '155px';
+    let st1_options = parseInt(settings['st1_options']);
     addWidget(createCaption(statesToNames.st1));
     addWidget(taskDiv);
-    addWidget(createKeyboard(asciiDigits, state1, {
-        'Redo': () => { currentGenerator.next('-REDO-') },
-        'Hint': () => { currentGenerator.next('-HINT-') },
-        'Graph': () => { currentGenerator.next('-GRAPH-') },
-    }, ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
+    addWidget(document.createElement('br'));
+    addWidget(createChooser(state1, st1_options, {
+        'Restart': () => { 
+                if (confirm("Are you sure you want to restart?")) {
+                    currentGenerator.next('-RESTART-');
+                }
+            },
+        'Answer': () => { currentGenerator.next('-ANSWER-') }
+    }));
     currentGenerator = state1_generator(taskArea);
     currentGenerator.next();
 }
@@ -933,341 +1020,147 @@ function findSubarray(arr, subarr) {
 
 function* state1_generator(taskArea) {
     let st1_auto_mode = parseInt(settings['st1_auto_mode']);
-    let st1_words = parseInt(settings['st1_words']);
-    let st1_edges = parseInt(settings['st1_edges']);
-    let st1_remove_freq = parseInt(settings['st1_remove_freq']);
-    let st1_min_edges = 2, st1_max_edges = 100;
-    st1_edges = Math.min(st1_words * (st1_words - 1) / 2, Math.max(st1_words - 1, Math.min(st1_max_edges, Math.max(st1_min_edges, st1_edges))));
-    let words = [
-        "7up", "accountant", "action", "adventure", "airplane",
-        "almond-milk", "ambient", "analyst", "animation", "apple",
-        "apricot", "architect", "artichoke", "asparagus", "avocado",
-        "badminton", "baking", "banana", "bartender", "baseball",
-        "basketball", "biathlon", "bird", "blueberry", "boat", "broccoli",
-        "bus", "cabbage", "camping", "car", "carrot", "cat", "cauliflower",
-        "chef", "cherry", "chess", "chinchilla", "classical", "climbing",
-        "coach", "coffee", "cola", "collecting", "comedy", "cooking", "corn",
-        "country", "cranberry", "cricket", "crime", "cucumber", "cycling",
-        "d&b", "dancer", "designer", "disaster", "disco", "doctor",
-        "documentary", "dog", "drama", "drawing", "dressmaker", "dubstep",
-        "eggplant", "electronic", "engineer", "entrepreneur", "epic", "family",
-        "fanta", "fantasy", "ferret", "filmmaking", "firefighter", "fish",
-        "freelancer", "frog", "gardening", "garlic", "goat", "goldfish",
-        "golf", "gospel", "grapefruit", "hamster", "handball", "hedgehog",
-        "helicopter", "hiking", "hip-hop", "horror", "horse", "hot-chocolate",
-        "house", "ice-hockey", "indie", "jazz", "jet-ski", "journalist", "juice",
-        "kale", "kiwi", "lacrosse", "lawyer", "lemonade", "lettuce", "librarian",
-        "lime", "lizard", "magic-tricks", "manager", "mango", "martial-arts",
-        "mechanic", "metal", "milk", "mirinda", "motorbike", "musician", "mystery",
-        "nectarine", "onion", "orange", "papaya", "paramedic", "parkour", "pear",
-        "pepper", "photographer", "pilot", "pineapple", "plum", "police-officer",
-        "pomegranate", "pop", "potato", "project-manager", "pumpkin", "puzzles",
-        "r&b", "rabbit", "raspberry", "reading", "reggae", "rock", "roller",
-        "romance", "rowing", "rugby", "sailing", "salsa", "satire", "scientist",
-        "scooter", "security-guard", "ship", "singing", "skateboard", "skiing",
-        "skydiving", "snake", "snowmobile", "social-worker", "soccer",
-        "software-developer", "soul", "soy-milk", "spinach", "sprite", "spy",
-        "strawberry", "subway", "sudoku", "superhero", "surfing", "swimming",
-        "taxi", "tea", "teacher", "techno", "tennis", "thriller", "time-travel",
-        "tomato", "train", "tram", "turtle", "video-games", "volleyball", "water",
-        "western", "writer"
-    ];
+    let st1_n = parseInt(settings['st1_n']);
+    let st1_options = parseInt(settings['st1_options']);
+    let st1_category_element_mode = settings['st1_category_element_mode'];
+    let st1_hard_mode = settings['st1_hard_mode'];
+    let category_element_mode = st1_category_element_mode === combo_st1_category_element_mode.Enable;
+    let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
     let auto_increase_counter = 0;
     let clearBefore = true;
+    let images_generator = imageGetter(state1_images, st1_options, hard_mode);
+    let images_list = [];
+    let image_index = 0;
+    let mistakeFlag = false, skip_mode = true, lines = [];
+    st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
+    addHistoryItem(['N-Image-Back']);
     while (true) {
-        let words_generator = wordsGetter(words);
-        let removed_words = [];
-        appendText(taskArea, "[New] graph (" + st1_words + " vertices" + ", " + st1_edges + " edges)\n", clearBefore);
-        let graph_dict = new Map();
-        let graph_mt = st1_remove_freq;
-        addHistoryItem(['Graph']);
-        let mistakeFlag = false, mistake = false;
-        while (true) {
-            let edges_count = 0;
-            for (let [_, vd] of graph_dict) {
-                edges_count += vd.size;
-            }
-            if (mistakeFlag === false && edges_count >= st1_edges) {
-                appendText(taskArea, "Completed!\n", clearBefore);
-                appendText(taskArea, "==========\n\n");
-                auto_increase_counter += 1;
-                if (mistake === false && st1_auto_mode >= 1 && auto_increase_counter >= st1_auto_mode) {
-                    let next_edges = st1_edges, next_vertices = st1_words;
-                    for (let n_edges = st1_edges; n_edges <= st1_edges + 1; ++n_edges) {
-                        let n_v = Math.floor((Math.sqrt(8 * n_edges + 1) + 1) / 2);
-                        let break_condition = false;
-                        while (n_v - 1 <= n_edges) {
-                            if (n_edges <= n_v * (n_v - 1) / 2 && n_edges <= st1_max_edges && (st1_edges < n_edges || st1_edges == n_edges && st1_words < n_v)) {
-                                next_edges = n_edges;
-                                next_vertices = n_v;
-                                break_condition = true;
-                                break;
-                            }
-                            n_v += 1;
-                        }
-                        if (break_condition === true) {
-                            break;
-                        }
-                    }
-                    st1_edges = next_edges;
-                    st1_words = next_vertices;
-                    setSetting('st1_edges', st1_edges);
-                    setSetting('st1_words', st1_words);
-                    auto_increase_counter = 0;
-                }
-                else if (st1_auto_mode === 0) {
-                    st1_edges = randomInt(st1_words - 1, st1_words * (st1_words - 1) / 2);
-                }
-                else if (mistake === true) {
-                    auto_increase_counter = Math.max(0, auto_increase_counter - 1);
-                }
-                break;
-            }
-            if (mistakeFlag) {
-                appendText(taskArea, '[Repeat] without mistakes\n', clearBefore);
-                mistakeFlag = false;
+        if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
+            st1_n = Math.min(Math.max(st1_n + 1, 0), 10);
+            setSetting('st1_n', st1_n);
+            auto_increase_counter = 0;
+            images_list = [];
+            image_index = 0;
+            mistakeFlag = false;
+            skip_mode = true;
+            st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
+            appendText(taskArea, "N = " + st1_n + "!\n", clearBefore);
+        }
+        else if (mistakeFlag) {
+            auto_increase_counter = Math.max(0, auto_increase_counter - 2);
+            mistakeFlag = false;
+        }
+        let image_struct = null; // category 1, category 2, filename, title, variants
+        let image_path;
+        let gen_next = images_generator.next();
+        if (gen_next.done) {
+            images_generator = imageGetter(state1_images, st1_options, hard_mode);
+            gen_next = images_generator.next();
+        }
+        if (image_index < st1_n) {
+            images_list.push(gen_next.value);
+            image_struct = images_list[image_index];
+            image_path = image_struct[0] + "/" + image_struct[1] + "/" + image_struct[2] + ".jpg";
+            image_index += 1;
+            skip_mode = true;
+            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                       image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
+        }
+        else if (image_index === st1_n && st1_n !== 0) {
+            let last = images_list[0];
+            images_list = images_list.slice(1);
+            images_list.push(gen_next.value);
+            image_struct = last;
+            let tmp = images_list[images_list.length - 1];
+            image_path = tmp[0] + "/" + tmp[1] + "/" + tmp[2] + ".jpg";
+            skip_mode = false;
+            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                       tmp[0] + " > " + tmp[1] + " > " + tmp[2]);
+        }
+        else {
+            images_list = images_list.slice(1);
+            images_list.push(gen_next.value);
+            image_struct = images_list[0];
+            image_path = image_struct[0] + "/" + image_struct[1] + "/" + image_struct[2] + ".jpg";
+            skip_mode = false;
+            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                       image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
+        }
+        let category_element_mode_active = category_element_mode ? randomChoice([0, 1, 2]) : 0;
+        if (category_element_mode_active == 2 && (image_struct[0] == 'Adjectives' || image_struct[0] == 'Verbs')) {
+            category_element_mode_active = 1;
+        }
+        let line1;
+        if (category_element_mode_active) {
+            line1 = "Element: " + image_struct[3] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")";
+        }
+        else {
+            line1 = "Category: " + image_struct[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")";
+        }
+        let line2 = "Options [" + st1_n + "-back]:\n";
+        let options = category_element_mode_active ? (category_element_mode_active == 1 ? [image_struct[1]] : [image_struct[0]]) : [image_struct[3]];
+        let skip_plug = ["skip"];
+        for (let x of image_struct[4]) {
+            options.push(x);
+            skip_plug.push("skip");
+        }
+        options = randomShuffle(options);
+        let i = 0, currentLine = '';
+        for (let x of options) {
+            if (currentLine.length == 0) {
+                currentLine += x;
             }
             else {
-                let word = null;
-                if (graph_dict.size >= 3 && st1_remove_freq > 0 && graph_dict.size % graph_mt === 0) {
-                    graph_mt = graph_dict.size + st1_remove_freq;
-                    let word_to_del = randomChoice([...graph_dict.keys()]);
-                    let new_graph_dict = new Map();
-                    let in_conn = new Set(), out_conn = new Set();
-                    for (let [v1, vd] of graph_dict) {
-                        if (v1 !== word_to_del) {
-                            new_graph_dict.set(v1, new Map());
-                        }
-                        for (let [v2, cost] of vd) {
-                            if (v2 === word_to_del) {
-                                in_conn.add(v1 + "!#%" + cost);
-                            }
-                            else if (v1 === word_to_del) {
-                                out_conn.add(v2 + "!#%" + cost);
-                            }
-                            else {
-                                new_graph_dict.get(v1).set(v2, cost);
-                            }
-                        }
-                    }
-                    if (in_conn.size === 0) {
-                        in_conn = out_conn;
-                    }
-                    else if (out_conn.size === 0) {
-                        out_conn = in_conn;
-                    }
-                    let edges_history = [];
-                    for (let xd1 of in_conn) {
-                        let [x1, d1] = xd1.split('!#%');
-                        d1 = parseInt(d1);
-                        for (let xd2 of out_conn) {
-                            let [x2, d2] = xd2.split('!#%');
-                            d2 = parseInt(d2);
-                            if (x1 !== x2 && new_graph_dict.get(x2).has(x1) === false) {
-                                let cost = d1 < d2 ? d2 : d1;
-                                if (new_graph_dict.has(x1) === false) {
-                                    new_graph_dict.set(x1, new Map())
-                                }
-                                new_graph_dict.get(x1).set(x2, cost);
-                                edges_history.push(x1 + ' - ' + cost + ' - ' + x2);
-                            }
-                        }
-                    }
-                    graph_dict = new_graph_dict;
-                    appendText(taskArea, '[Remove] vertex\n');
-                    appendText(taskArea, 'Removed ' + word_to_del + '\n');
-                    if (edges_history.length > 0) {
-                        appendText(taskArea, '[New] edge' + (edges_history.length >= 2 ? 's' : '') + '\n');
-                        for (let x of edges_history) {
-                            appendText(taskArea, x + '\n');
-                        }
-                    }
-                }
-                else {
-                    let wordObject = words_generator.next();
-                    if (wordObject.value == null || wordObject.done) {
-                        if (removed_words.length > 0) {
-                            word = removed_words.pop(0);
-                        }
-                    }
-                    else {
-                        word = wordObject.value;
-                    }
-                    if (word == null) {
-                        break;
-                    }
-                    let conn = [];
-                    for (let [v1, vd1] of graph_dict) {
-                        for (let [v2, vd2] of graph_dict) {
-                            if (v1 !== v2 && vd2.has(v1) === false && vd1.has(v2) === false) {
-                                conn.push([v1, v2]);
-                                conn.push([v2, v1]);
-                            }
-                        }
-                    }
-                    let cost = randomInt(1, 9);
-                    let next_word = null;
-                    if (conn.length >= 1 && graph_dict.size == st1_words) {
-                        [word, next_word] = randomChoice(conn);
-                        if (graph_dict.has(word) === false) {
-                            graph_dict.set(word, new Map());
-                        }
-                        graph_dict.get(word).set(next_word, cost);
-                    }
-                    else if (graph_dict.size >= 2) {
-                        next_word = randomChoice([...graph_dict.keys()]);
-                        graph_dict.set(word, new Map());
-                        graph_dict.get(word).set(next_word, cost);
-                    }
-                    else {
-                        next_word = words_generator.next().value;
-                        let tmp = new Map();
-                        tmp.set(next_word, cost);
-                        graph_dict.set(word, tmp);
-                        graph_dict.set(next_word, new Map());
-                    }
-                    appendText(taskArea, '[New] edge\n');
-                    appendText(taskArea, word + ' - ' + cost + ' - ' + next_word + '\n');
-                }
+                currentLine += ' | ' + x;
             }
-            let sorted_items = [...graph_dict.keys()].sort().reverse();
-            let floatInfinity = Number.POSITIVE_INFINITY;
-            let table = [], table_bk = [];
-            for (let _ of range(0, sorted_items.length)) {
-                let row = [], row_bk = [];
-                for (let j of range(0, sorted_items.length)) {
-                    row.push(floatInfinity);
-                    row_bk.push(j);
-                }
-                table.push(row);
-                table_bk.push(row_bk);
+            i += 1;
+            if (i != 0 && i % 2 == 0) {
+                line2 += currentLine + '\n';
+                currentLine = '';
             }
-            sorted_items.forEach((v1, i) => {
-                sorted_items.forEach((v2, j) => {
-                    if (v1 !== v2) {
-                        if (graph_dict.get(v1).has(v2)) {
-                            table[i][j] = table[j][i] = graph_dict.get(v1).get(v2);
-                        }
-                        else if (graph_dict.get(v2).has(v1)) {
-                            table[i][j] = table[j][i] = graph_dict.get(v2).get(v1);
-                        }
-                    }
-                    else {
-                        table[i][j] = 0;
-                    }
-                });
-            });
-            for (let k = 0, n = table.length; k < n; ++k) {
-                for (let i = 0; i < n; ++i) {
-                    for (let j = 0; j < n; ++j) {
-                        if (k != i && i != j && k != j) {
-                            let x = table[i][k] + table[k][j];
-                            let y = table[i][j];
-                            if (x < y) {
-                                table[i][j] = x;
-                                table_bk[i][j] = table_bk[i][k];
-                            }
-                        }
-                    }
-                }
+        }
+        appendText(taskArea, line1 + "\n");
+        if (skip_mode === false) {
+            appendText(taskArea, line2 + "\n");
+        }
+        taskArea.scrollTop = 0;
+        taskArea.scrollLeft = 0;
+        let expected = category_element_mode_active ? (category_element_mode_active == 1 ? image_struct[1] : image_struct[0]) : image_struct[3];
+        if (skip_mode === true) {
+            expected = 'skip';
+        }
+        updateLastHistoryItem([lines.join("\n")]);
+        while (true) {
+            updateChooser("./images/" + image_path, skip_mode === true ? skip_plug : options);
+            let actual = (yield);
+            appendText(taskArea, actual + ' - ');
+            if (actual === '-ANSWER-') {
+                appendText(taskArea, "Expected: " + expected + '\n');
+                continue;
             }
-            let paths = [];
-            for (let i = 0, n = table_bk.length; i < n; ++i) {
-                for (let j = i + 1; j < n; ++j) {
-                    let x = i, ds = [sorted_items[i]];
-                    let path = [i];
-                    while (x !== j) {
-                        let prev_x = x;
-                        x = table_bk[x][j];
-                        let t = graph_dict.get(sorted_items[prev_x]).get(sorted_items[x]);
-                        if (t == null) {
-                            t = graph_dict.get(sorted_items[x]).get(sorted_items[prev_x]);
-                        }
-                        ds.push('' + t);
-                        ds.push(sorted_items[x]);
-                        path.push(x);
-                    }
-                    paths.push([path, ds.join(' - ')]);
-                }
-            }
-            paths.sort((a, b) => b[0].length - a[0].length);
-            let questions = [], answers = [], detailed_answers = [];
-            for (let i = 0, n = paths.length; i < n; ++i) {
-                let skip = false;
-                for (let j = 0; j < i; ++j) {
-                    let idx1 = findSubarray(paths[j][0], paths[i][0]);
-                    let idx2 = findSubarray(paths[j][0], paths[i][0].slice().reverse());
-                    if (idx1 >= 0 || idx2 >= 0) {
-                        skip = true;
-                        break;
-                    }
-                }
-                if (skip === false) {
-                    let path = paths[i][0];
-                    let question = randomShuffle([sorted_items[path[0]], sorted_items[path[path.length - 1]]]);
-                    if (Math.random() < 0.5) {
-                        questions.push(question);
-                        answers.push(table[path[0]][path[path.length - 1]]);
-                        detailed_answers.push(paths[i][1]);
-                    }
-                    else {
-                        questions.unshift(question);
-                        answers.unshift(table[path[0]][path[path.length - 1]]);
-                        detailed_answers.unshift(paths[i][1]);
-                    }
-                }
-            }
-            edges_count = 0;
-            for (let [_, vd] of graph_dict) {
-                edges_count += vd.size;
-            }
-            let graph_string = 'Graph (' + "Vertices: " + graph_dict.size + '/' + st1_words + ", Edges: " + edges_count + '/' + st1_edges + '):\n';
-            for (let [v1, vd1] of graph_dict) {
-                for (let [v2, cost] of vd1) {
-                    graph_string = graph_string.concat(v1 + ' - ' + cost + ' - ' + v2 + '\n');
-                }
-            }
-            graph_string += '\n';
-            appendText(taskArea, '\n');
-            let k = 0;
-            while (true) {
-                let expected = '' + answers[k];
-                let [v1, v2] = questions[k];
-                let inputText = ((k + 1) + '. ') + v1 + ' - ? - ' + v2 + ':> ';
-                updateLastHistoryItem([graph_string]);
-                appendText(taskArea, inputText);
-                let actual = (yield).toUpperCase();
-                appendText(taskArea, actual + '\n');
-                if (actual === '-HINT-') {
-                    appendText(taskArea, "Expected: " + expected + '\n');
-                    appendText(taskArea, "Detailed: " + detailed_answers[k] + '\n\n');
-                    continue;
-                }
-                if (actual === '-REDO-') {
-                    break;
-                }
-                if (actual === '-GRAPH-') {
-                    appendText(taskArea, graph_string);
-                    continue;
-                }
-                let status = actual === expected;
-                if (status) {
-                    if (k + 1 < questions.length) {
-                        k += 1;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                else {
-                    appendText(taskArea, 'No, retry\n');
-                    mistakeFlag = true;
-                    mistake = true;
-                }
-            }
-            if (mistakeFlag === false) {
-                addScore('st1', answers.length);
+            if (actual === '-RESTART-') {
+                auto_increase_counter = 0;
+                images_list = [];
+                image_index = 0;
+                mistakeFlag = false;
+                skip_mode = true;
+                st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
+                images_generator = imageGetter(state1_images, st1_options, hard_mode);
                 appendText(taskArea, '', clearBefore);
+                break;
+            }
+            let status = actual === expected;
+            if (status) {
+                if (skip_mode === false) {
+                    auto_increase_counter += 1;
+                    addScore('st1', st1_n + 1);
+                }
+                appendText(taskArea, '', clearBefore);
+                break;
+            }
+            else {
+                appendText(taskArea, 'No, retry\n');
+                mistakeFlag = true;
             }
         }
     }
@@ -3878,8 +3771,13 @@ function checkVersion() {
         stateN_clear_score('st2');
         version = null;
     }
+    else if (version === '4.00') {
+        stateN_defaults('st1');
+        stateN_clear_score('st1');
+        version = null;
+    }
     if (version == null) {
-        version = '4.00';
+        version = '5.00';
         localStorage.setItem('VERSION', version);
     }
 }
@@ -3889,10 +3787,18 @@ let currentGenerator = null;
 
 let asciiDigits = '123456789-0_';
 let statesToNames = {
-    st1: 'Graph',
+    st1: 'N-Image-Back',
     st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
+};
+let combo_st1_category_element_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_hard_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
 };
 let combo_st4_hard_mode = {
     Enable: "Enable",
@@ -3902,3 +3808,103 @@ let settings = loadSettings();
 let scores = loadScores();
 let exHistory = loadHistory();
 let version = localStorage.getItem('VERSION');
+
+let state1_images = JSON.parse(`
+{
+    "Adjectives": {
+        "Opposites": [ "Artificial", "Beautiful", "Big", "Black and white", "Bottom", "Clean", "Closed", "Cold", "Color", "Curly", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Dull", "Edible", "Elderly", "Empty", "Fast", "Fat", "Few", "Flat", "Fragile", "Full", "Happy", "Heavy", "High", "Hot", "Kind", "Left", "Light coloured", "Light", "Long", "Low", "Many", "New", "Old", "Open", "Poisonous", "Poor", "Prickly", "Real", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Simple", "Slim", "Slow", "Small", "Smooth", "Soft", "Sour", "Straight", "Strong", "Sweet", "Thick", "Thin", "Tough", "Ugly", "Unclothed", "Volume", "Wet", "Wicked"]
+    },
+    "Animals": {
+        "Arctic animals": [ "Arctic fox", "Arctic wolf", "Beluga", "Fur seal", "Giant squid", "Muskox", "Narwhal", "Orca, killer whale", "Owl", "Penguin", "Polar bear", "Seal", "Walrus", "Whale"],
+        "Domestic animals": [ "Canary", "Cat", "Chinchilla", "Dog", "Fish", "Guinea pig", "Hamster", "Parrot", "Turtle"],
+        "Farm animals": [ "Bee", "Bull", "Camel", "Cow", "Donkey", "Goat", "Horse", "Lama", "Pig", "Pony", "Rabbit", "Ram", "Reindeer", "Sheep"],
+        "Forest animals": [ "Badger", "Bear", "Bison", "Boar", "Buffalo", "Chipmunk", "Coyote", "Deer", "Ferret", "Fox", "Hare", "Hedgehog", "Lynx", "Marmot", "Mole", "Raccoon", "Skunk", "Sloth", "Squirrel", "Wolf", "Wolverine"],
+        "Insects": [ "Ant", "Bedbug", "Bee", "Bug", "Bumblebee", "Butterfly", "Caterpillar", "Cockroach", "Dragonfly", "Fly", "Grasshopper", "Hornet", "Ladybug", "Louse", "Mantis", "Millipede", "Mite", "Mosquito", "Scarabaeus", "Scorpion", "Spider", "Termite", "Wasp"],
+        "Jungle animals": [ "Anteater", "Cheetah", "Crocodile", "Elephant", "Gibbon", "Giraffe", "Gorilla", "Hippopotamus", "Jaguar", "Leopard", "Lion", "Monkey", "Ocelot", "Panda", "Red panda", "Rhinoceros", "Sifaka", "Tapir", "Tiger", "White tiger", "Zebra"],
+        "Sea animals": [ "Beluga", "Coral", "Crab", "Crayfish", "Dolphin", "Fur seal", "Giant squid", "Jellyfish", "Lobster", "Narwhal", "Nautilus", "Octopus", "Orca, killer whale", "Sea anemone", "Sea turtle", "Sea urchin", "Seahorse", "Seal", "Seaweed", "Shark", "Shell", "Shrimp", "Snail", "Sperm whale", "Squid", "Starfish", "Stingray", "Walrus", "Whale"]
+    },
+    "Baby": {
+        "Baby clothes": [ "Baby mittens", "Bib", "Bodysuit", "Jumper", "Romper", "Shoes", "Sleeper", "Socks", "Sun hat", "Trousers"],
+        "Baby things": [ "Baby bath", "Baby walker", "Car seat", "Changing pad", "Changing table", ["Childrens tent", "Children's tent"], "Cradle", "Crib", "High chair", "Mobile", "Nursing bottle", "Pacifier", "Pillow", "Potty", "Rattle", "Scales", "Sleeping bag", "Stroller", "Towel"],
+        "Playground": [ "Bench", "Bucket", "Carousel", "Horizontal bar", "Monkey bar", "Rake", "Sand molds", "Sandbox", "Seesaw", "Shovel", "Slide", "Swings", "Watering can"]
+    },
+    "Bedroom": {
+        "Bed": [ "Bed", "Blanket", "Bunk bed", "Comforter", "Cot", "Cushion", "Duvet cover", "Headboard", "Mattress pad", "Mattress", "Pillow", "Pillowcase", "Playpen", "Sheet"],
+        "Bedroom accessories": [ "Blinds", "Clock", "Curtain rod", "Curtains", "Dressing table", "Flower", "Hanger", "Mat", "Mirror", "Night light", "Nightstand", "Roller blind", "Room divider", "Rug", "Vase"]
+    },
+    "Birds": {
+        "Farm birds": [ "Chick", "Duck", "Duckling", "Hen", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
+        "Wild birds": [ "Bullfinch", "Crow", "Eagle", "Falcon", "Flamingo", "Hummingbird", "Owl", "Parrot", "Pelican", "Penguin", "Pigeon", "Sparrow", "Stork", "Swallow", "Swan", "Titmouse", "Vulture", "Woodpecker"]
+    },
+    "Colors": {
+        "Base colors": [ "Black", "Blue", "Brown", "Gold", "Gray", "Orange", "Purple", "Red", "Silver", "White", "Yellow"],
+        "Secondary colors": [ "Aqua", "Aquamarine", "Bisque", "Chocolate", "Coral", "Dark red", "Indigo", "Ivory", "Khaki", "Lilac", "Magenta", "Maroon", "Navy", "Olive", "Pink", "Purple", "Salmon", "Tan", "Teal"]
+    },
+    "Food": {
+        "Berries": [ "Black currant", "Blackberry", "Blueberry", "Cherry", "Cranberry", "Gooseberry", "Melon", "Raspberry", "Red currant", "Strawberry", "Watermelon"],
+        "Fruits": [ "Apple", "Apricot", "Avocado", "Banana", "Coconut", "Dates", "Grapefruit", "Grapes", "Kiwi", "Lemon", "Lime", "Orange", "Peach", "Pear", "Persimmon", "Pineapple", "Plum", "Pomegranate"],
+        "Vegetables": [ "Beet", "Broccoli", "Carrot", "Cauliflower", "Celery", "Chili pepper", "Chinese cabbage", "Corn", "Cucumber", "Custard squash", "Eggplant", "Garlic", "Ginger", "Lettuce", "Olives", "Onion", "Peas", "Pepper", "Potato", "Pumpkin", "Radish", "Red cabbage", "Romanesco broccoli", "Savoy cabbage", "Spinach", "Tomato", "Turnip", "White cabbage", "Zucchini"]
+    },
+    "Holidays": {
+        "Christmas": [ "Angel", "Bells", "Bow", "Candle", "Candy cane", "Christmas cracker", "Christmas lights", "Christmas mailbox", "Christmas ornament", "Christmas tree", "Father christmas", "Fireworks", "Gingerbread house", "Gingerbread man", "Holly", "Presents", "Santa claus", ["Santas cap", "Santa's cap"], ["Santas sack", "Santa's sack"], "Sleigh", "Snow globe", "Snow Maiden", "Snowballs", "Snowflake", "Snowman", "Star", "Stocking", "Wreath"],
+        "Easter": [ "Bible", "Candies", "Candle", "Chalice", "Chick", "Christ", "Church", "Communion", "Crosses", "Crown of thorns", "Crucifixion", "Easter basket", "Easter bread", "Easter bunny", "Easter cookies", "Easter egg", "Easter eggs", "Easter lamb", "Eggshell", "Eucharist wafer", "Hen", "Icon", "Jelly bean", "Lily", "Prayer", "Prosfora", "Rosary", "Stained glass", "Tulips", "Willow", "Wine"],
+        "Halloween": [ "Bat", "Black cat", "Broomstick", "Cauldron", "Elf", "Ghost", "Haunted house", "Magic wand", "Monster", "Mummy", "Pumpkin", "Skeleton", "Spider", "Vampire", "Werewolf", "Witch"],
+        "Mothers day": [ "Bouquet", "Cake", "Chocolates", "Congratulate", "Educate", "Entertain", "Feed", "Foster", "Gift", "Grandmother", "Hug", "Jewellery", "Kiss", "Letter", "Love", "Message", "Mother", "Offer flowers", "Perfume", "Prepare a breakfast", "Read a story", "Rose", "Sympathize", "Take care", "Tulip"],
+        "Valentines day": [ "Balloons", "Bouquet", "Card", "Chocolates", "Cupid", "Date", "Friendship", "Heart", "Lock", "Lollipop", "Love", "Lovers", "Message", "Petals", "Presents", "Proposal", "Wedding ring"]
+    },
+    "Home": {
+        "Furniture": [ "Armchair", "Bench", "Bookcase", "Cabinet", "Cage", "Chair", "Chest of drawers", "Chest", "Coffee table", "Couch", "Cupboard", "Desk", "Dresser", "Hanger", "Laundry basket", "Long stool", "Pouf", "Rocking chair", "Safe", "Secretaire", "Shoe cabinet", "Sofa", "Stool", "Swivel chair", "Table", "TV stand", "Wall shelf", "Wardrobe"],
+        "Garden": [ "Barbecue", "Fence", "Flowerbed", "Fountain", "Garage", "Gate", "Gazebo", "Greenhouse", "Hammock", "Hanging basket", "Hedge", "Lawn", "Path", "Pond", "Pool", "Porch swing", "Shed", "Sun lounger"],
+        "House": [ "Attic", "Balcony", "Basement", "Battery", "Bolt", "Brick", "Building", "Chimney", "Column", "Door chain", "Door", "Doormat", "Elevator", "Fireplace", "Gutter", "House", "Intercom", "Key", "Lock", "Mailbox", "Porch", "Roof", "Staircase", "Wall", "Window"],
+        "Rooms": [ "Basement", "Bathroom", "Bedroom", "Billiard room", "Closet", "Dining room", "Foyer", "Hall, corridor", "Kitchen", "Library", "Living room", "Office, den", "Parking", "Playroom", "Swimming pool", "Veranda"]
+    },
+    "Household Appliances": {
+        "Electronics": [ "Air conditioner", "Blender", "Calculator", "Coffee machine", "Dish washer", "Dryer", "Electric kettle", "Extractor hood", "Fan", "Freezer", "Fridge", "Grill", "Hair dryer", "Hand dryer", "Heater", "Iron", "Juicer", "Lamp", "Meat grinder", "Microwave", "Mixer", "Multicooker", "Oven", "Sandwich maker", "Scales", "Sewing machine", "Shaver", "Stove", "Telephone", "Toaster", "Vacuum cleaner", "Washing machine"],
+        "Gadgets": [ "3D glasses", "Binoculars", "Camera", "Charger", "Computer", "Drone", "E-reader", "Fitness bracelet", "Game console", "Gamepad", "Headphones", "Laptop", "Lens", "Memory card", "Microphone", "Phone", "Player", "Projector", "Router", "Satellite antenna", "Security camera", "Sim-card", "Speaker", "Tablet", "TV remote", "Videocamera", "VR glasses"]
+    },
+    "Kitchen": {
+        "Crockery and cutlery": [ "Bowl", "Butter dish", "Cake server", "Carafe", "Chopsticks", "Coffee cup", "Cup", "Egg cup", "Fork", "French press", "Glass", "Jug", "Knife", "Mixing bowl", "Mug", "Napkin", "Pepper shaker", "Plate", "Salt shaker", "Samovar", "Saucer", "Serving plate", "Sugar bowl", "Teacup", "Teapot", "Thermos", "Tray", "Wine glass"],
+        "Kitchenware": [ "Bottle opener", "Bottle", "Bread bin", "Can opener", "Cheese slicer", "Colander", "Cooking tongs", "Corkscrew", "Cutting board", "Egg slicer", "Food container", "Frying pan", "Garlic press", "Grater", "Ice-cream scoop", "Jar", "Kettle", "Knife, cleaver", "Ladle", "Masher", "Meat tenderizer", "Nutcrackers", "Pasta spoon", "Peeler", "Pestle and mortar", "Pizza cutter", "Pot", "Spatula", "Strainer", "Whisk"]
+    },
+    "Nature": {
+        "Bodies of water": [ "Aquarium", "Bay", "Branch of the river", "Canal", "Cove", "Fjord", "Fountain", "Glacier", "Iceberg", "Lagoon", "Lake", "Levee", "Marsh", "Mouth of a river", "Oasis", "Pond", "Puddle", "Reservoir", "River cascades", "River delta", "River", "Sea", "Source of a river", "Spring", "Strait", "Stream", "Waterfall", "Well", "Wetland"],
+        "Solar system": [ "Asteroid", "Comet", "Crater", "Earth", "Eclipse", "Galaxy", "Jupiter", "Mars", "Mercury", "Meteorite", "Milky way", "Moon", "Nebula", "Neptune", "Pluto", "Saturn", "Solar system", "Star", "Starry sky", "Uranus"],
+        "Weather": [ "Cloud", "Cloudy", "Cold", "Dew", "Fog", "Frost", "Frozen", "Hail", "Hot", "Hurricane", "Ice", "Icicles", "Leaf fall", "Lighting", "Polar lights", "Puddle", "Rain", "Rainbow", "Slippery ice", "Snow", "Snowdrift", "Snowfall", "Snowflake", "Storm", "Sunrise", "Sunset", "Thunder", "Tsunami", "Warm, calm", "Wind, windy"]
+    },
+    "Numbers": {
+        "Counting": [ "Eight", "Five", "Four", "Nine", "One", "Six", "Ten", "Three", "Two"],
+        "Numbers": [ "Eight", "Eighteen", "Eleven", "Fifteen", "Five", "Four", "Fourteen", "Nine", "Nineteen", "One", "Seventeen", "Six", "Sixteen", "Ten", "Thirteen", "Three", "Twelve", "Twenty", "Two"]
+    },
+    "People": {
+        "Body parts": [ "Abdomen", "Arm", "Back", "Bone", "Bum", "Chest", "Elbow", "Finger", "Fist", "Foot", "Hand", "Head", "Heel", "Hip", "Knee", "Leg", "Nail", "Nape", "Neck", "Palm", "Shoulder", "Skeleton", "Skull", "Sole", "Toe", "Wrist"],
+        "Face": [ "Beard", "Cheek", "Chin", "Ear", "Eye", "Eyebrow", "Eyelashes", "Face", "Forehead", "Freckles", "Hair", "Jaw", "Lip", "Mouth", "Mustache", "Nose", "Nostril", "Tongue", "Tooth", "Wrinkles"],
+        "Family members": [ "Aunt", "Bride", "Brother", "Children", "Couple", "Daughter", "Family", "Father in law (for husband)", "Father or dad", "Father-in-law (for wife)", "Grandchildren", "Granddaughter", "Grandfather", "Grandmother", "Grandparents", "Grandson", "Husband", "Mother in law (for wife)", "Mother or mom", "Mother-in-law (for husband)", "Nephew", "Newborn", "Niece", "Parents", "Pregnant", "Siblings", "Sister", "Son", "Twins", "Uncle", "Wife"],
+        "Jobs and occupations": [ "Accountant", "Analyst", "Astronaut", "Athlete", "Baker", "Bartender", "Blacksmith", "Builder", "Car mechanic", "Carpenter", "Chemist", "Cleaner", "Clerk", "Cook", "Dispatcher", "Diver", "Driver", "Electrician", "Exterminator", "Farmer", "Firefighter", "Fisherman", "Flight attendant", "Florist", "Foreman", "Gardener", "Hairdresser", "Hunter", "Librarian", "Loader", "Mailman", "Massage therapist", "Model", "Monk", "Painter", "Pensioner", "Plumber", "Policewoman", "Priest", "Realtor", "Sailor", "Seamstress", "Secretary", "Security guard", "Seller", "Soldier", "Waiter", "Washer", "Welder", "Worker"],
+        "Professions": [ "Actress", "Architect", "Audio engineer", "Ballerina", "Boss", "Captain", "Clown", "Coach", "Conductor", "Consultant", "Dancer", "Designer", "Doctor", "Engineer", "Entrepreneur", "Investigator", "Journalist", "Judge", "Lawyer", "Magician", "Musician", "Painter", "Photographer", "Pilot", "Politician", "Producer", "Professor", "Programmer", "Reporter", "Scientist", "Sculptor", "Singer", "Street performer", "Teacher", "TV presenter", "Writer"],
+        "Stages": [ "Adult", "Baby", "Boy", "Children", "Girl", "Lady", "Man", "Old man", "Old woman", "Teenager", "Youth"]
+    },
+    "School": {
+        "Classroom objects": [ "Abacus", "Backpack", "Board marker", "Book", "Bookshelf", "Calculator", "Chalk", "Chalkboard", "Computer", "Desk", "Eraser", "Globe", "Glue", "Laptop", "Letter tracing", "Letters", "Lunch box", "Marker", "Microscope", "Notebook", "Numbers", "Paper leaf", "Pen", "Pencil case", "Pencil sharpener", "Pencil", "Protractor", "Pupil", "Ruler", "School bus", "School compasses", "School", "Scissors", "Teacher", "Timetable", "Whiteboard"],
+        "School building": [ "Art room", "Auditorium", "Classroom", "Computer room", "Dining room", "Gym", "Hall", "Lab", "Library", "Lockers", "Music class", "Office", "Playground", "Pool", "School yard", "Sports ground", "Toilet"]
+    },
+    "Shapes": {
+        "2D shapes": [ "Acute triangle", "Annulus", "Arch", "Circle", "Crescent", "Decagon", "Dodecagon", "Equilateral triangle", "Gear", "Heart", "Heptagon", "Hexagon", "Isosceles triangle", "Kite", "Lens", "Nonagon", "Obtuse triangle", "Octagon", "Oval", "Parallelogram", "Pentagon", "Polygon", "Quadrilateral", "Rectangle", "Rhombus", "Right triangle", "Sector", "Segment", "Semicircle", "Square", "Star", "Trapezoid", "Triangle"],
+        "3D shapes": [ "Cone", "Cube", "Cuboid", "Cylinder", "Dodecahedron", "Ellipsoid", "Frustum", "Hexagonal prism", "Hexagonal pyramid", "Icosahedron", "Octahedron", "Parallelepiped", "Pentagonal prism", "Sphere", "Square pyramid", "Triangular prism", "Triangular pyramid"]
+    },
+    "Transport": {
+        "Aircraft": [ "Aeroplane", "Air balloon", "Biplane", "Convertiplane", "Fighter plane", "Glider", "Helicopter", "Kite", "Parachute", "Rocket", "Satellite", "Space shuttle", "Ultralight", "Zeppelin"],
+        "Bicycle transport": [ "3 wheel bicycle", "4 wheel bicycle", "Baby bike", "Balance bike", "Bicycle trailer", "Bicycle", "Child bike seat", "Cycling helmet", "Electric unicycle", "Kick scooter", "Pedicab", "Recumbent bike", "Segway", "Tandem", "Unicycle", "Velomobile"],
+        "Land transport": [ "Aerial platform", "Ambulance", "Bus", "Camper", "Car carrier trailer", "Car", "Carriage", "Covered wagon", "Double-decker bus", "Fire engine", "Garbage truck", "Loader", "Police car", "Refueler", "School bus", "Sleigh", "Tank", "Taxi", "Tourist bus", "Tractor unit", "Tractor", "Trailer", "Trolleybus", "Truck", "Van", "Vintage"],
+        "Motorcycles": [ "Auto rickshaw", "Cargo motorcycle", "Chopper", "Helmet", "Moped", "Moto gloves", "Motorcycle", "Quadracycle", "Scooter", "Sidecar", "Snowmobile", "Superbike"],
+        "Rail transport": [ "Autorack", "Dump car", "Electric train", "Flatcar", "Funicular", "Goods wagon", "High-speed train", "Hopper car", "Monorail", "Open wagon", "Passenger car", "Railway crane", "Steam train", "Subway", "Tank car", "Tender", "Train", "Tram"],
+        "Water transport": [ "Aircraft carrier", "Boat", "Catamaran", "Container ship", "Cruise ship", "Ferry", "Hovercraft", "Inflatable dinghy", "Kayak", "Motoboat", "Sailboat", "Ship", "Steamship", "Submarine", "Tanker", "Water scooter", "Yacht"]
+    },
+    "Verbs": {
+        "Action verbs": [ "Add", "Bite", "Blow ones nose", "Blow", "Bring up", "Build", "Care", "Catch", "Clap", "Collect, gather", "Comb", "Dance", "Dig", "Dry", "Feed", "Fish", "Fix", "Give", "Hang", "Hide", "Hold", "Kick", "Knock", "Launch", "Lay", "Look into", "Mow", "Open", "Paint", "Peep out", "Play the piano", "Play", "Present", "Pull", "Put", "Saw", "Scratch", "Shoot", "Sing", "Sit", "Sneeze", "Squeeze", "Stand", "Sunbathe", "Swing", "Tear, rip", "Throw up", "Throw", "Whisper"],
+        "Movement verbs": [ "Chase", "Climb", "Crawl", "Descend", "Dive", "Drive", "Fall", "Fly", "Jump", "Pull", "Push", "Ride", "Roll", "Row", "Run", "Swim", "Walk"],
+        "Routine verbs": [ "Brush teeth", "Button the buttons", "Clean, scrub", "Cook", "Do laundry", "Drink", "Eat", "Feed", "Get dressed", "Gets her hair cut", "Go shopping", "Iron", "Pee", "Play with friends", "Poop", "Put on make-up", "Put on shoes", "Relax", "Shave", "Sit on the potty", "Sleep", "Smoke", "Splash", "Take a bath", "Take a shower", "Tie shoelaces", "Vacuum", "Wake up", "Wash", "Watch TV", "Water", "Work"],
+        "State verbs": [ "Be angry", "Beat", "Call", "Confuse", "Cry", "Defend", "Dream", "Fear", "Grimace", "Has", "Hear", "Hug", "Hurt", "Kiss", "Laugh", "Look", "Pray", "See", "Shout", "Show", "Sniff", "Think", "Yawn"]
+    }
+}
+`);
+
