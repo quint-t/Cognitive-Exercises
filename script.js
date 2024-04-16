@@ -941,13 +941,13 @@ function state1() {
             "Increase level", "Decrease", "buttons",
             function (event) {
                 let st1_n = parseInt(settings['st1_n']);
-                st1_n = Math.min(Math.max(st1_n + 1, 0), 10);
+                st1_n = Math.min(Math.max(st1_n + 1, 0), 20);
                 setSetting('st1_n', st1_n);
                 state1();
             },
             function (event) {
                 let st1_n = parseInt(settings['st1_n']);
-                st1_n = Math.min(Math.max(st1_n - 1, 0), 10);
+                st1_n = Math.min(Math.max(st1_n - 1, 0), 20);
                 setSetting('st1_n', st1_n);
                 state1();
             },
@@ -955,8 +955,8 @@ function state1() {
         ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully classified images<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-10]", "integer", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 10;
+        ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-20]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 20;
         }],
         ["st1_options", "Options<br>[2|4|6|8|10|12]", "integer", function (xv) {
             return xv == 2 || xv == 4 || xv == 6 || xv == 8 || xv == 10 || xv == 12;
@@ -1036,7 +1036,7 @@ function* state1_generator(taskArea) {
     addHistoryItem(['N-Image-Back']);
     while (true) {
         if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
-            st1_n = Math.min(Math.max(st1_n + 1, 0), 10);
+            st1_n = Math.min(Math.max(st1_n + 1, 0), 20);
             setSetting('st1_n', st1_n);
             auto_increase_counter = 0;
             images_list = [];
