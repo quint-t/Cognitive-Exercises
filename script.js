@@ -102,6 +102,7 @@ function loadSettings() {
         "st1_options": 4,
         "st1_category_element_mode": combo_st1_category_element_mode.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
+        "st1_time_limit": 0,
         "st2_auto_mode": 5,
         "st2_boxes": 2,
         "st2_operations": 1,
@@ -923,6 +924,7 @@ function updateLastHistoryItem(historyElem) {
 }
 
 function state1() {
+    clearInterval(st1_interval);
     currentGenerator = null;
     state = 1;
     clearWidgets();
@@ -963,6 +965,9 @@ function state1() {
         }],
         ["st1_category_element_mode", "Category↔Element mode", "combobox", Object.values(combo_st1_category_element_mode)],
         ["st1_hard_mode", "Hard mode<br>(similar elements)", "combobox", Object.values(combo_st1_hard_mode)],
+        ["st1_time_limit", "Show image time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 60;
+        }],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1024,6 +1029,7 @@ function* state1_generator(taskArea) {
     let st1_options = parseInt(settings['st1_options']);
     let st1_category_element_mode = settings['st1_category_element_mode'];
     let st1_hard_mode = settings['st1_hard_mode'];
+    let st1_time_limit = parseInt(settings['st1_time_limit']);
     let category_element_mode = st1_category_element_mode === combo_st1_category_element_mode.Enable;
     let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
     let auto_increase_counter = 0;
@@ -1130,8 +1136,28 @@ function* state1_generator(taskArea) {
             expected = 'skip';
         }
         updateLastHistoryItem([lines.join("\n")]);
+        updateChooser("./images/" + image_path, skip_mode === true ? skip_plug : options);
+        let imageDiv = document.getElementById('imageDiv');
+        let timer_p = document.createElement('p');
+        timer_p.style.margin = '5px';
+        var temp_variable = st1_time_limit;
+        if (st1_time_limit > 0) {
+            timer_p.innerHTML = '' + temp_variable;
+            imageDiv.appendChild(timer_p);
+            st1_interval = setInterval(function() {
+                temp_variable -= 1;
+                timer_p.innerHTML = '' + temp_variable;
+                if (temp_variable == 0) {
+                    let img = imageDiv.firstChild;
+                    img.src = "./images/time_limit.jpg";
+                    img.alt = "time limit";
+                    clearInterval(st1_interval);
+                    timer_p.innerHTML = '&nbsp;';
+                    return;
+                }
+            }, 1000);
+        }
         while (true) {
-            updateChooser("./images/" + image_path, skip_mode === true ? skip_plug : options);
             let actual = (yield);
             appendText(taskArea, actual + ' - ');
             if (actual === '-ANSWER-') {
@@ -1162,6 +1188,10 @@ function* state1_generator(taskArea) {
                 appendText(taskArea, 'No, retry\n');
                 mistakeFlag = true;
             }
+        }
+        clearInterval(st1_interval);
+        if (imageDiv.childElementCount > 1) {
+            imageDiv.removeChild(timer_p);
         }
     }
 }
@@ -3809,6 +3839,7 @@ let scores = loadScores();
 let exHistory = loadHistory();
 let version = localStorage.getItem('VERSION');
 
+let st1_interval;
 let state1_images = JSON.parse(`
 {
     "Adjectives": {
