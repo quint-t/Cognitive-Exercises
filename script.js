@@ -135,6 +135,7 @@ function loadSettings() {
         "st1_category_element_mode": combo_st1_category_element_mode.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
         "st1_time_limit": 0,
+        "st1_baby_category": combo_st1_baby_category.Disable,
         "st2_auto_mode": 5,
         "st2_boxes": 2,
         "st2_operations": 1,
@@ -1076,6 +1077,7 @@ function state1() {
         ["st1_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 60;
         }],
+        ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1141,11 +1143,19 @@ function* state1_generator(taskArea) {
     let st1_image_mode = settings['st1_image_mode'];
     let st1_word_mode = settings['st1_word_mode'];
     let st1_voice_index = parseInt(settings['st1_voice_index']);
+    let st1_baby_category = settings['st1_baby_category'];
     let category_element_mode = st1_category_element_mode === combo_st1_category_element_mode.Enable;
     let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
     let auto_increase_counter = 0;
     let clearBefore = true;
-    let images_generator = imageGetter(state1_images, st1_options, hard_mode);
+    let state1_images_w = {};
+    for (let [key, value] of Object.entries(state1_images)) {
+        if (key == 'Baby' && st1_baby_category == combo_st1_baby_category.Disable) {
+            continue;
+        }
+        state1_images_w[key] = value;
+    }
+    let images_generator = imageGetter(state1_images_w, st1_options, hard_mode);
     let task_list = [];
     let task_index = 0;
     let mistakeFlag = false, skip_mode = true, lines = [];
@@ -1161,7 +1171,7 @@ function* state1_generator(taskArea) {
     for (let i = 0; i < st1_options; ++i) {
         skip_plug.push('skip');
     }
-    addHistoryItem(['N-Image-Back']);
+    addHistoryItem([statesToNames.st1]);
     while (true) {
         imageDiv.style.display = 'none';
         voiceDiv.style.display = 'none';
@@ -1196,7 +1206,7 @@ function* state1_generator(taskArea) {
         if (variant == 'image' || variant == 'voice' || variant == 'word') {
             gen_next = images_generator.next();
             if (gen_next.done) {
-                images_generator = imageGetter(state1_images, st1_options, hard_mode);
+                images_generator = imageGetter(state1_images_w, st1_options, hard_mode);
                 gen_next = images_generator.next(); // [category 1, category 2, filename, title, variants]
             }
         }
@@ -1377,7 +1387,7 @@ function* state1_generator(taskArea) {
                 mistakeFlag = false;
                 skip_mode = true;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
-                images_generator = imageGetter(state1_images, st1_options, hard_mode);
+                images_generator = imageGetter(state1_images_w, st1_options, hard_mode);
                 appendText(taskArea, '', clearBefore);
                 break;
             }
@@ -4048,6 +4058,10 @@ let combo_st1_hard_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
+let combo_st1_baby_category = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
 let combo_st4_hard_mode = {
     Enable: "Enable",
     Disable: "Disable"
@@ -4061,13 +4075,13 @@ let st1_interval;
 let state1_images = JSON.parse(`
 {
     "Adjectives": {
-        "Opposites": [ "Artificial", "Beautiful", "Big", "Black and white", "Bottom", "Clean", "Closed", "Cold", "Color", "Curly", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Dull", "Edible", "Elderly", "Empty", "Fast", "Fat", "Few", "Flat", "Fragile", "Full", "Happy", "Heavy", "High", "Hot", "Kind", "Left", "Light coloured", "Light", "Long", "Low", "Many", "New", "Old", "Open", "Poisonous", "Poor", "Prickly", "Real", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Simple", "Slim", "Slow", "Small", "Smooth", "Soft", "Sour", "Straight", "Strong", "Sweet", "Thick", "Thin", "Tough", "Ugly", "Unclothed", "Volume", "Wet", "Wicked"]
+        "Opposites": [ "Artificial", "Beautiful", "Big", "Black and white", "Bottom", "Clean", "Closed", "Cold", "Color", "Curly", "Curve", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Dull", "Edible", "Elderly", "Empty", "Fast", "Fat", "Few", "Flat", "Fragile", "Full", "Happy", "Heavy", "High", "Hot", "Kind", "Left", "Light coloured", "Light", "Long", "Low", "Many", "New", "Old", "Open", "Poisonous", "Poor", "Prickly", "Real", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Simple", "Slim", "Slow", "Small", "Smooth", "Soft", "Sour", "Straight", "Strong", "Sweet", "Thick", "Thin", "Tough", "Ugly", "Unclothed", "Volume", "Wet", "Wicked", "Young"]
     },
     "Animals": {
         "Arctic animals": [ "Arctic fox", "Arctic wolf", "Beluga", "Fur seal", "Giant squid", "Muskox", "Narwhal", "Orca, killer whale", "Owl", "Penguin", "Polar bear", "Seal", "Walrus", "Whale"],
-        "Domestic animals": [ "Canary", "Cat", "Chinchilla", "Dog", "Fish", "Guinea pig", "Hamster", "Parrot", "Turtle"],
-        "Farm animals": [ "Bee", "Bull", "Camel", "Cow", "Donkey", "Goat", "Horse", "Lama", "Pig", "Pony", "Rabbit", "Ram", "Reindeer", "Sheep"],
-        "Forest animals": [ "Badger", "Bear", "Bison", "Boar", "Buffalo", "Chipmunk", "Coyote", "Deer", "Ferret", "Fox", "Hare", "Hedgehog", "Lynx", "Marmot", "Mole", "Raccoon", "Skunk", "Sloth", "Squirrel", "Wolf", "Wolverine"],
+        "Domestic animals": [ "Canary", "Cat", "Chinchilla", "Dog", "Fish", "Guinea pig", "Hamster", "Mouse", "Parrot", "Turtle"],
+        "Farm animals": [ "Bee", "Bull", "Camel", "Cow", "Coypu", "Donkey", "Goat", "Horse", "Lama", "Pig", "Pony", "Rabbit", "Ram", "Reindeer", "Sheep"],
+        "Forest animals": [ "Badger", "Bear", "Bison", "Boar", "Buffalo", "Chipmunk", "Coyote", "Deer", "Ferret", "Fox", "Hare", "Hedgehog", "Lynx", "Marmot", "Mole", "Moose", "Raccoon", "Skunk", "Sloth", "Squirrel", "Wolf", "Wolverine"],
         "Insects": [ "Ant", "Bedbug", "Bee", "Bug", "Bumblebee", "Butterfly", "Caterpillar", "Cockroach", "Dragonfly", "Fly", "Grasshopper", "Hornet", "Ladybug", "Louse", "Mantis", "Millipede", "Mite", "Mosquito", "Scarabaeus", "Scorpion", "Spider", "Termite", "Wasp"],
         "Jungle animals": [ "Anteater", "Cheetah", "Crocodile", "Elephant", "Gibbon", "Giraffe", "Gorilla", "Hippopotamus", "Jaguar", "Leopard", "Lion", "Monkey", "Ocelot", "Panda", "Red panda", "Rhinoceros", "Sifaka", "Tapir", "Tiger", "White tiger", "Zebra"],
         "Sea animals": [ "Beluga", "Coral", "Crab", "Crayfish", "Dolphin", "Fur seal", "Giant squid", "Jellyfish", "Lobster", "Narwhal", "Nautilus", "Octopus", "Orca, killer whale", "Sea anemone", "Sea turtle", "Sea urchin", "Seahorse", "Seal", "Seaweed", "Shark", "Shell", "Shrimp", "Snail", "Sperm whale", "Squid", "Starfish", "Stingray", "Walrus", "Whale"]
@@ -4082,16 +4096,16 @@ let state1_images = JSON.parse(`
         "Bedroom accessories": [ "Blinds", "Clock", "Curtain rod", "Curtains", "Dressing table", "Flower", "Hanger", "Mat", "Mirror", "Night light", "Nightstand", "Roller blind", "Room divider", "Rug", "Vase"]
     },
     "Birds": {
-        "Farm birds": [ "Chick", "Duck", "Duckling", "Hen", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
+        "Farm birds": [ "Chick", "Duck", "Duckling", "Goose", "Hen", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
         "Wild birds": [ "Bullfinch", "Crow", "Eagle", "Falcon", "Flamingo", "Hummingbird", "Owl", "Parrot", "Pelican", "Penguin", "Pigeon", "Sparrow", "Stork", "Swallow", "Swan", "Titmouse", "Vulture", "Woodpecker"]
     },
     "Colors": {
-        "Base colors": [ "Black", "Blue", "Brown", "Gold", "Gray", "Orange", "Purple", "Red", "Silver", "White", "Yellow"],
-        "Secondary colors": [ "Aqua", "Aquamarine", "Bisque", "Chocolate", "Coral", "Dark red", "Indigo", "Ivory", "Khaki", "Lilac", "Magenta", "Maroon", "Navy", "Olive", "Pink", "Purple", "Salmon", "Tan", "Teal"]
+        "Base colors": [ "Black", "Blue", "Brown", "Gold", "Gray", "Green", "Orange", "Purple", "Red", "Silver", "White", "Yellow"],
+        "Secondary colors": [ "Aqua", "Aquamarine", "Azure", "Bisque", "Chocolate", "Coral", "Dark red", "Indigo", "Ivory", "Khaki", "Lilac", "Magenta", "Maroon", "Navy", "Olive", "Pink", "Purple", "Salmon", "Tan", "Teal"]
     },
     "Food": {
         "Berries": [ "Black currant", "Blackberry", "Blueberry", "Cherry", "Cranberry", "Gooseberry", "Melon", "Raspberry", "Red currant", "Strawberry", "Watermelon"],
-        "Fruits": [ "Apple", "Apricot", "Avocado", "Banana", "Coconut", "Dates", "Grapefruit", "Grapes", "Kiwi", "Lemon", "Lime", "Orange", "Peach", "Pear", "Persimmon", "Pineapple", "Plum", "Pomegranate"],
+        "Fruits": [ "Apple", "Apricot", "Avocado", "Banana", "Coconut", "Dates", "Grapefruit", "Grapes", "Guava", "Kiwi", "Lemon", "Lime", "Mango", "Orange", "Peach", "Pear", "Persimmon", "Pineapple", "Plum", "Pomegranate"],
         "Vegetables": [ "Beet", "Broccoli", "Carrot", "Cauliflower", "Celery", "Chili pepper", "Chinese cabbage", "Corn", "Cucumber", "Custard squash", "Eggplant", "Garlic", "Ginger", "Lettuce", "Olives", "Onion", "Peas", "Pepper", "Potato", "Pumpkin", "Radish", "Red cabbage", "Romanesco broccoli", "Savoy cabbage", "Spinach", "Tomato", "Turnip", "White cabbage", "Zucchini"]
     },
     "Holidays": {
@@ -4105,39 +4119,39 @@ let state1_images = JSON.parse(`
         "Furniture": [ "Armchair", "Bench", "Bookcase", "Cabinet", "Cage", "Chair", "Chest of drawers", "Chest", "Coffee table", "Couch", "Cupboard", "Desk", "Dresser", "Hanger", "Laundry basket", "Long stool", "Pouf", "Rocking chair", "Safe", "Secretaire", "Shoe cabinet", "Sofa", "Stool", "Swivel chair", "Table", "TV stand", "Wall shelf", "Wardrobe"],
         "Garden": [ "Barbecue", "Fence", "Flowerbed", "Fountain", "Garage", "Gate", "Gazebo", "Greenhouse", "Hammock", "Hanging basket", "Hedge", "Lawn", "Path", "Pond", "Pool", "Porch swing", "Shed", "Sun lounger"],
         "House": [ "Attic", "Balcony", "Basement", "Battery", "Bolt", "Brick", "Building", "Chimney", "Column", "Door chain", "Door", "Doormat", "Elevator", "Fireplace", "Gutter", "House", "Intercom", "Key", "Lock", "Mailbox", "Porch", "Roof", "Staircase", "Wall", "Window"],
-        "Rooms": [ "Basement", "Bathroom", "Bedroom", "Billiard room", "Closet", "Dining room", "Foyer", "Hall, corridor", "Kitchen", "Library", "Living room", "Office, den", "Parking", "Playroom", "Swimming pool", "Veranda"]
+        "Rooms": [ "Basement", "Bathroom", "Bedroom", "Billiard room", "Closet", "Dining room", "Foyer", "Hall, corridor", "Kitchen", "Library", "Living room", "Office, den", "Parking", "Playroom", "Sauna", "Swimming pool", "Veranda"]
     },
     "Household Appliances": {
         "Electronics": [ "Air conditioner", "Blender", "Calculator", "Coffee machine", "Dish washer", "Dryer", "Electric kettle", "Extractor hood", "Fan", "Freezer", "Fridge", "Grill", "Hair dryer", "Hand dryer", "Heater", "Iron", "Juicer", "Lamp", "Meat grinder", "Microwave", "Mixer", "Multicooker", "Oven", "Sandwich maker", "Scales", "Sewing machine", "Shaver", "Stove", "Telephone", "Toaster", "Vacuum cleaner", "Washing machine"],
-        "Gadgets": [ "3D glasses", "Binoculars", "Camera", "Charger", "Computer", "Drone", "E-reader", "Fitness bracelet", "Game console", "Gamepad", "Headphones", "Laptop", "Lens", "Memory card", "Microphone", "Phone", "Player", "Projector", "Router", "Satellite antenna", "Security camera", "Sim-card", "Speaker", "Tablet", "TV remote", "Videocamera", "VR glasses"]
+        "Gadgets": [ "3D glasses", "Binoculars", "Camera", "Charger", "Computer", "Drone", "E-reader", "Fitness bracelet", "Game console", "Gamepad", "Headphones", "Laptop", "Lens", "Memory card", "Microphone", "Phone", "Player", "Projector", "Router", "Satellite antenna", "Security camera", "Sim-card", "Speaker", "Tablet", "TV remote", "TV", "Videocamera", "VR glasses"]
     },
     "Kitchen": {
-        "Crockery and cutlery": [ "Bowl", "Butter dish", "Cake server", "Carafe", "Chopsticks", "Coffee cup", "Cup", "Egg cup", "Fork", "French press", "Glass", "Jug", "Knife", "Mixing bowl", "Mug", "Napkin", "Pepper shaker", "Plate", "Salt shaker", "Samovar", "Saucer", "Serving plate", "Sugar bowl", "Teacup", "Teapot", "Thermos", "Tray", "Wine glass"],
+        "Crockery and cutlery": [ "Bowl", "Butter dish", "Cake server", "Carafe", "Chopsticks", "Coffee cup", "Cup", "Egg cup", "Fork", "French press", "Glass", "Jug", "Knife", "Mixing bowl", "Mug", "Napkin", "Pepper shaker", "Plate", "Salt shaker", "Samovar", "Saucer", "Serving plate", "Spoon", "Sugar bowl", "Teacup", "Teapot", "Thermos", "Tray", "Wine glass"],
         "Kitchenware": [ "Bottle opener", "Bottle", "Bread bin", "Can opener", "Cheese slicer", "Colander", "Cooking tongs", "Corkscrew", "Cutting board", "Egg slicer", "Food container", "Frying pan", "Garlic press", "Grater", "Ice-cream scoop", "Jar", "Kettle", "Knife, cleaver", "Ladle", "Masher", "Meat tenderizer", "Nutcrackers", "Pasta spoon", "Peeler", "Pestle and mortar", "Pizza cutter", "Pot", "Spatula", "Strainer", "Whisk"]
     },
     "Nature": {
-        "Bodies of water": [ "Aquarium", "Bay", "Branch of the river", "Canal", "Cove", "Fjord", "Fountain", "Glacier", "Iceberg", "Lagoon", "Lake", "Levee", "Marsh", "Mouth of a river", "Oasis", "Pond", "Puddle", "Reservoir", "River cascades", "River delta", "River", "Sea", "Source of a river", "Spring", "Strait", "Stream", "Waterfall", "Well", "Wetland"],
-        "Solar system": [ "Asteroid", "Comet", "Crater", "Earth", "Eclipse", "Galaxy", "Jupiter", "Mars", "Mercury", "Meteorite", "Milky way", "Moon", "Nebula", "Neptune", "Pluto", "Saturn", "Solar system", "Star", "Starry sky", "Uranus"],
-        "Weather": [ "Cloud", "Cloudy", "Cold", "Dew", "Fog", "Frost", "Frozen", "Hail", "Hot", "Hurricane", "Ice", "Icicles", "Leaf fall", "Lighting", "Polar lights", "Puddle", "Rain", "Rainbow", "Slippery ice", "Snow", "Snowdrift", "Snowfall", "Snowflake", "Storm", "Sunrise", "Sunset", "Thunder", "Tsunami", "Warm, calm", "Wind, windy"]
+        "Bodies of water": [ "Aquarium", "Bay", "Branch of the river", "Canal", "Cove", "Fjord", "Fountain", "Glacier", "Iceberg", "Lagoon", "Lake", "Levee", "Marsh", "Mouth of a river", "Oasis", "Ocean", "Pond", "Puddle", "Reservoir", "River cascades", "River delta", "River", "Sea", "Source of a river", "Spring", "Strait", "Stream", "Waterfall", "Well", "Wetland"],
+        "Solar system": [ "Asteroid", "Comet", "Crater", "Earth", "Eclipse", "Galaxy", "Jupiter", "Mars", "Mercury", "Meteorite", "Milky way", "Moon", "Nebula", "Neptune", "Pluto", "Saturn", "Solar system", "Star", "Starry sky", "Uranus", "Venus"],
+        "Weather": [ "Cloud", "Cloudy", "Cold", "Dew", "Fog", "Frost", "Frozen", "Hail", "Hot", "Hurricane", "Ice", "Icicles", "Leaf fall", "Lighting", "Polar lights", "Puddle", "Rain", "Rainbow", "Slippery ice", "Snow", "Snowdrift", "Snowfall", "Snowflake", "Storm", "Sunny", "Sunrise", "Sunset", "Thunder", "Tsunami", "Warm, calm", "Wind, windy"]
     },
     "Numbers": {
-        "Counting": [ "Eight", "Five", "Four", "Nine", "One", "Six", "Ten", "Three", "Two"],
-        "Numbers": [ "Eight", "Eighteen", "Eleven", "Fifteen", "Five", "Four", "Fourteen", "Nine", "Nineteen", "One", "Seventeen", "Six", "Sixteen", "Ten", "Thirteen", "Three", "Twelve", "Twenty", "Two"]
+        "Counting": [ "Eight", "Five", "Four", "Nine", "One", "Seven", "Six", "Ten", "Three", "Two"],
+        "Numbers": [ "Eight", "Eighteen", "Eleven", "Fifteen", "Five", "Four", "Fourteen", "Nine", "Nineteen", "One", "Seven", "Seventeen", "Six", "Sixteen", "Ten", "Thirteen", "Three", "Twelve", "Twenty", "Two"]
     },
     "People": {
         "Body parts": [ "Abdomen", "Arm", "Back", "Bone", "Bum", "Chest", "Elbow", "Finger", "Fist", "Foot", "Hand", "Head", "Heel", "Hip", "Knee", "Leg", "Nail", "Nape", "Neck", "Palm", "Shoulder", "Skeleton", "Skull", "Sole", "Toe", "Wrist"],
         "Face": [ "Beard", "Cheek", "Chin", "Ear", "Eye", "Eyebrow", "Eyelashes", "Face", "Forehead", "Freckles", "Hair", "Jaw", "Lip", "Mouth", "Mustache", "Nose", "Nostril", "Tongue", "Tooth", "Wrinkles"],
-        "Family members": [ "Aunt", "Bride", "Brother", "Children", "Couple", "Daughter", "Family", "Father in law (for husband)", "Father or dad", "Father-in-law (for wife)", "Grandchildren", "Granddaughter", "Grandfather", "Grandmother", "Grandparents", "Grandson", "Husband", "Mother in law (for wife)", "Mother or mom", "Mother-in-law (for husband)", "Nephew", "Newborn", "Niece", "Parents", "Pregnant", "Siblings", "Sister", "Son", "Twins", "Uncle", "Wife"],
-        "Jobs and occupations": [ "Accountant", "Analyst", "Astronaut", "Athlete", "Baker", "Bartender", "Blacksmith", "Builder", "Car mechanic", "Carpenter", "Chemist", "Cleaner", "Clerk", "Cook", "Dispatcher", "Diver", "Driver", "Electrician", "Exterminator", "Farmer", "Firefighter", "Fisherman", "Flight attendant", "Florist", "Foreman", "Gardener", "Hairdresser", "Hunter", "Librarian", "Loader", "Mailman", "Massage therapist", "Model", "Monk", "Painter", "Pensioner", "Plumber", "Policewoman", "Priest", "Realtor", "Sailor", "Seamstress", "Secretary", "Security guard", "Seller", "Soldier", "Waiter", "Washer", "Welder", "Worker"],
+        "Family members": [ "Aunt", "Bride", "Brother", "Children", "Couple", "Daughter", "Family", "Father or dad", "Father-in-law (for husband)", "Father-in-law (for wife)", "Grandchildren", "Granddaughter", "Grandfather", "Grandmother", "Grandparents", "Grandson", "Groom", "Husband", "Mother or mom", "Mother-in-law (for husband)", "Mother-in-law (for wife)", "Nephew", "Newborn", "Niece", "Parents", "Pregnant", "Siblings", "Sister", "Son", "Twins", "Uncle", "Wife"],
+        "Jobs and occupations": [ "Accountant", "Analyst", "Astronaut", "Athlete", "Baker", "Bartender", "Blacksmith", "Builder", "Car mechanic", "Carpenter", "Chemist", "Cleaner", "Clerk", "Cook", "Dispatcher", "Diver", "Driver", "Electrician", "Exterminator", "Farmer", "Firefighter", "Fisherman", "Flight attendant", "Florist", "Foreman", "Gardener", "Hairdresser", "Hunter", "Librarian", "Loader", "Mailman", "Massage therapist", "Model", "Monk", "Nurse", "Painter", "Pensioner", "Plumber", "Policewoman", "Priest", "Realtor", "Sailor", "Seamstress", "Secretary", "Security guard", "Seller", "Soldier", "Waiter", "Washer", "Welder", "Worker"],
         "Professions": [ "Actress", "Architect", "Audio engineer", "Ballerina", "Boss", "Captain", "Clown", "Coach", "Conductor", "Consultant", "Dancer", "Designer", "Doctor", "Engineer", "Entrepreneur", "Investigator", "Journalist", "Judge", "Lawyer", "Magician", "Musician", "Painter", "Photographer", "Pilot", "Politician", "Producer", "Professor", "Programmer", "Reporter", "Scientist", "Sculptor", "Singer", "Street performer", "Teacher", "TV presenter", "Writer"],
-        "Stages": [ "Adult", "Baby", "Boy", "Children", "Girl", "Lady", "Man", "Old man", "Old woman", "Teenager", "Youth"]
+        "Stages": [ "Adult", "Baby", "Boy", "Children", "Girl", "Lady", "Man", "Old man", "Old woman", "Teenager", "Woman", "Youth"]
     },
     "School": {
         "Classroom objects": [ "Abacus", "Backpack", "Board marker", "Book", "Bookshelf", "Calculator", "Chalk", "Chalkboard", "Computer", "Desk", "Eraser", "Globe", "Glue", "Laptop", "Letter tracing", "Letters", "Lunch box", "Marker", "Microscope", "Notebook", "Numbers", "Paper leaf", "Pen", "Pencil case", "Pencil sharpener", "Pencil", "Protractor", "Pupil", "Ruler", "School bus", "School compasses", "School", "Scissors", "Teacher", "Timetable", "Whiteboard"],
         "School building": [ "Art room", "Auditorium", "Classroom", "Computer room", "Dining room", "Gym", "Hall", "Lab", "Library", "Lockers", "Music class", "Office", "Playground", "Pool", "School yard", "Sports ground", "Toilet"]
     },
     "Shapes": {
-        "2D shapes": [ "Acute triangle", "Annulus", "Arch", "Circle", "Crescent", "Decagon", "Dodecagon", "Equilateral triangle", "Gear", "Heart", "Heptagon", "Hexagon", "Isosceles triangle", "Kite", "Lens", "Nonagon", "Obtuse triangle", "Octagon", "Oval", "Parallelogram", "Pentagon", "Polygon", "Quadrilateral", "Rectangle", "Rhombus", "Right triangle", "Sector", "Segment", "Semicircle", "Square", "Star", "Trapezoid", "Triangle"],
+        "2D shapes": [ "Acute triangle", "Annulus", "Arch", "Arrow", "Circle", "Crescent", "Cross", "Decagon", "Dodecagon", "Equilateral triangle", "Gear", "Heart", "Heptagon", "Hexagon", "Isosceles triangle", "Kite", "Lens", "Nonagon", "Obtuse triangle", "Octagon", "Oval", "Parallelogram", "Pentagon", "Polygon", "Quadrilateral", "Rectangle", "Rhombus", "Right triangle", "Sector", "Segment", "Semicircle", "Square", "Star", "Trapezoid", "Triangle"],
         "3D shapes": [ "Cone", "Cube", "Cuboid", "Cylinder", "Dodecahedron", "Ellipsoid", "Frustum", "Hexagonal prism", "Hexagonal pyramid", "Icosahedron", "Octahedron", "Parallelepiped", "Pentagonal prism", "Sphere", "Square pyramid", "Triangular prism", "Triangular pyramid"]
     },
     "Transport": {
@@ -4146,12 +4160,12 @@ let state1_images = JSON.parse(`
         "Land transport": [ "Aerial platform", "Ambulance", "Bus", "Camper", "Car carrier trailer", "Car", "Carriage", "Covered wagon", "Double-decker bus", "Fire engine", "Garbage truck", "Loader", "Police car", "Refueler", "School bus", "Sleigh", "Tank", "Taxi", "Tourist bus", "Tractor unit", "Tractor", "Trailer", "Trolleybus", "Truck", "Van", "Vintage"],
         "Motorcycles": [ "Auto rickshaw", "Cargo motorcycle", "Chopper", "Helmet", "Moped", "Moto gloves", "Motorcycle", "Quadracycle", "Scooter", "Sidecar", "Snowmobile", "Superbike"],
         "Rail transport": [ "Autorack", "Dump car", "Electric train", "Flatcar", "Funicular", "Goods wagon", "High-speed train", "Hopper car", "Monorail", "Open wagon", "Passenger car", "Railway crane", "Steam train", "Subway", "Tank car", "Tender", "Train", "Tram"],
-        "Water transport": [ "Aircraft carrier", "Boat", "Catamaran", "Container ship", "Cruise ship", "Ferry", "Hovercraft", "Inflatable dinghy", "Kayak", "Motoboat", "Sailboat", "Ship", "Steamship", "Submarine", "Tanker", "Water scooter", "Yacht"]
+        "Water transport": [ "Aircraft carrier", "Boat", "Canoe", "Catamaran", "Container ship", "Cruise ship", "Ferry", "Hovercraft", "Inflatable dinghy", "Kayak", "Motoboat", "Sailboat", "Ship", "Steamship", "Submarine", "Tanker", "Water scooter", "Yacht"]
     },
     "Verbs": {
-        "Action verbs": [ "Add", "Bite", "Blow ones nose", "Blow", "Bring up", "Build", "Care", "Catch", "Clap", "Collect, gather", "Comb", "Dance", "Dig", "Dry", "Feed", "Fish", "Fix", "Give", "Hang", "Hide", "Hold", "Kick", "Knock", "Launch", "Lay", "Look into", "Mow", "Open", "Paint", "Peep out", "Play the piano", "Play", "Present", "Pull", "Put", "Saw", "Scratch", "Shoot", "Sing", "Sit", "Sneeze", "Squeeze", "Stand", "Sunbathe", "Swing", "Tear, rip", "Throw up", "Throw", "Whisper"],
-        "Movement verbs": [ "Chase", "Climb", "Crawl", "Descend", "Dive", "Drive", "Fall", "Fly", "Jump", "Pull", "Push", "Ride", "Roll", "Row", "Run", "Swim", "Walk"],
-        "Routine verbs": [ "Brush teeth", "Button the buttons", "Clean, scrub", "Cook", "Do laundry", "Drink", "Eat", "Feed", "Get dressed", "Gets her hair cut", "Go shopping", "Iron", "Pee", "Play with friends", "Poop", "Put on make-up", "Put on shoes", "Relax", "Shave", "Sit on the potty", "Sleep", "Smoke", "Splash", "Take a bath", "Take a shower", "Tie shoelaces", "Vacuum", "Wake up", "Wash", "Watch TV", "Water", "Work"],
+        "Action verbs": [ "Add", "Bite", "Blow ones nose", "Blow", "Bring up", "Build", "Care", "Catch", "Clap", "Collect, gather", "Comb", "Dance", "Dig", "Dry", "Feed", "Fish", "Fix", "Give", "Hang", "Hide", "Hold", "Kick", "Knock", "Launch", "Lay", "Look into", "Mow", "Open", "Paint", "Peep out", "Play the piano", "Play", "Pour over", "Present", "Press", "Pull", "Put", "Saw", "Scratch", "Shoot", "Sing", "Sit", "Sneeze", "Squeeze", "Stand", "Sunbathe", "Swing", "Tear, rip", "Throw up", "Throw", "Whisper"],
+        "Movement verbs": [ "Carry", "Chase", "Climb", "Crawl", "Descend", "Dive", "Drive", "Fall", "Fly", "Go", "Jump", "Pull", "Push", "Ride", "Roll", "Row", "Run", "Swim", "Walk"],
+        "Routine verbs": [ "Brush teeth", "Button the buttons", "Clean, scrub", "Cook", "Do laundry", "Drink", "Eat", "Feed", "Get dressed", "Gets her hair cut", "Go shopping", "Iron", "Pee", "Play with friends", "Poop", "Put on make-up", "Put on shoes", "Relax", "Shave", "Sit on the potty", "Sleep", "Smoke", "Splash", "Sweep", "Take a bath", "Take a shower", "Tie shoelaces", "Vacuum", "Wake up", "Wash", "Watch TV", "Water", "Work"],
         "State verbs": [ "Be angry", "Beat", "Call", "Confuse", "Cry", "Defend", "Dream", "Fear", "Grimace", "Has", "Hear", "Hug", "Hurt", "Kiss", "Laugh", "Look", "Pray", "See", "Shout", "Show", "Sniff", "Think", "Yawn"]
     }
 }
