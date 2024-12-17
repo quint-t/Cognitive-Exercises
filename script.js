@@ -129,6 +129,7 @@ function loadSettings() {
         "st1_auto_mode": 10,
         "st1_n": 0,
         "st1_image_mode": combo_st1_image_mode.Enable,
+        "st1_word_mode": combo_st1_word_mode.Disable,
         "st1_voice_index": -1,
         "st1_options": 4,
         "st1_category_element_mode": combo_st1_category_element_mode.Disable,
@@ -1067,6 +1068,7 @@ function state1() {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
         ["st1_image_mode", "Image mode", "combobox", Object.values(combo_st1_image_mode)],
+        ["st1_word_mode", "Word mode", "combobox", Object.values(combo_st1_word_mode)],
         ["st1_voice_index", "Voice mode", "voice_combobox"],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["st1_category_element_mode", "Category↔Element", "combobox", Object.values(combo_st1_category_element_mode)],
@@ -1137,6 +1139,7 @@ function* state1_generator(taskArea) {
     let st1_hard_mode = settings['st1_hard_mode'];
     let st1_time_limit = parseInt(settings['st1_time_limit']);
     let st1_image_mode = settings['st1_image_mode'];
+    let st1_word_mode = settings['st1_word_mode'];
     let st1_voice_index = parseInt(settings['st1_voice_index']);
     let category_element_mode = st1_category_element_mode === combo_st1_category_element_mode.Enable;
     let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
@@ -1182,19 +1185,15 @@ function* state1_generator(taskArea) {
         if (st1_image_mode == combo_st1_image_mode.Enable) {
             variants.push('image');
         }
+        if (st1_word_mode == combo_st1_word_mode.Enable) {
+            variants.push('word');
+        }
         if (st1_voice_index >= 0) {
             variants.push('voice');
         }
         let variant = randomChoice(variants);
         let gen_next = null;
-        if (variant == 'image') {
-            gen_next = images_generator.next();
-            if (gen_next.done) {
-                images_generator = imageGetter(state1_images, st1_options, hard_mode);
-                gen_next = images_generator.next(); // [category 1, category 2, filename, title, variants]
-            }
-        }
-        else if (variant == 'voice') {
+        if (variant == 'image' || variant == 'voice' || variant == 'word') {
             gen_next = images_generator.next();
             if (gen_next.done) {
                 images_generator = imageGetter(state1_images, st1_options, hard_mode);
@@ -1230,7 +1229,7 @@ function* state1_generator(taskArea) {
         }
         let text = '';
         let category_element_mode_active = category_element_mode ? randomChoice([0, 1, 2]) : 0;
-        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
+        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'word' || n_prev_task[0] == 'voice') {
             let image_struct = n_prev_task[1];
             if (category_element_mode_active == 2 && (image_struct[0] == 'Adjectives' || image_struct[0] == 'Verbs')) {
                 category_element_mode_active = 0;
@@ -1330,6 +1329,12 @@ function* state1_generator(taskArea) {
             voiceButton?.onmouseup();
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
                        voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
+        }
+        else if (current_task[0] == 'word') {
+            let word_struct = current_task[1];
+            text += '\nWord: ' + word_struct[3];
+            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                       word_struct[0] + " > " + word_struct[1] + " > " + word_struct[2]);
         }
         updateLastHistoryItem([lines.join("\n")]);
 
@@ -4005,7 +4010,7 @@ function checkVersion() {
         version = null;
     }
     if (version == null) {
-        version = '5.10';
+        version = '5.20';
         localStorage.setItem('VERSION', version);
     }
 }
@@ -4021,6 +4026,10 @@ let statesToNames = {
     st4: 'Puzzle-Solving'
 };
 let combo_st1_image_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_word_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
