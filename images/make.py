@@ -10,6 +10,8 @@ replaces = {
 }
 
 for filepath in files:
+    if 'time_limit.jpg' in filepath.parts:
+        continue
     parts = list(map(str, filepath.parts))
     head = tree
     for i in range(len(parts)):
