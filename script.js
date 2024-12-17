@@ -51,6 +51,35 @@ Array.prototype.slice_ext = function (start = null, end = null, step = null) {
     return r;
 }
 
+
+function getVoices() {
+    let i = 0;
+    let voices = [];
+    for (let voice of window.speechSynthesis.getVoices()) {
+        if (voice.lang.toLowerCase().startsWith('en')) {
+            let name = voice.name;
+            if (name.toLowerCase().startsWith('microsoft')) {
+                let splitted = name.split(' ');
+                if (splitted.length >= 2) {
+                    name = splitted[1];
+                }
+            }
+            if (name.length > 25) {
+                name = name.slice(0, 25);
+            }
+            voices.push([i, voice.lang, name]);
+        }
+        ++i;
+    }
+    return voices;
+}
+
+function speak(text, voice_index) {
+    const utterThis = new SpeechSynthesisUtterance(text);
+    utterThis.voice = window.speechSynthesis.getVoices()[voice_index];
+    window.speechSynthesis.speak(utterThis);
+}
+
 function initGui() {
     state0();
 }
@@ -99,6 +128,8 @@ function loadSettings() {
     let defParameters = {
         "st1_auto_mode": 10,
         "st1_n": 0,
+        "st1_image_mode": combo_st1_image_mode.Enable,
+        "st1_voice_index": -1,
         "st1_options": 4,
         "st1_category_element_mode": combo_st1_category_element_mode.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
@@ -351,14 +382,14 @@ function* imageGetter(dictionary, options, hard_mode) {
                 else {
                     filename = title = image;
                 }
-                list.push([category1, category2, filename, title, []]);
+                list.push([category1, category2, filename, title, [title]]);
             }
         }
     }
     for (let w1 of randomShuffle(list)) {
         if (hard_mode) {
             for (let w2 of randomShuffle(list)) {
-                if (w1[w1.length - 1].length >= options - 1) {
+                if (w1[w1.length - 1].length >= options) {
                     break;
                 }
                 if (w1[0] == w2[0] && w1[1] == w2[1] && w1[2] != w2[2] &&
@@ -369,7 +400,7 @@ function* imageGetter(dictionary, options, hard_mode) {
             }
         }
         for (let w2 of randomShuffle(list)) {
-            if (w1[w1.length - 1].length >= options - 1) {
+            if (w1[w1.length - 1].length >= options) {
                 break;
             }
             if (w1[0] != w2[0] && w1[1] != w2[1] &&
@@ -514,6 +545,8 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
 }
 
 function createChooser(stateN, options, additionalButtons) {
+    let st1_time_limit = parseInt(settings['st1_time_limit']);
+
     let inputDiv = document.createElement("div");
     inputDiv.id = "inputDiv";
     let chooserDiv = document.createElement("div");
@@ -529,16 +562,49 @@ function createChooser(stateN, options, additionalButtons) {
         button.onmouseup = eachButtonAction;
         chooserDiv.appendChild(button);
     }
-    let imageDiv = document.createElement('div');
-    imageDiv.id = 'imageDiv';
-    let img = document.createElement('img');
-    img.id = 'imgTask';
-    imageDiv.appendChild(img);
+
     let backButtonAction = function (event) {
         if (confirm("Are you sure you want to go back?")) {
             stateN();
         }
     };
+
+    let imageDiv = document.createElement('div');
+    imageDiv.id = 'imageDiv';
+    let img = document.createElement('img');
+    img.id = 'imgTask';
+    imageDiv.appendChild(img);
+    imageDiv.style.display = 'none';
+
+    let voiceDiv = document.createElement('div');
+    voiceDiv.id = 'voiceDiv';
+    let voiceButton = document.createElement('button');
+    voiceButton.id = 'voiceButton';
+    voiceButton.classList.add("blackButton");
+    voiceButton.classList.add("no-hover");
+    voiceButton.innerHTML = 'Play';
+    voiceButton.onmouseup = function() {
+        if (voiceButton.value != null) {
+            speak(voiceButton.voice_text, voiceButton.voice_index);
+        }
+    }
+    voiceDiv.appendChild(voiceButton);
+    voiceDiv.style.display = 'none';
+
+    let timerDiv = document.createElement('div');
+    timerDiv.id = 'timerDiv';
+    let timerImg = document.createElement('img');
+    timerImg.id = 'timerImg';
+    timerImg.src = "./images/time_limit.jpg";
+    timerImg.alt = "time limit";
+    timerImg.style.width = '350px';
+    timerDiv.appendChild(timerImg);
+    let timerP = document.createElement('p');
+    timerP.id = 'timerP';
+    timerP.style.margin = '5px';
+    timerDiv.appendChild(timerP);
+    timerDiv.style.display = '';
+
     let additionalDiv = null;
     if (additionalButtons != null) {
         for (const key in additionalButtons) {
@@ -558,6 +624,8 @@ function createChooser(stateN, options, additionalButtons) {
     let backButton = createActionButton("Back", backButtonAction);
     backButton.classList.add("blackButton");
     inputDiv.appendChild(imageDiv);
+    inputDiv.appendChild(voiceDiv);
+    inputDiv.appendChild(timerDiv);
     inputDiv.appendChild(chooserDiv);
     inputDiv.appendChild(hr);
     if (additionalDiv != null) {
@@ -570,19 +638,15 @@ function createChooser(stateN, options, additionalButtons) {
     return inputDiv;
 }
 
-function updateChooser(image_path, options) {
+function updateChooser(options) {
     let chooserDiv = document.getElementById("chooserDiv");
     let children = chooserDiv.children;
     for (let i = 0, k = 0; i < children.length; i++) {
         if (children[i].nodeName == 'BUTTON') {
-            children[i].innerHTML = options[k];
-            k += 1;
+            children[i].innerHTML = (k < options.length) ? options[k] : '-';
+            ++k;
         }
     }
-    let imageDiv = document.getElementById('imageDiv');
-    let img = imageDiv?.firstChild;
-    img.src = image_path;
-    img.alt = image_path;
 }
 
 function createTableOfSelects(stateN, additionalButtons = null) {
@@ -722,6 +786,18 @@ function createParameters(parameters) {
                 secondElement.id = item[0];
                 break;
             }
+            case "voice_combobox": {
+                firstElement = document.createElement("p");
+                firstElement.innerHTML = item[1];
+                secondElement = createVoiceCombobox(item[0], function(value) {
+                    if (isInt(parseInt(value)) && parseInt(value) >= 0) {
+                        speak('Hello!', value);
+                    }
+                });
+                secondElement.id = item[0];
+                secondElement.style.maxWidth = '135px';
+                break;
+            }
         }
         if (firstElement == null || secondElement == null) {
             return;
@@ -797,6 +873,36 @@ function createParameterCombobox(param_id, options, onchangeFunc = null) {
         select.appendChild(option);
     });
     select.value = settings[param_id];
+    select.classList.add("modern_select");
+    select.onchange = function (event) {
+        event = event.target;
+        setSetting(param_id, event.value);
+        if (onchangeFunc != null) {
+            onchangeFunc(event.value);
+        }
+    }
+    return select;
+}
+
+function createVoiceCombobox(param_id, onchangeFunc = null) {
+    let select = document.createElement("select");
+    let empty_option = document.createElement("option");
+    empty_option.value = -1;
+    empty_option.innerHTML = "-";
+    select.appendChild(empty_option);
+    let options = getVoices();
+    options.forEach(optionValue => {
+        let option = document.createElement("option");
+        option.value = optionValue[0];
+        option.innerHTML = optionValue[2];
+        select.appendChild(option);
+    });
+    select.value = empty_option.value;
+    for (let x of options) {
+        if (x[0] == settings[param_id]) {
+            select.value = x[0];
+        }
+    }
     select.classList.add("modern_select");
     select.onchange = function (event) {
         event = event.target;
@@ -943,29 +1049,29 @@ function state1() {
             "Increase level", "Decrease", "buttons",
             function (event) {
                 let st1_n = parseInt(settings['st1_n']);
-                st1_n = Math.min(Math.max(st1_n + 1, 0), 20);
+                st1_n = Math.min(Math.max(st1_n + 1, 0), 100);
                 setSetting('st1_n', st1_n);
                 state1();
             },
             function (event) {
                 let st1_n = parseInt(settings['st1_n']);
-                st1_n = Math.min(Math.max(st1_n - 1, 0), 20);
+                st1_n = Math.min(Math.max(st1_n - 1, 0), 100);
                 setSetting('st1_n', st1_n);
                 state1();
             },
         ],
-        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully classified images<br>[0:disable|1-100]", "integer", function (xv) {
+        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-20]", "integer", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 20;
+        ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-100]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st1_options", "Options<br>[2|4|6|8|10|12]", "integer", function (xv) {
-            return xv == 2 || xv == 4 || xv == 6 || xv == 8 || xv == 10 || xv == 12;
-        }],
-        ["st1_category_element_mode", "Category↔Element mode", "combobox", Object.values(combo_st1_category_element_mode)],
-        ["st1_hard_mode", "Hard mode<br>(similar elements)", "combobox", Object.values(combo_st1_hard_mode)],
-        ["st1_time_limit", "Show image time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
+        ["st1_image_mode", "Image mode", "combobox", Object.values(combo_st1_image_mode)],
+        ["st1_voice_index", "Voice mode", "voice_combobox"],
+        ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
+        ["st1_category_element_mode", "Category↔Element", "combobox", Object.values(combo_st1_category_element_mode)],
+        ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
+        ["st1_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 60;
         }],
         [
@@ -1030,23 +1136,39 @@ function* state1_generator(taskArea) {
     let st1_category_element_mode = settings['st1_category_element_mode'];
     let st1_hard_mode = settings['st1_hard_mode'];
     let st1_time_limit = parseInt(settings['st1_time_limit']);
+    let st1_image_mode = settings['st1_image_mode'];
+    let st1_voice_index = parseInt(settings['st1_voice_index']);
     let category_element_mode = st1_category_element_mode === combo_st1_category_element_mode.Enable;
     let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
     let auto_increase_counter = 0;
     let clearBefore = true;
     let images_generator = imageGetter(state1_images, st1_options, hard_mode);
-    let images_list = [];
-    let image_index = 0;
+    let task_list = [];
+    let task_index = 0;
     let mistakeFlag = false, skip_mode = true, lines = [];
     st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
+    let imageDiv = document.getElementById('imageDiv');
+    let voiceDiv = document.getElementById('voiceDiv');
+    let timerDiv = document.getElementById('timerDiv');
+    let voiceButton = document.getElementById('voiceButton');
+    let timerImg = document.getElementById('timerImg');
+    let timerP = document.getElementById('timerP');
+    var timer_variable = st1_time_limit;
+    let skip_plug = [];
+    for (let i = 0; i < st1_options; ++i) {
+        skip_plug.push('skip');
+    }
     addHistoryItem(['N-Image-Back']);
     while (true) {
+        imageDiv.style.display = 'none';
+        voiceDiv.style.display = 'none';
+        timerImg.style.display = 'none';
         if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
             st1_n = Math.min(Math.max(st1_n + 1, 0), 20);
             setSetting('st1_n', st1_n);
             auto_increase_counter = 0;
-            images_list = [];
-            image_index = 0;
+            task_list = [];
+            task_index = 0;
             mistakeFlag = false;
             skip_mode = true;
             st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
@@ -1056,118 +1178,197 @@ function* state1_generator(taskArea) {
             auto_increase_counter = Math.max(0, auto_increase_counter - 2);
             mistakeFlag = false;
         }
-        let image_struct = null; // category 1, category 2, filename, title, variants
-        let image_path;
-        let gen_next = images_generator.next();
-        if (gen_next.done) {
-            images_generator = imageGetter(state1_images, st1_options, hard_mode);
+        let variants = [];
+        if (st1_image_mode == combo_st1_image_mode.Enable) {
+            variants.push('image');
+        }
+        if (st1_voice_index >= 0) {
+            variants.push('voice');
+        }
+        let variant = randomChoice(variants);
+        let gen_next = null;
+        if (variant == 'image') {
             gen_next = images_generator.next();
+            if (gen_next.done) {
+                images_generator = imageGetter(state1_images, st1_options, hard_mode);
+                gen_next = images_generator.next(); // [category 1, category 2, filename, title, variants]
+            }
         }
-        if (image_index < st1_n) {
-            images_list.push(gen_next.value);
-            image_struct = images_list[image_index];
-            image_path = image_struct[0] + "/" + image_struct[1] + "/" + image_struct[2] + ".jpg";
-            image_index += 1;
+        else if (variant == 'voice') {
+            gen_next = images_generator.next();
+            if (gen_next.done) {
+                images_generator = imageGetter(state1_images, st1_options, hard_mode);
+                gen_next = images_generator.next(); // [category 1, category 2, filename, title, variants]
+            }
+        }
+        if (gen_next == null) {
+            return;
+        }
+        task_list.push([variant, gen_next.value]);
+        let n_prev_task = null, current_task = null, expected = '';
+        if (task_index < st1_n) {
+            current_task = task_list[task_index];
             skip_mode = true;
-            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                       image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
+            ++task_index;
         }
-        else if (image_index === st1_n && st1_n !== 0) {
-            let last = images_list[0];
-            images_list = images_list.slice(1);
-            images_list.push(gen_next.value);
-            image_struct = last;
-            let tmp = images_list[images_list.length - 1];
-            image_path = tmp[0] + "/" + tmp[1] + "/" + tmp[2] + ".jpg";
+        else if (task_index === st1_n && st1_n !== 0) {
+            n_prev_task = task_list[0];
+            current_task = task_list[task_index];
+            task_list = task_list.slice(1);
             skip_mode = false;
-            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                       tmp[0] + " > " + tmp[1] + " > " + tmp[2]);
         }
         else {
-            images_list = images_list.slice(1);
-            images_list.push(gen_next.value);
-            image_struct = images_list[0];
-            image_path = image_struct[0] + "/" + image_struct[1] + "/" + image_struct[2] + ".jpg";
+            current_task = task_list[0];
+            task_list = task_list.slice(1);
             skip_mode = false;
-            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                       image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
         }
+        if (current_task == null) {
+            return;
+        }
+        if (n_prev_task == null) {
+            n_prev_task = current_task;
+        }
+        let text = '';
         let category_element_mode_active = category_element_mode ? randomChoice([0, 1, 2]) : 0;
-        if (category_element_mode_active == 2 && (image_struct[0] == 'Adjectives' || image_struct[0] == 'Verbs')) {
-            category_element_mode_active = 1;
-        }
-        let line1;
-        if (category_element_mode_active) {
-            line1 = "Element: " + image_struct[3] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")";
-        }
-        else {
-            line1 = "Category: " + image_struct[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")";
-        }
-        let line2 = "Options [" + st1_n + "-back]:\n";
-        let options = category_element_mode_active ? (category_element_mode_active == 1 ? [image_struct[1]] : [image_struct[0]]) : [image_struct[3]];
-        let skip_plug = ["skip"];
-        for (let x of image_struct[4]) {
-            options.push(x);
-            skip_plug.push("skip");
-        }
-        options = randomShuffle(options);
-        let i = 0, currentLine = '';
-        for (let x of options) {
-            if (currentLine.length == 0) {
-                currentLine += x;
+        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
+            let image_struct = n_prev_task[1];
+            if (category_element_mode_active == 2 && (image_struct[0] == 'Adjectives' || image_struct[0] == 'Verbs')) {
+                category_element_mode_active = 0;
+            }
+            if (hard_mode) {
+                text += "N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "\n";
+            }
+            else if (category_element_mode_active) {
+                let element_name = '***';
+                if (n_prev_task[0] == 'image' || st1_n === 0) {
+                    element_name = image_struct[3];
+                }
+                if (skip_mode === false && st1_n !== 0) {
+                    text += st1_n + '-Back element: ';
+                }
+                else {
+                    text += 'Element: ';
+                }
+                text += element_name + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
             else {
-                currentLine += ' | ' + x;
+                if (skip_mode === false && st1_n !== 0) {
+                    text += st1_n + '-Back category: ';
+                }
+                else {
+                    text += 'Category: ';
+                }
+                text += image_struct[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
-            i += 1;
-            if (i != 0 && i % 2 == 0) {
-                line2 += currentLine + '\n';
-                currentLine = '';
+            if (skip_mode === true) {
+                expected = 'skip';
+                updateChooser(skip_plug);
+            }
+            else {
+                let choose_text = '';
+                let options = image_struct[4];
+                if (category_element_mode_active == 0) {
+                    expected = image_struct[3];
+                    choose_text = "Choose element:\n";
+                }
+                else if (category_element_mode_active == 1) {
+                    expected = image_struct[0];
+                    let i = 0;
+                    for (let x of options) {
+                        if (x == image_struct[3]) {
+                            options[i] = expected;
+                        }
+                        ++i;
+                    }
+                    choose_text = "Choose category:\n";
+                }
+                else if (category_element_mode_active == 2) {
+                    expected = image_struct[1];
+                    let i = 0;
+                    for (let x of options) {
+                        if (x == image_struct[3]) {
+                            options[i] = expected;
+                        }
+                        ++i;
+                    }
+                    choose_text = "Choose category:\n";
+                }
+                options = randomShuffle(options);
+                text += choose_text;
+                updateChooser(options);
+                let i = 0, currentLine = '';
+                for (let x of options) {
+                    if (currentLine.length == 0) {
+                        currentLine += x;
+                    }
+                    else {
+                        currentLine += ' | ' + x;
+                    }
+                    ++i;
+                    if (i != 0 && i % 2 == 0) {
+                        text += currentLine + '\n';
+                        currentLine = '';
+                    }
+                }
             }
         }
-        appendText(taskArea, line1 + "\n");
-        if (skip_mode === false) {
-            appendText(taskArea, line2 + "\n");
+        if (current_task[0] == 'image') {
+            imageDiv.style.display = '';
+            let image_struct = current_task[1];
+            let image_path = "./images/" + image_struct[0] + '/' + image_struct[1] + '/' + image_struct[2] + ".jpg";
+            let img = imageDiv?.firstChild;
+            img.src = image_path;
+            img.alt = image_path;
+            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                       image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
         }
-        taskArea.scrollTop = 0;
-        taskArea.scrollLeft = 0;
-        let expected = category_element_mode_active ? (category_element_mode_active == 1 ? image_struct[1] : image_struct[0]) : image_struct[3];
-        if (skip_mode === true) {
-            expected = 'skip';
+        else if (current_task[0] == 'voice') {
+            voiceDiv.style.display = '';
+            let voice_struct = current_task[1];
+            voiceButton.voice_text = voice_struct[3];
+            voiceButton.voice_index = st1_voice_index;
+            voiceButton?.onmouseup();
+            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                       voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
         }
         updateLastHistoryItem([lines.join("\n")]);
-        updateChooser("./images/" + image_path, skip_mode === true ? skip_plug : options);
-        let imageDiv = document.getElementById('imageDiv');
-        let timer_p = document.createElement('p');
-        timer_p.style.margin = '5px';
-        var temp_variable = st1_time_limit;
+
+        timer_variable = st1_time_limit;
         if (st1_time_limit > 0) {
-            timer_p.innerHTML = '' + temp_variable;
-            imageDiv.appendChild(timer_p);
+            timerP.innerHTML = '' + timer_variable;
             st1_interval = setInterval(function() {
-                temp_variable -= 1;
-                timer_p.innerHTML = '' + temp_variable;
-                if (temp_variable == 0) {
-                    let img = imageDiv.firstChild;
-                    img.src = "./images/time_limit.jpg";
-                    img.alt = "time limit";
+                timer_variable -= 1;
+                timerP.innerHTML = '' + timer_variable;
+                if (timer_variable == 0) {
+                    timerP.innerHTML = '&nbsp;';
+                    timerImg.style.display = '';
+                    imageDiv.style.display = 'none';
+                    voiceDiv.style.display = 'none';
                     clearInterval(st1_interval);
-                    timer_p.innerHTML = '&nbsp;';
                     return;
                 }
             }, 1000);
         }
+        else {
+            timerP.innerHTML = '&nbsp;';
+        }
+        appendText(taskArea, text + "\n");
+        taskArea.scrollTop = 0;
+        taskArea.scrollLeft = 0;
         while (true) {
             let actual = (yield);
             appendText(taskArea, actual + ' - ');
             if (actual === '-ANSWER-') {
+                let image_struct = n_prev_task[1];
+                appendText(taskArea, '\n');
                 appendText(taskArea, "Expected: " + expected + '\n');
+                appendText(taskArea, "Explanation: " + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2] + '\n');
                 continue;
             }
             if (actual === '-RESTART-') {
                 auto_increase_counter = 0;
-                images_list = [];
-                image_index = 0;
+                task_list = [];
+                task_index = 0;
                 mistakeFlag = false;
                 skip_mode = true;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
@@ -1190,9 +1391,6 @@ function* state1_generator(taskArea) {
             }
         }
         clearInterval(st1_interval);
-        if (imageDiv.childElementCount > 1) {
-            imageDiv.removeChild(timer_p);
-        }
     }
 }
 
@@ -3807,7 +4005,7 @@ function checkVersion() {
         version = null;
     }
     if (version == null) {
-        version = '5.00';
+        version = '5.10';
         localStorage.setItem('VERSION', version);
     }
 }
@@ -3821,6 +4019,17 @@ let statesToNames = {
     st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
+};
+let combo_st1_image_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_options = {
+    "2": "2",
+    "4": "4",
+    "6": "6",
+    "8": "8",
+    "12": "12"
 };
 let combo_st1_category_element_mode = {
     Enable: "Enable",
@@ -3938,4 +4147,4 @@ let state1_images = JSON.parse(`
     }
 }
 `);
-
+getVoices();
