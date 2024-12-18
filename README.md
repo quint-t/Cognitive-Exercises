@@ -1,9 +1,9 @@
-# Cognitive-Exercises v4
+# Cognitive-Exercises v5
 
-Repository size: ~110 MB.
+Repository size: ~126 MB.
 
 ## Exercises
-1. N-Image-Back: using short-term memory and working memory to classify images in N-Back mode.
+1. N-Multi-Back: using short-term memory and working memory to solve tasks in N-Back mode.
 2. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
 3. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
 
