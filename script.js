@@ -64,9 +64,7 @@ function getVoices() {
                     name = splitted[1];
                 }
             }
-            if (name.length > 25) {
-                name = name.slice(0, 25);
-            }
+            name = name.slice(0, 50);
             voices.push([i, voice.lang, name]);
         }
         ++i;
@@ -136,6 +134,7 @@ function loadSettings() {
         "st1_hard_mode": combo_st1_hard_mode.Disable,
         "st1_time_limit": 0,
         "st1_baby_category": combo_st1_baby_category.Disable,
+        "st1_font_size": 16,
         "st2_auto_mode": 5,
         "st2_boxes": 2,
         "st2_operations": 1,
@@ -270,8 +269,10 @@ function stateN_defaults(st) {
             localStorage.removeItem(x);
         }
     });
-    settings = loadSettings();
-    state0();
+    if (state !== -1) {
+        settings = loadSettings();
+        state0();
+    }
 }
 
 function stateN_clear_score(st) {
@@ -283,8 +284,10 @@ function stateN_clear_score(st) {
     else {
         localStorage.removeItem(st);
     }
-    scores = loadScores();
-    state0();
+    if (state !== -1) {
+        scores = loadScores();
+        state0();
+    }
 }
 
 function* permutationsGenerator(permutation, length = null) {
@@ -972,7 +975,7 @@ function state0() {
     let link = document.createElement('a');
     link.href = 'https://github.com/quint-t/Cognitive-Exercises';
     link.target = '_blank';
-    link.innerHTML = 'GitHub';
+    link.innerHTML = 'v.' + version;
     addWidget(link);
 }
 
@@ -1106,6 +1109,8 @@ function state1_start() {
     taskDiv.style.height = '150px';
     taskArea.style.height = '155px';
     let st1_options = parseInt(settings['st1_options']);
+    let fs = parseInt(settings['st1_font_size']);
+    taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(createCaption(statesToNames.st1));
     addWidget(taskDiv);
     addWidget(document.createElement('br'));
@@ -1115,7 +1120,21 @@ function state1_start() {
                     currentGenerator.next('-RESTART-');
                 }
             },
-        'Answer': () => { currentGenerator.next('-ANSWER-') }
+        'Answer': () => { currentGenerator.next('-ANSWER-') },
+        '+': () => {
+            let fs = parseInt(taskArea.style.fontSize);
+            fs = isFinite(fs) ? fs : 16;
+            let newValue = Math.min(20, Math.max(9, fs + 1));
+            setSetting('st1_font_size', newValue);
+            taskArea.style.fontSize = newValue + 'px';
+        },
+        '-': () => {
+            let fs = parseInt(taskArea.style.fontSize);
+            fs = isFinite(fs) ? fs : 16;
+            let newValue = Math.min(20, Math.max(9, fs - 1));
+            setSetting('st1_font_size', newValue);
+            taskArea.style.fontSize = newValue + 'px';
+        },
     }));
     currentGenerator = state1_generator(taskArea);
     currentGenerator.next();
@@ -1372,10 +1391,9 @@ function* state1_generator(taskArea) {
         taskArea.scrollLeft = 0;
         while (true) {
             let actual = (yield);
-            appendText(taskArea, actual + ' - ');
             if (actual === '-ANSWER-') {
                 let image_struct = n_prev_task[1];
-                appendText(taskArea, '\n');
+                appendText(taskArea, 'Answer:\n');
                 appendText(taskArea, "Expected: " + expected + '\n');
                 appendText(taskArea, "Explanation: " + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2] + '\n');
                 continue;
@@ -1391,6 +1409,7 @@ function* state1_generator(taskArea) {
                 appendText(taskArea, '', clearBefore);
                 break;
             }
+            appendText(taskArea, actual + ' - ');
             let status = actual === expected;
             if (status) {
                 if (skip_mode === false) {
@@ -3993,7 +4012,20 @@ function* state4_generator(taskArea) {
 }
 
 function checkVersion() {
-    if (version < '3.00') {
+    var scripts = document.getElementsByTagName('script');
+    for (let script of scripts) {
+        if (script.src.includes('script.js')) {
+            let xs = script.src.slice(script.src.indexOf('?') + 1).split('&');
+            for (let x of xs) {
+                let kv = x.split('=');
+                if (kv.length === 2 && kv[0] == 'version') {
+                    version = kv[1];
+                }
+            }
+        }
+    }
+    let last_version = parseFloat(localStorage.getItem('VERSION'));
+    if (last_version < 5.00) {
         stateN_defaults('st1');
         stateN_clear_score('st1');
         stateN_defaults('st2');
@@ -4002,35 +4034,16 @@ function checkVersion() {
         stateN_clear_score('st3');
         stateN_defaults('st4');
         stateN_clear_score('st4');
-        version = null;
     }
-    else if (version === '3.00') {
-        stateN_defaults('st1');
-        stateN_clear_score('st1');
-        version = null;
-    }
-    else if (version === '3.10') {
-        stateN_defaults('st2');
-        stateN_clear_score('st2');
-        version = null;
-    }
-    else if (version === '4.00') {
-        stateN_defaults('st1');
-        stateN_clear_score('st1');
-        version = null;
-    }
-    if (version == null) {
-        version = '5.20';
-        localStorage.setItem('VERSION', version);
-    }
+    localStorage.setItem('VERSION', version);
 }
 
-let state = 0;
+let state = -1;
 let currentGenerator = null;
 
 let asciiDigits = '123456789-0_';
 let statesToNames = {
-    st1: 'N-Image-Back',
+    st1: 'N-Multi-Back',
     st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
@@ -4111,7 +4124,7 @@ let state1_images = JSON.parse(`
     "Holidays": {
         "Christmas": [ "Angel", "Bells", "Bow", "Candle", "Candy cane", "Christmas cracker", "Christmas lights", "Christmas mailbox", "Christmas ornament", "Christmas tree", "Father christmas", "Fireworks", "Gingerbread house", "Gingerbread man", "Holly", "Presents", "Santa claus", ["Santas cap", "Santa's cap"], ["Santas sack", "Santa's sack"], "Sleigh", "Snow globe", "Snow Maiden", "Snowballs", "Snowflake", "Snowman", "Star", "Stocking", "Wreath"],
         "Easter": [ "Bible", "Candies", "Candle", "Chalice", "Chick", "Christ", "Church", "Communion", "Crosses", "Crown of thorns", "Crucifixion", "Easter basket", "Easter bread", "Easter bunny", "Easter cookies", "Easter egg", "Easter eggs", "Easter lamb", "Eggshell", "Eucharist wafer", "Hen", "Icon", "Jelly bean", "Lily", "Prayer", "Prosfora", "Rosary", "Stained glass", "Tulips", "Willow", "Wine"],
-        "Halloween": [ "Bat", "Black cat", "Broomstick", "Cauldron", "Elf", "Ghost", "Haunted house", "Magic wand", "Monster", "Mummy", "Pumpkin", "Skeleton", "Spider", "Vampire", "Werewolf", "Witch"],
+        "Halloween": [ "Bat", "Broomstick", "Cauldron", "Elf", "Ghost", "Haunted house", "Magic wand", "Monster", "Mummy", "Pumpkin", "Skeleton", "Spider", "Vampire", "Werewolf", "Witch"],
         "Mothers day": [ "Bouquet", "Cake", "Chocolates", "Congratulate", "Educate", "Entertain", "Feed", "Foster", "Gift", "Grandmother", "Hug", "Jewellery", "Kiss", "Letter", "Love", "Message", "Mother", "Offer flowers", "Perfume", "Prepare a breakfast", "Read a story", "Rose", "Sympathize", "Take care", "Tulip"],
         "Valentines day": [ "Balloons", "Bouquet", "Card", "Chocolates", "Cupid", "Date", "Friendship", "Heart", "Lock", "Lollipop", "Love", "Lovers", "Message", "Petals", "Presents", "Proposal", "Wedding ring"]
     },
