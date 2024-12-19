@@ -912,7 +912,7 @@ function createVoiceCombobox(param_id, onchangeFunc = null, add_voice_std_option
     if (add_voice_std_option) {
         let voice_std_option = document.createElement("option");
         voice_std_option.value = -2;
-        voice_std_option.innerHTML = "[Online] Mark (Wi-Fi only)";
+        voice_std_option.innerHTML = "[Online] Steffan (Wi-Fi only)";
         select.appendChild(voice_std_option);
     }
     let options = getVoices();
