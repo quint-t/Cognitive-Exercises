@@ -597,8 +597,11 @@ function createChooser(stateN, options, additionalButtons) {
     voiceButton.classList.add("no-hover");
     voiceButton.innerHTML = 'Play';
     voiceButton.onmouseup = function() {
-        if (voiceButton.value != null) {
+        if (isInt(parseInt(voiceButton.voice_index)) && parseInt(voiceButton.voice_index) >= 0) {
             speak(voiceButton.voice_text, voiceButton.voice_index);
+        }
+        if (parseInt(voiceButton.voice_index) === -2) {
+            st1_play(voiceButton.voice_text);
         }
     }
     voiceDiv.appendChild(voiceButton);
@@ -799,14 +802,17 @@ function createParameters(parameters) {
                 secondElement.id = item[0];
                 break;
             }
-            case "voice_combobox": {
+            case "st1_voice_combobox": {
                 firstElement = document.createElement("p");
                 firstElement.innerHTML = item[1];
                 secondElement = createVoiceCombobox(item[0], function(value) {
                     if (isInt(parseInt(value)) && parseInt(value) >= 0) {
                         speak('Hello!', value);
                     }
-                });
+                    if (parseInt(value) === -2) {
+                        st1_play('Hello');
+                    }
+                }, true);
                 secondElement.id = item[0];
                 secondElement.style.maxWidth = '135px';
                 break;
@@ -897,17 +903,23 @@ function createParameterCombobox(param_id, options, onchangeFunc = null) {
     return select;
 }
 
-function createVoiceCombobox(param_id, onchangeFunc = null) {
+function createVoiceCombobox(param_id, onchangeFunc = null, add_voice_std_option = false) {
     let select = document.createElement("select");
     let empty_option = document.createElement("option");
     empty_option.value = -1;
     empty_option.innerHTML = "-";
     select.appendChild(empty_option);
+    if (add_voice_std_option) {
+        let voice_std_option = document.createElement("option");
+        voice_std_option.value = -2;
+        voice_std_option.innerHTML = "[Online] Nate (Wi-Fi only)";
+        select.appendChild(voice_std_option);
+    }
     let options = getVoices();
     options.forEach(optionValue => {
         let option = document.createElement("option");
         option.value = optionValue[0];
-        option.innerHTML = optionValue[2];
+        option.innerHTML = '[Offline] ' + optionValue[2];
         select.appendChild(option);
     });
     select.value = empty_option.value;
@@ -915,6 +927,9 @@ function createVoiceCombobox(param_id, onchangeFunc = null) {
         if (x[0] == settings[param_id]) {
             select.value = x[0];
         }
+    }
+    if (add_voice_std_option && settings[param_id] == -2) {
+        select.value = -2;
     }
     select.classList.add("modern_select");
     select.onchange = function (event) {
@@ -925,6 +940,15 @@ function createVoiceCombobox(param_id, onchangeFunc = null) {
         }
     }
     return select;
+}
+
+function st1_play(text) {
+    if (!Object.hasOwn(state1_audios, text)) {
+        state1_audios[text] = new Audio('voice/' + text + '.mp3');
+    }
+    state1_audios[text].play().then(null, function () {
+        speak(text, getVoices()[0][0]);
+    });
 }
 
 function createMenuButton(text, onmouseup) {
@@ -1081,7 +1105,7 @@ function state1() {
         }],
         ["st1_image_mode", "Image mode", "combobox", Object.values(combo_st1_image_mode)],
         ["st1_word_mode", "Word mode", "combobox", Object.values(combo_st1_word_mode)],
-        ["st1_voice_index", "Voice mode", "voice_combobox"],
+        ["st1_voice_index", "Voice mode", "st1_voice_combobox"],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["st1_category_element_mode", "Category↔Element", "combobox", Object.values(combo_st1_category_element_mode)],
         ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
@@ -1261,7 +1285,7 @@ function* state1_generator(taskArea) {
         if (st1_word_mode == combo_st1_word_mode.Enable) {
             variants.push('word');
         }
-        if (st1_voice_index >= 0) {
+        if (st1_voice_index >= 0 || st1_voice_index === -2) {
             variants.push('voice');
         }
         let variant = randomChoice(variants);
@@ -4245,3 +4269,4 @@ let state1_images = JSON.parse(`
 }
 `);
 getVoices();
+let state1_audios = {};
