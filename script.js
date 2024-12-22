@@ -51,6 +51,9 @@ Array.prototype.slice_ext = function (start = null, end = null, step = null) {
     return r;
 }
 
+function capitalize(string) {
+    return string[0].toUpperCase() + string.slice(1);
+}
 
 function getVoices() {
     let i = 0;
@@ -124,15 +127,21 @@ function loadHistory() {
 
 function loadSettings() {
     let defParameters = {
-        "st1_auto_mode": 10,
+        "st1_auto_mode": 20,
         "st1_n": 0,
+        "st1_dynamic_n": combo_st1_dynamic_n.Disable,
         "st1_image_mode": combo_st1_image_mode.Enable,
-        "st1_word_mode": combo_st1_word_mode.Disable,
-        "st1_voice_index": -1,
+        "st1_word_mode": combo_st1_word_mode.Enable,
+        "st1_word_mode_just_word": combo_st1_word_mode_just_word.Enable,
+        "st1_word_mode_meaning": combo_st1_word_mode_meaning.Enable,
+        "st1_word_mode_synonyms": combo_st1_word_mode_synonyms.Enable,
+        "st1_word_mode_antonyms": combo_st1_word_mode_antonyms.Enable,
+        "st1_voice_index": -2,
         "st1_options": 4,
         "st1_category_element_mode": combo_st1_category_element_mode.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
-        "st1_time_limit": 0,
+        "st1_show_trial_time_limit": 0,
+        "st1_answer_trial_time_limit": 0,
         "st1_insects_category": combo_st1_insects_category.Enable,
         "st1_halloween_category": combo_st1_halloween_category.Enable,
         "st1_family_members_category": combo_st1_family_members_category.Enable,
@@ -429,6 +438,276 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
     return null;
 }
 
+function text_to_lines(text, n_symbols_per_line, indent=0, pre_indent = true, preserve_endlines = true) {
+    let words = text.split(' '), new_words = [];
+    for (let w of words) {
+        let i = 0;
+        for (let sw of w.split('\n')) {
+            if (preserve_endlines && i >= 1) {
+                new_words.push(null);
+            }
+            new_words.push(sw);
+            i += 1;
+        }
+    }
+    words = new_words;
+    let current_line = '', new_lines = [], indent_str = '';
+    for (let i = 0; i < indent; ++i) {
+        indent_str = indent_str.concat(' ');
+    }
+    for (let i = 0; i < words.length; ++i) {
+        if (words[i] == null) {
+            new_lines.push(indent_str.concat(current_line));
+            current_line = '';
+            continue;
+        }
+        let s = '';
+        if (current_line.length > 0) {
+            s = current_line.concat(' ');
+        }
+        s = s.concat(words[i]);
+        if (indent_str.concat(s).length <= n_symbols_per_line) {
+            current_line = s;
+        }
+        else {
+            new_lines.push(indent_str.concat(current_line));
+            current_line = words[i];
+        }
+    }
+    if (current_line.length > 0) {
+        new_lines.push(indent_str.concat(current_line));
+    }
+    let result = new_lines.join('\n');
+    if (pre_indent == false) {
+        result = result.replace(/^\s+/, '');
+    }
+    return result;
+}
+
+function* wordGetter(dictionary, options, hard_mode) {
+    let list = [];
+    for (const [word, params] of Object.entries(dictionary)) {
+        list.push([word, params[0], params[1], params[2], params[3]]);
+    }
+    list = randomShuffle(list);
+    let task_type = '', skip = false;
+    for (let x of list) {
+        let task = '', expected = '', explanation = '', options_list = [];
+        let word = x[0];
+        let meaning = x[1];
+        let example = x[2];
+        let synonyms = x[3];
+        let antonyms = x[4];
+        let r = [];
+        if (skip === false) {
+            task_type = (yield 'task');
+        }
+        else {
+            skip = false;
+        }
+        let all_synonyms = new Map();
+        let all_antonyms = new Map();
+        let q = [[word, false, 0]];
+        while (q.length > 0) {
+            let [w, is_antonym, depth] = q.pop();
+            if (is_antonym) {
+                if (all_antonyms.has(w)) {
+                    continue;
+                }
+                all_antonyms.set(w, depth);
+            }
+            else {
+                if (all_synonyms.has(w)) {
+                    continue;
+                }
+                all_synonyms.set(w, depth);
+            }
+            let synonyms_of_x = dictionary[w] ? dictionary[w][2] : [];
+            for (let syn of synonyms_of_x) {
+                q.push([syn, is_antonym, depth + 1]);
+            }
+            let antonyms_of_x = dictionary[w] ? dictionary[w][3] : [];
+            for (let ant of antonyms_of_x) {
+                q.push([ant, !is_antonym, depth + 1]);
+            }
+        }
+        all_synonyms.delete(word);
+        if (task_type == 'word-just-one') {
+            task = 'Word:\n ' + capitalize(word) + '\n';
+            expected = word;
+            let sd_list = [];
+            for (let [synonym, depth] of all_synonyms.entries()) {
+                if (depth != 0) {
+                    sd_list.push([synonym, depth]);
+                }
+            }
+            sd_list = randomShuffle(sd_list);
+            sd_list.sort((a, b) => -a[1] + b[1]);
+            for (let [synonym, depth] of sd_list) {
+                options_list.push(synonym);
+            }
+            for (let x of list) {
+                if (options_list.length >= options) {
+                    break;
+                }
+                if (x[0] != word && all_antonyms.has(x[0]) == false) {
+                    options_list.push(x[0]);
+                }
+            }
+        }
+        else if (task_type == 'word-meaning') {
+            task = 'Meaning of the word:\n ' + meaning + '\n';
+            expected = word;
+            explanation = example;
+            let ad_list = [];
+            for (let [antonym, depth] of all_antonyms.entries()) {
+                if (depth != 0) {
+                    ad_list.push([antonym, depth]);
+                }
+            }
+            ad_list = randomShuffle(ad_list);
+            ad_list.sort((a, b) => -a[1] + b[1]);
+            for (let [antonym, depth] of ad_list) {
+                options_list.push(antonym);
+            }
+            for (let x of list) {
+                if (options_list.length >= options) {
+                    break;
+                }
+                if (x[0] != word && all_synonyms.has(x[0]) == false) {
+                    options_list.push(x[0]);
+                }
+            }
+        }
+        else if (task_type == 'word-synonyms' && synonyms.length > 0) {
+            expected = randomChoice(synonyms);
+            task = 'Choose synonym of the word:\n ' + capitalize(word) + '\n';
+            task += 'Meaning of the word:\n ' + meaning + '\n';
+            let sd_list = [];
+            for (let [synonym, depth] of all_synonyms.entries()) {
+                if (depth != 0) {
+                    sd_list.push([synonym, depth]);
+                }
+            }
+            sd_list = randomShuffle(sd_list);
+            sd_list.sort((a, b) => -a[1] + b[1]);
+            if (hard_mode) {
+                sd_list = sd_list.slice(0, Math.max(options, sd_list.length / 2));
+                sd_list = randomShuffle(sd_list);
+            }
+            else {
+                sd_list = sd_list.slice(Math.min(sd_list.length - options, sd_list.length / 2));
+                sd_list = randomShuffle(sd_list);
+            }
+            for (let [synonym, depth] of sd_list) {
+                expected = synonym;
+                break;
+            }
+            let ad_list = [];
+            for (let [antonym, depth] of all_antonyms.entries()) {
+                ad_list.push([antonym, depth]);
+            }
+            ad_list = randomShuffle(ad_list);
+            ad_list.sort((a, b) => -a[1] + b[1]);
+            if (hard_mode) {
+                ad_list = ad_list.slice(0, Math.max(options, ad_list.length / 2));
+                ad_list = randomShuffle(ad_list);
+            }
+            else {
+                ad_list = ad_list.slice(Math.min(ad_list.length - options, ad_list.length / 2));
+                ad_list = randomShuffle(ad_list);
+            }
+            for (let [antonym, depth] of ad_list) {
+                options_list.push(antonym);
+            }
+            for (let x of list) {
+                if (options_list.length >= options) {
+                    break;
+                }
+                if (x[0] != word && all_synonyms.has(x[0]) == false) {
+                    options_list.push(x[0]);
+                }
+            }
+            explanation = capitalize(word) + ' - ' + meaning;
+        }
+        else if (task_type == 'word-antonyms' && antonyms.length > 0) {
+            expected = randomChoice(antonyms);
+            task = 'Choose antonym of the word:\n ' + capitalize(word) + '\n';
+            task += 'Meaning of the word:\n ' + meaning + '\n';
+            let ad_list = [];
+            for (let [antonym, depth] of all_antonyms.entries()) {
+                if (depth != 0) {
+                    ad_list.push([antonym, depth]);
+                }
+            }
+            ad_list = randomShuffle(ad_list);
+            ad_list.sort((a, b) => -a[1] + b[1]);
+            if (hard_mode) {
+                ad_list = ad_list.slice(0, Math.max(options, ad_list.length / 2));
+                ad_list = randomShuffle(ad_list);
+            }
+            else {
+                ad_list = ad_list.slice(Math.min(ad_list.length - options, ad_list.length / 2));
+                ad_list = randomShuffle(ad_list);
+            }
+            for (let [antonym, depth] of ad_list) {
+                expected = antonym;
+                break;
+            }
+            let sd_list = [];
+            for (let [synonym, depth] of all_synonyms.entries()) {
+                if (depth != 0) {
+                    sd_list.push([synonym, depth]);
+                }
+            }
+            sd_list = randomShuffle(sd_list);
+            sd_list.sort((a, b) => -a[1] + b[1]);
+            if (hard_mode) {
+                sd_list = sd_list.slice(0, Math.max(options, sd_list.length / 2));
+                sd_list = randomShuffle(sd_list);
+            }
+            else {
+                sd_list = sd_list.slice(Math.min(sd_list.length - options, sd_list.length / 2));
+                sd_list = randomShuffle(sd_list);
+            }
+            for (let [synonym, depth] of sd_list) {
+                options_list.push(synonym);
+            }
+            for (let x of list) {
+                if (options_list.length >= options) {
+                    break;
+                }
+                if (x[0] != word && all_antonyms.has(x[0]) == false) {
+                    options_list.push(x[0]);
+                }
+            }
+            explanation = capitalize(word) + ' - ' + meaning;
+        }
+        options_list = options_list.slice(0, options - 1);
+        options_list.push(expected);
+        let new_options_list = [];
+        for (let x of options_list) {
+            new_options_list.push(capitalize(x));
+        }
+        options_list = new_options_list;
+        if (options_list.length <= 1) {
+            skip = true;
+            console.log(`${word} skipped`);
+        }
+        if (skip === true) {
+            continue;
+        }
+        r.push(capitalize(word));
+        r.push(task);
+        r.push(capitalize(expected));
+        r.push(explanation);
+        r.push(options_list);
+        yield (r); // word, task, expected, explanation, options
+    }
+    return null;
+}
+
+
 function range(start, stop, step = 1) {
     let a = [], b = start;
     if (step > 0) {
@@ -558,8 +837,6 @@ function createKeyboard(symbols, stateN, additionalButtons = null, endlBySymbols
 }
 
 function createChooser(stateN, options, additionalButtons) {
-    let st1_time_limit = parseInt(settings['st1_time_limit']);
-
     let inputDiv = document.createElement("div");
     inputDiv.id = "inputDiv";
     let chooserDiv = document.createElement("div");
@@ -596,30 +873,36 @@ function createChooser(stateN, options, additionalButtons) {
     voiceButton.classList.add("blackButton");
     voiceButton.classList.add("no-hover");
     voiceButton.innerHTML = 'Play';
-    voiceButton.onmouseup = function() {
-        if (isInt(parseInt(voiceButton.voice_index)) && parseInt(voiceButton.voice_index) >= 0) {
-            speak(voiceButton.voice_text, voiceButton.voice_index);
-        }
-        if (parseInt(voiceButton.voice_index) === -2) {
-            st1_play(voiceButton.voice_text);
+    voiceButton.onmouseup = function () {
+        let voice_index = parseInt(voiceButton.voice_index);
+        if (isInt(voice_index) && voice_index !== -1) {
+            st1_speak(voiceButton.voice_text, voiceButton.voice_index);
         }
     }
     voiceDiv.appendChild(voiceButton);
     voiceDiv.style.display = 'none';
 
-    let timerDiv = document.createElement('div');
-    timerDiv.id = 'timerDiv';
-    let timerImg = document.createElement('img');
-    timerImg.id = 'timerImg';
-    timerImg.src = "./images/time_limit.jpg";
-    timerImg.alt = "time limit";
-    timerImg.style.width = '350px';
-    timerDiv.appendChild(timerImg);
-    let timerP = document.createElement('p');
-    timerP.id = 'timerP';
-    timerP.style.margin = '5px';
-    timerDiv.appendChild(timerP);
-    timerDiv.style.display = '';
+    let showTrialTimerDiv = document.createElement('div');
+    showTrialTimerDiv.id = 'showTrialTimerDiv';
+    let showTrialTimerImg = document.createElement('img');
+    showTrialTimerImg.id = 'showTrialTimerImg';
+    showTrialTimerImg.src = "./images/time_limit.jpg";
+    showTrialTimerImg.alt = "time limit";
+    showTrialTimerImg.style.width = '350px';
+    showTrialTimerDiv.appendChild(showTrialTimerImg);
+    let showTrialTimerP = document.createElement('p');
+    showTrialTimerP.id = 'showTrialTimerP';
+    showTrialTimerP.style.margin = '5px';
+    showTrialTimerDiv.appendChild(showTrialTimerP);
+    showTrialTimerDiv.style.display = '';
+
+    let answerTrialTimerDiv = document.createElement('div');
+    answerTrialTimerDiv.id = 'answerTrialTimerDiv';
+    let answerTrialTimerP = document.createElement('p');
+    answerTrialTimerP.id = 'answerTrialTimerP';
+    answerTrialTimerP.style.margin = '5px';
+    answerTrialTimerDiv.appendChild(answerTrialTimerP);
+    answerTrialTimerDiv.style.display = '';
 
     let additionalDiv = null;
     if (additionalButtons != null) {
@@ -641,8 +924,9 @@ function createChooser(stateN, options, additionalButtons) {
     backButton.classList.add("blackButton");
     inputDiv.appendChild(imageDiv);
     inputDiv.appendChild(voiceDiv);
-    inputDiv.appendChild(timerDiv);
+    inputDiv.appendChild(showTrialTimerDiv);
     inputDiv.appendChild(chooserDiv);
+    inputDiv.appendChild(answerTrialTimerDiv);
     inputDiv.appendChild(hr);
     if (additionalDiv != null) {
         additionalDiv.prepend(backButton);
@@ -805,16 +1089,21 @@ function createParameters(parameters) {
             case "st1_voice_combobox": {
                 firstElement = document.createElement("p");
                 firstElement.innerHTML = item[1];
-                secondElement = createVoiceCombobox(item[0], function(value) {
-                    if (isInt(parseInt(value)) && parseInt(value) >= 0) {
-                        speak('Hello!', value);
-                    }
-                    if (parseInt(value) === -2) {
-                        st1_play('Hello');
+                secondElement = createVoiceCombobox(item[0], function (value) {
+                    let voice_index = parseInt(value);
+                    if (isInt(voice_index) && voice_index !== -1) {
+                        st1_speak('Hello', voice_index);
                     }
                 }, true);
                 secondElement.id = item[0];
                 secondElement.style.maxWidth = '135px';
+                break;
+            }
+            case "hr": {
+                firstElement = document.createElement("hr");
+                firstElement.style.borderColor = 'hsl(45, 100%, 50%)';
+                secondElement = document.createElement("hr");
+                secondElement.style.borderColor = 'hsl(45, 100%, 50%)';
                 break;
             }
         }
@@ -942,11 +1231,15 @@ function createVoiceCombobox(param_id, onchangeFunc = null, add_voice_std_option
     return select;
 }
 
-function st1_play(text) {
-    if (!Object.hasOwn(state1_audios, text)) {
-        state1_audios[text] = new Audio('voice/' + text + '.mp3');
+function st1_speak(text, voice_index) {
+    if (voice_index >= 0) {
+        speak(text, voice_index);
+        return;
     }
-    state1_audios[text].play().then(null, function () {
+    if (!Object.hasOwn(state1_voice_mp3, text)) {
+        state1_voice_mp3[text] = new Audio('voice/' + text + '.mp3');
+    }
+    state1_voice_mp3[text].play().then(null, function () {
         speak(text, getVoices()[0][0]);
     });
 }
@@ -1067,7 +1360,8 @@ function updateLastHistoryItem(historyElem) {
 }
 
 function state1() {
-    clearInterval(st1_interval);
+    clearInterval(st1_show_trial_interval);
+    clearInterval(st1_answer_trial_interval);
     currentGenerator = null;
     state = 1;
     clearWidgets();
@@ -1097,25 +1391,37 @@ function state1() {
                 state1();
             },
         ],
-        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-100]", "integer", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 100;
+        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-1000]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 1000;
         }],
         ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st1_image_mode", "Image mode", "combobox", Object.values(combo_st1_image_mode)],
-        ["st1_word_mode", "Word mode", "combobox", Object.values(combo_st1_word_mode)],
-        ["st1_voice_index", "Voice mode", "st1_voice_combobox"],
-        ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
-        ["st1_category_element_mode", "Category↔Element", "combobox", Object.values(combo_st1_category_element_mode)],
-        ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
-        ["st1_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 60;
-        }],
+        ["st1_dynamic_n", "Dynamic N", "combobox", Object.values(combo_st1_dynamic_n)],
+        ["", "", "hr"],
+        ["st1_image_mode", "<b>Image mode</b>", "combobox", Object.values(combo_st1_image_mode)],
         ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
         ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
         ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
         ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
+        ["", "", "hr"],
+        ["st1_word_mode", "<b>Word mode</b>", "combobox", Object.values(combo_st1_word_mode)],
+        ["st1_word_mode_just_word", "Just a word", "combobox", Object.values(combo_st1_word_mode_just_word)],
+        ["st1_word_mode_meaning", "Meaning", "combobox", Object.values(combo_st1_word_mode_meaning)],
+        ["st1_word_mode_synonyms", "Synonyms", "combobox", Object.values(combo_st1_word_mode_synonyms)],
+        ["st1_word_mode_antonyms", "Antonyms", "combobox", Object.values(combo_st1_word_mode_antonyms)],
+        ["", "", "hr"],
+        ["st1_voice_index", "<b>Voice mode</b>", "st1_voice_combobox"],
+        ["", "", "hr"],
+        ["st1_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 60;
+        }],
+        ["st1_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "integer", function (xv) {
+            return xv === 0 || 2 <= xv && xv <= 60;
+        }],
+        ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
+        ["st1_category_element_mode", "Category←Element tasks", "combobox", Object.values(combo_st1_category_element_mode)],
+        ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1150,11 +1456,11 @@ function state1_start() {
     addWidget(taskDiv);
     addWidget(document.createElement('br'));
     addWidget(createChooser(state1, st1_options, {
-        'Restart': () => { 
-                if (confirm("Are you sure you want to restart?")) {
-                    currentGenerator.next('-RESTART-');
-                }
-            },
+        'Restart': () => {
+            if (confirm("Are you sure you want to restart?")) {
+                currentGenerator.next('-RESTART-');
+            }
+        },
         'Answer': () => { currentGenerator.next('-ANSWER-') },
         '+': () => {
             let fs = parseInt(taskArea.style.fontSize);
@@ -1187,15 +1493,42 @@ function findSubarray(arr, subarr) {
     return -1;
 }
 
+function convertOptionsToString(options) {
+    let i = 0, currentLine = '', text = '';
+    for (let x of options) {
+        if (currentLine.length == 0) {
+            currentLine = currentLine.concat('' + x);
+        }
+        else {
+            currentLine = currentLine.concat(' | ' + x);
+        }
+        ++i;
+        if (i != 0 && i % 2 == 0) {
+            text = text.concat(currentLine + '\n');
+            currentLine = '';
+        }
+    }
+    if (currentLine.length > 0) {
+        text = text.concat(currentLine + '\n');
+    }
+    return text;
+}
+
 function* state1_generator(taskArea) {
     let st1_auto_mode = parseInt(settings['st1_auto_mode']);
     let st1_n = parseInt(settings['st1_n']);
     let st1_options = parseInt(settings['st1_options']);
     let st1_category_element_mode = settings['st1_category_element_mode'];
     let st1_hard_mode = settings['st1_hard_mode'];
-    let st1_time_limit = parseInt(settings['st1_time_limit']);
+    let st1_dynamic_n = settings['st1_dynamic_n'];
+    let st1_show_trial_time_limit = parseInt(settings['st1_show_trial_time_limit']);
+    let st1_answer_trial_time_limit = parseInt(settings['st1_answer_trial_time_limit']);
     let st1_image_mode = settings['st1_image_mode'];
     let st1_word_mode = settings['st1_word_mode'];
+    let st1_word_mode_just_word = settings['st1_word_mode_just_word'];
+    let st1_word_mode_meaning = settings['st1_word_mode_meaning'];
+    let st1_word_mode_synonyms = settings['st1_word_mode_synonyms'];
+    let st1_word_mode_antonyms = settings['st1_word_mode_antonyms'];
     let st1_voice_index = parseInt(settings['st1_voice_index']);
     let st1_insects_category = settings['st1_insects_category'];
     let st1_halloween_category = settings['st1_halloween_category'];
@@ -1205,7 +1538,7 @@ function* state1_generator(taskArea) {
     let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
     let auto_increase_counter = 0;
     let clearBefore = true;
-    let not_item_checker = function(category1, category2, title) {
+    let not_item_checker = function (category1, category2, title) {
         if (st1_insects_category == combo_st1_insects_category.Disable && (category2 == 'Insects' || title == 'Spider')) {
             return true;
         }
@@ -1220,10 +1553,13 @@ function* state1_generator(taskArea) {
         }
         return false;
     };
-    let not_variants_checker = function(
+    let not_variants_checker = function (
         item1_category1, item1_category2, item1_title,
         item2_category1, item2_category2, item2_title
     ) {
+        if (item1_category2 == item2_category2 && item1_category2 == 'Mothers day') {
+            return true;
+        }
         let item1_splitted = item1_title.split(' ');
         let item2_splitted = item2_title.split(' ');
         for (let x of item1_splitted) {
@@ -1244,31 +1580,34 @@ function* state1_generator(taskArea) {
         return false;
     };
     let images_generator = imageGetter(state1_images, st1_options, hard_mode, not_item_checker, not_variants_checker);
+    let word_generator = wordGetter(state1_words, st1_options, hard_mode);
     let task_list = [];
-    let task_index = 0;
     let mistakeFlag = false, skip_mode = true, lines = [];
     st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
     let imageDiv = document.getElementById('imageDiv');
     let voiceDiv = document.getElementById('voiceDiv');
     let voiceButton = document.getElementById('voiceButton');
-    let timerImg = document.getElementById('timerImg');
-    let timerP = document.getElementById('timerP');
-    var timer_variable = st1_time_limit;
+    let showTrialTimerImg = document.getElementById('showTrialTimerImg');
+    let showTrialTimerP = document.getElementById('showTrialTimerP');
+    let answerTrialTimerP = document.getElementById('answerTrialTimerP');
+    var show_trial_timer_var = st1_show_trial_time_limit;
+    var answer_trial_timer_var = st1_answer_trial_time_limit;
     let skip_plug = [];
     for (let i = 0; i < st1_options; ++i) {
         skip_plug.push('skip');
     }
     addHistoryItem([statesToNames.st1]);
     while (true) {
+        clearInterval(st1_show_trial_interval);
+        clearInterval(st1_answer_trial_interval);
         imageDiv.style.display = 'none';
         voiceDiv.style.display = 'none';
-        timerImg.style.display = 'none';
+        showTrialTimerImg.style.display = 'none';
         if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
             st1_n = Math.min(Math.max(st1_n + 1, 0), 20);
             setSetting('st1_n', st1_n);
             auto_increase_counter = 0;
             task_list = [];
-            task_index = 0;
             mistakeFlag = false;
             skip_mode = true;
             st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
@@ -1283,38 +1622,53 @@ function* state1_generator(taskArea) {
             variants.push('image');
         }
         if (st1_word_mode == combo_st1_word_mode.Enable) {
-            variants.push('word');
+            if (st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable) {
+                variants.push('word-just-one');
+            }
+            if (st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable) {
+                variants.push('word-meaning');
+            }
+            if (st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable) {
+                variants.push('word-synonyms');
+            }
+            if (st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable) {
+                variants.push('word-antonyms');
+            }
         }
         if (st1_voice_index >= 0 || st1_voice_index === -2) {
             variants.push('voice');
         }
         let variant = randomChoice(variants);
         let gen_next = null;
-        if (variant == 'image' || variant == 'voice' || variant == 'word') {
+        if (variant == 'image' || variant == 'voice') {
             gen_next = images_generator.next();
             if (gen_next.done) {
                 images_generator = imageGetter(state1_images, st1_options, hard_mode, not_item_checker, not_variants_checker);
                 gen_next = images_generator.next(); // [category 1, category 2, filename, title, variants]
             }
         }
+        else if (variant == 'word-just-one' || variant == 'word-meaning' || variant == 'word-synonyms' || variant == 'word-antonyms') {
+            gen_next = word_generator.next();
+            gen_next = word_generator.next(variant);
+            if (gen_next.done) {
+                word_generator = wordGetter(state1_words, st1_options, hard_mode);
+                gen_next = word_generator.next(); // [word, task, expected, explanation, options]
+                gen_next = word_generator.next(variant);
+            }
+        }
         if (gen_next == null) {
             return;
         }
         task_list.push([variant, gen_next.value]);
-        let n_prev_task = null, current_task = null, expected = '';
-        if (task_index < st1_n) {
-            current_task = task_list[task_index];
+        let prev_n = st1_n, n_prev_task = null, current_task = task_list[task_list.length - 1];
+        if (task_list.length - 1 < st1_n) {
             skip_mode = true;
-            ++task_index;
-        }
-        else if (task_index === st1_n && st1_n !== 0) {
-            n_prev_task = task_list[0];
-            current_task = task_list[task_index];
-            task_list = task_list.slice(1);
-            skip_mode = false;
         }
         else {
-            current_task = task_list[0];
+            if (st1_dynamic_n === combo_st1_dynamic_n.Enable) {
+                prev_n = randomInt(0, st1_n); // task_list.length - 1 == st1_n
+            }
+            n_prev_task = task_list[task_list.length - prev_n - 1];
             task_list = task_list.slice(1);
             skip_mode = false;
         }
@@ -1324,48 +1678,39 @@ function* state1_generator(taskArea) {
         if (n_prev_task == null) {
             n_prev_task = current_task;
         }
-        let text = '';
+        let text = '', expected = '', explanation = '';
         let category_element_mode_active = category_element_mode ? randomChoice([0, 1, 2]) : 0;
-        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'word' || n_prev_task[0] == 'voice') {
+        if (skip_mode === true) {
+            expected = 'skip';
+            updateChooser(skip_plug);
+        }
+        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
             let image_struct = n_prev_task[1];
             if (category_element_mode_active && (image_struct[0] == 'Adjectives' ||
-                                                 image_struct[0] == 'Baby' ||
-                                                 image_struct[0] == 'Bedroom' ||
-                                                 image_struct[0] == 'Holidays' ||
-                                                 image_struct[0] == 'Verbs' ||
-                                                 image_struct[1] == 'Stages')) {
+                image_struct[0] == 'Baby' ||
+                image_struct[0] == 'Bedroom' ||
+                image_struct[0] == 'Holidays' ||
+                image_struct[0] == 'Verbs' ||
+                image_struct[1] == 'Stages')) {
                 category_element_mode_active = 0;
             }
             if (hard_mode) {
-                text += "N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "\n";
+                text += prev_n + "-Back [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
             }
             else if (category_element_mode_active) {
                 let element_name = '***';
                 if (n_prev_task[0] == 'image' || st1_n === 0) {
                     element_name = image_struct[3];
                 }
-                if (skip_mode === false && st1_n !== 0) {
-                    text += st1_n + '-Back element: ';
-                }
-                else {
-                    text += 'Element: ';
-                }
+                text += prev_n + '-Back element: ';
                 text += element_name + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
             else {
-                if (skip_mode === false && st1_n !== 0) {
-                    text += st1_n + '-Back category: ';
-                }
-                else {
-                    text += 'Category: ';
-                }
+                text += prev_n + '-Back category: ';
                 text += image_struct[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
-            if (skip_mode === true) {
-                expected = 'skip';
-                updateChooser(skip_plug);
-            }
-            else {
+            explanation = image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2];
+            if (skip_mode === false) {
                 let choose_text = '';
                 let options = image_struct[4];
                 if (category_element_mode_active == 0) {
@@ -1397,21 +1742,23 @@ function* state1_generator(taskArea) {
                 options = randomShuffle(options);
                 text += choose_text;
                 updateChooser(options);
-                let i = 0, currentLine = '';
-                for (let x of options) {
-                    if (currentLine.length == 0) {
-                        currentLine += x;
-                    }
-                    else {
-                        currentLine += ' | ' + x;
-                    }
-                    ++i;
-                    if (i != 0 && i % 2 == 0) {
-                        text += currentLine + '\n';
-                        currentLine = '';
-                    }
-                }
+                text += convertOptionsToString(options);
             }
+        }
+        else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
+            if (hard_mode) {
+                text += prev_n + "-Back [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
+            }
+            else {
+                text += prev_n + "-Back (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
+            }
+            text += n_prev_task[1][1] + '\n'; // [word, task, expected, explanation, options]
+            expected = n_prev_task[1][2];
+            explanation = n_prev_task[1][3] ? ('\n' + n_prev_task[1][3]) : '';
+            let options = n_prev_task[1][4];
+            options = randomShuffle(options);
+            updateChooser(options);
+            text += 'Choose:\n' + text_to_lines(convertOptionsToString(options), 100, 1, true);
         }
         if (current_task[0] == 'image') {
             let image_struct = current_task[1];
@@ -1420,7 +1767,7 @@ function* state1_generator(taskArea) {
             img.src = image_path;
             img.alt = image_path;
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                       image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
+                image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
             imageDiv.style.display = '';
         }
         else if (current_task[0] == 'voice') {
@@ -1429,56 +1776,92 @@ function* state1_generator(taskArea) {
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                       voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
+                voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
             voiceDiv.style.display = '';
         }
-        else if (current_task[0] == 'word') {
-            let word_struct = current_task[1];
-            text += '\nWord: ' + word_struct[3];
+        else if (current_task[0] == 'word-just-one' || current_task[0] == 'word-meaning' || current_task[0] == 'word-synonyms' || current_task[0] == 'word-antonyms') {
+            if (n_prev_task != current_task) {
+                text += '\n' + current_task[1][1];
+            }
+            text += '\n';
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                       word_struct[0] + " > " + word_struct[1] + " > " + word_struct[2]);
+                capitalize(current_task[0].replace('-', ' ')) + ' ' + current_task[1][0] + ' -> ' + current_task[1][2]);
         }
         updateLastHistoryItem([lines.join("\n")]);
 
-        timer_variable = st1_time_limit;
-        if (st1_time_limit > 0) {
-            timerP.innerHTML = '' + timer_variable;
-            st1_interval = setInterval(function() {
-                timer_variable -= 1;
-                timerP.innerHTML = '' + timer_variable;
-                if (timer_variable == 0) {
-                    timerP.innerHTML = '&nbsp;';
-                    timerImg.style.display = '';
+        show_trial_timer_var = st1_show_trial_time_limit;
+        if (st1_show_trial_time_limit > 0) {
+            showTrialTimerP.innerHTML = '' + show_trial_timer_var;
+            st1_show_trial_interval = setInterval(function () {
+                show_trial_timer_var -= 1;
+                showTrialTimerP.innerHTML = '' + show_trial_timer_var;
+                if (show_trial_timer_var == 0) {
+                    appendText(taskArea, "\n", clearBefore);
+                    showTrialTimerP.innerHTML = '&nbsp;';
+                    showTrialTimerImg.style.display = '';
                     imageDiv.style.display = 'none';
                     voiceDiv.style.display = 'none';
-                    clearInterval(st1_interval);
+                    clearInterval(st1_show_trial_interval);
                     return;
                 }
             }, 1000);
         }
         else {
-            timerP.innerHTML = '&nbsp;';
+            showTrialTimerP.innerHTML = '&nbsp;';
         }
+
+        answer_trial_timer_var = st1_answer_trial_time_limit;
+        if (st1_answer_trial_time_limit > 0) {
+            answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
+            st1_answer_trial_interval = setInterval(function () {
+                answer_trial_timer_var -= 1;
+                answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
+                if (answer_trial_timer_var == 0) {
+                    clearInterval(st1_show_trial_interval);
+                    clearInterval(st1_answer_trial_interval);
+                    answerTrialTimerP.innerHTML = '&nbsp;';
+                    setTimeout(function () {
+                        currentGenerator.next('-NO-ANSWER-');
+                    }, 0);
+                    return;
+                }
+            }, 1000);
+        }
+        else {
+            answerTrialTimerP.innerHTML = '&nbsp;';
+        }
+
         appendText(taskArea, text + "\n");
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
         while (true) {
             let actual = (yield);
+            if (actual === '-NO-ANSWER-') {
+                if (skip_mode === true) {
+                    mistakeFlag = false;
+                }
+                else {
+                    mistakeFlag = true;
+                }
+                appendText(taskArea, '', clearBefore);
+                break;
+            }
             if (actual === '-ANSWER-') {
-                let image_struct = n_prev_task[1];
                 appendText(taskArea, 'Answer:\n');
                 appendText(taskArea, "Expected: " + expected + '\n');
-                appendText(taskArea, "Explanation: " + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2] + '\n');
+                if (explanation != '') {
+                    appendText(taskArea, "Explanation: " + explanation + '\n');
+                }
                 continue;
             }
             if (actual === '-RESTART-') {
                 auto_increase_counter = 0;
                 task_list = [];
-                task_index = 0;
                 mistakeFlag = false;
                 skip_mode = true;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
                 images_generator = imageGetter(state1_images, st1_options, hard_mode, not_item_checker, not_variants_checker);
+                word_generator = wordGetter(state1_words, st1_options, hard_mode);
                 appendText(taskArea, '', clearBefore);
                 break;
             }
@@ -1497,7 +1880,6 @@ function* state1_generator(taskArea) {
                 mistakeFlag = true;
             }
         }
-        clearInterval(st1_interval);
     }
 }
 
@@ -4084,6 +4466,32 @@ function* state4_generator(taskArea) {
     }
 }
 
+function loadScript(url, head_or_body = 'head') {
+    var script = document.createElement("script");
+    if (url.slice(-3) == '.js') {
+        url = url + '?version=' + version;
+    }
+    else {
+        url = url + '&version=' + version;
+    }
+    script.src = url;
+    if (head_or_body == 'head') {
+        document.head.appendChild(script);
+    }
+    else {
+        document.body.appendChild(script);
+    }
+}
+
+function addEvent(element, eventName, fn) {
+    if (element.addEventListener) {
+        element.addEventListener(eventName, fn, false);
+    }
+    else if (element.attachEvent) {
+        element.attachEvent('on' + eventName, fn);
+    }
+}
+
 function checkVersion() {
     var scripts = document.getElementsByTagName('script');
     for (let script of scripts) {
@@ -4116,7 +4524,7 @@ let currentGenerator = null;
 
 let asciiDigits = '123456789-0_';
 let statesToNames = {
-    st1: 'N-Multi-Back',
+    st1: 'Multi N-Back',
     st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
@@ -4126,6 +4534,26 @@ let combo_st1_image_mode = {
     Disable: "Disable"
 };
 let combo_st1_word_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_word_mode_just_word = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_word_mode_meaning = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_word_mode_synonyms = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_word_mode_antonyms = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_dynamic_n = {
     Enable: "Enable",
     Disable: "Disable"
 };
@@ -4169,104 +4597,17 @@ let scores = loadScores();
 let exHistory = loadHistory();
 let version = localStorage.getItem('VERSION');
 
-let st1_interval;
-let state1_images = JSON.parse(`
-{
-    "Adjectives": {
-        "Opposites": [ "Artificial", "Beautiful", "Big", "Black and white", "Bottom", "Clean", "Closed", "Cold", "Color", "Curly", "Curve", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Dull", "Edible", "Empty", "Fast", "Fat", "Few", "Flat", "Fragile", "Full", "Happy", "Heavy", "High", "Hot", "Kind", "Left", "Light coloured", "Light", "Long", "Low", "Many", "New", "Old", "Open", "Poisonous", "Poor", "Prickly", "Real", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Simple", "Slim", "Slow", "Small", "Smooth", "Soft", "Sour", "Straight", "Strong", "Sweet", "Thick", "Thin", "Tough", "Ugly", "Unclothed", "Volume", "Wet", "Wicked", "Young"]
-    },
-    "Animals": {
-        "Arctic animals": [ "Arctic fox", "Arctic wolf", "Beluga", "Fur seal", "Giant squid", "Muskox", "Narwhal", "Orca, killer whale", "Owl", "Penguin", "Polar bear", "Seal", "Walrus", "Whale"],
-        "Domestic animals": [ "Canary", "Cat", "Chinchilla", "Dog", "Fish", "Guinea pig", "Hamster", "Mouse", "Parrot", "Turtle"],
-        "Farm animals": [ "Bee", "Bull", "Camel", "Cow", "Coypu", "Donkey", "Goat", "Horse", "Lama", "Pig", "Pony", "Rabbit", "Ram", "Reindeer", "Sheep"],
-        "Forest animals": [ "Badger", "Bear", "Bison", "Boar", "Buffalo", "Chipmunk", "Coyote", "Deer", "Ferret", "Fox", "Hare", "Hedgehog", "Lynx", "Marmot", "Mole", "Moose", "Raccoon", "Skunk", "Sloth", "Squirrel", "Wolf", "Wolverine"],
-        "Insects": [ "Ant", "Bedbug", "Bee", "Bug", "Bumblebee", "Butterfly", "Caterpillar", "Cockroach", "Dragonfly", "Fly", "Grasshopper", "Hornet", "Ladybug", "Louse", "Mantis", "Millipede", "Mite", "Mosquito", "Scarabaeus", "Scorpion", "Spider", "Termite", "Wasp"],
-        "Jungle animals": [ "Anteater", "Cheetah", "Crocodile", "Elephant", "Gibbon", "Giraffe", "Gorilla", "Hippopotamus", "Jaguar", "Leopard", "Lion", "Monkey", "Ocelot", "Panda", "Red panda", "Rhinoceros", "Sifaka", "Tapir", "Tiger", "White tiger", "Zebra"],
-        "Sea animals": [ "Beluga", "Coral", "Crab", "Crayfish", "Dolphin", "Fur seal", "Giant squid", "Jellyfish", "Lobster", "Narwhal", "Nautilus", "Octopus", "Orca, killer whale", "Sea anemone", "Sea turtle", "Sea urchin", "Seahorse", "Seal", "Seaweed", "Shark", "Shell", "Shrimp", "Snail", "Sperm whale", "Squid", "Starfish", "Stingray", "Walrus", "Whale"]
-    },
-    "Baby": {
-        "Baby clothes": [ "Baby mittens", "Bib", "Bodysuit", "Jumper", "Romper", "Shoes", "Sleeper", "Socks", "Sun hat", "Trousers"],
-        "Baby things": [ "Baby bath", "Baby walker", "Car seat", "Changing pad", "Changing table", ["Childrens tent", "Children's tent"], "Cradle", "Crib", "High chair", "Mobile", "Nursing bottle", "Pacifier", "Pillow", "Potty", "Rattle", "Scales", "Sleeping bag", "Stroller", "Towel"],
-        "Playground": [ "Bench", "Bucket", "Carousel", "Horizontal bar", "Monkey bar", "Rake", "Sand molds", "Sandbox", "Seesaw", "Shovel", "Slide", "Swings", "Watering can"]
-    },
-    "Bedroom": {
-        "Bed": [ "Bed", "Blanket", "Bunk bed", "Comforter", "Cot", "Cushion", "Duvet cover", "Headboard", "Mattress pad", "Mattress", "Pillow", "Pillowcase", "Playpen", "Sheet"],
-        "Bedroom accessories": [ "Blinds", "Clock", "Curtain rod", "Curtains", "Dressing table", "Flower", "Hanger", "Mat", "Mirror", "Night light", "Nightstand", "Roller blind", "Room divider", "Rug", "Vase"]
-    },
-    "Birds": {
-        "Farm birds": [ "Chick", "Duck", "Duckling", "Goose", "Hen", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
-        "Wild birds": [ "Bullfinch", "Crow", "Eagle", "Falcon", "Flamingo", "Hummingbird", "Owl", "Parrot", "Pelican", "Penguin", "Pigeon", "Sparrow", "Stork", "Swallow", "Swan", "Titmouse", "Vulture", "Woodpecker"]
-    },
-    "Colors": {
-        "Base colors": [ "Black", "Blue", "Brown", "Gold", "Gray", "Green", "Orange", "Purple", "Red", "Silver", "White", "Yellow"],
-        "Secondary colors": [ "Aqua", "Aquamarine", "Azure", "Bisque", "Chocolate", "Coral", "Dark red", "Indigo", "Ivory", "Khaki", "Lilac", "Magenta", "Maroon", "Navy", "Olive", "Pink", "Purple", "Salmon", "Tan", "Teal"]
-    },
-    "Food": {
-        "Berries": [ "Black currant", "Blackberry", "Blueberry", "Cherry", "Cranberry", "Gooseberry", "Melon", "Raspberry", "Red currant", "Strawberry", "Watermelon"],
-        "Fruits": [ "Apple", "Apricot", "Avocado", "Banana", "Coconut", "Dates", "Grapefruit", "Grapes", "Guava", "Kiwi", "Lemon", "Lime", "Mango", "Orange", "Peach", "Pear", "Persimmon", "Pineapple", "Plum", "Pomegranate"],
-        "Vegetables": [ "Beet", "Broccoli", "Carrot", "Cauliflower", "Celery", "Chili pepper", "Chinese cabbage", "Corn", "Cucumber", "Custard squash", "Eggplant", "Garlic", "Ginger", "Lettuce", "Olives", "Onion", "Peas", "Pepper", "Potato", "Pumpkin", "Radish", "Red cabbage", "Romanesco broccoli", "Savoy cabbage", "Spinach", "Tomato", "Turnip", "White cabbage", "Zucchini"]
-    },
-    "Holidays": {
-        "Christmas": [ "Angel", "Bells", "Bow", "Candle", "Candy cane", "Christmas cracker", "Christmas lights", "Christmas mailbox", "Christmas ornament", "Christmas tree", "Father christmas", "Fireworks", "Gingerbread house", "Gingerbread man", "Holly", "Presents", "Santa Claus", ["Santas cap", "Santa's cap"], ["Santas sack", "Santa's sack"], "Sleigh", "Snow globe", "Snow Maiden", "Snowballs", "Snowflake", "Snowman", "Star", "Stocking", "Wreath"],
-        "Easter": [ "Bible", "Candies", "Candle", "Chalice", "Chick", "Christ", "Church", "Communion", "Crosses", "Crown of thorns", "Crucifixion", "Easter basket", "Easter bread", "Easter bunny", "Easter cookies", "Easter egg", "Easter eggs", "Easter lamb", "Eggshell", "Eucharist wafer", "Hen", "Icon", "Jelly bean", "Lily", "Prayer", "Prosfora", "Rosary", "Stained glass", "Tulips", "Willow", "Wine"],
-        "Halloween": [ "Bat", "Broomstick", "Cauldron", "Elf", "Ghost", "Haunted house", "Magic wand", "Monster", "Mummy", "Pumpkin", "Skeleton", "Spider", "Vampire", "Werewolf", "Witch"],
-        "Mothers day": [ "Bouquet", "Cake", "Chocolates", "Congratulate", "Educate", "Entertain", "Feed", "Foster", "Gift", "Grandmother", "Hug", "Jewellery", "Kiss", "Letter", "Love", "Message", "Mother", "Offer flowers", "Perfume", "Prepare a breakfast", "Read a story", "Rose", "Sympathize", "Take care", "Tulip"],
-        "Valentines day": [ "Balloons", "Bouquet", "Card", "Chocolates", "Cupid", "Date", "Friendship", "Heart", "Lock", "Lollipop", "Love", "Lovers", "Message", "Petals", "Presents", "Proposal", "Wedding ring"]
-    },
-    "Home": {
-        "Furniture": [ "Armchair", "Bench", "Bookcase", "Cabinet", "Cage", "Chair", "Chest of drawers", "Chest", "Coffee table", "Couch", "Cupboard", "Desk", "Dresser", "Hanger", "Laundry basket", "Long stool", "Pouf", "Rocking chair", "Safe", "Secretaire", "Shoe cabinet", "Sofa", "Stool", "Swivel chair", "Table", "TV stand", "Wall shelf", "Wardrobe"],
-        "Garden": [ "Barbecue", "Fence", "Flowerbed", "Fountain", "Garage", "Gate", "Gazebo", "Greenhouse", "Hammock", "Hanging basket", "Hedge", "Lawn", "Path", "Pond", "Pool", "Porch swing", "Shed", "Sun lounger"],
-        "House": [ "Attic", "Balcony", "Basement", "Battery", "Bolt", "Brick", "Building", "Chimney", "Column", "Door chain", "Door", "Doormat", "Elevator", "Fireplace", "Gutter", "House", "Intercom", "Key", "Lock", "Mailbox", "Porch", "Roof", "Staircase", "Wall", "Window"],
-        "Rooms": [ "Basement", "Bathroom", "Bedroom", "Billiard room", "Closet", "Dining room", "Foyer", "Hall, corridor", "Kitchen", "Library", "Living room", "Office, den", "Parking", "Playroom", "Sauna", "Swimming pool", "Veranda"]
-    },
-    "Household Appliances": {
-        "Electronics": [ "Air conditioner", "Blender", "Calculator", "Coffee machine", "Dish washer", "Dryer", "Electric kettle", "Extractor hood", "Fan", "Freezer", "Fridge", "Grill", "Hair dryer", "Hand dryer", "Heater", "Iron", "Juicer", "Lamp", "Meat grinder", "Microwave", "Mixer", "Multicooker", "Oven", "Sandwich maker", "Scales", "Sewing machine", "Shaver", "Stove", "Telephone", "Toaster", "Vacuum cleaner", "Washing machine"],
-        "Gadgets": [ "3D glasses", "Binoculars", "Camera", "Charger", "Computer", "Drone", "E-reader", "Fitness bracelet", "Game console", "Gamepad", "Headphones", "Laptop", "Lens", "Memory card", "Microphone", "Phone", "Player", "Projector", "Router", "Satellite antenna", "Security camera", "Sim-card", "Speaker", "Tablet", "TV remote", "TV", "Videocamera", "VR glasses"]
-    },
-    "Kitchen": {
-        "Crockery and cutlery": [ "Bowl", "Butter dish", "Cake server", "Carafe", "Chopsticks", "Coffee cup", "Cup", "Egg cup", "Fork", "French press", "Glass", "Jug", "Knife", "Mixing bowl", "Mug", "Napkin", "Pepper shaker", "Plate", "Salt shaker", "Samovar", "Saucer", "Serving plate", "Spoon", "Sugar bowl", "Teacup", "Teapot", "Thermos", "Tray", "Wine glass"],
-        "Kitchenware": [ "Bottle opener", "Bottle", "Bread bin", "Can opener", "Cheese slicer", "Colander", "Cooking tongs", "Corkscrew", "Cutting board", "Egg slicer", "Food container", "Frying pan", "Garlic press", "Grater", "Ice-cream scoop", "Jar", "Kettle", "Knife, cleaver", "Ladle", "Masher", "Meat tenderizer", "Nutcrackers", "Pasta spoon", "Peeler", "Pestle and mortar", "Pizza cutter", "Pot", "Spatula", "Strainer", "Whisk"]
-    },
-    "Nature": {
-        "Bodies of water": [ "Aquarium", "Bay", "Branch of the river", "Canal", "Cove", "Fjord", "Fountain", "Glacier", "Iceberg", "Lagoon", "Lake", "Levee", "Marsh", "Mouth of a river", "Oasis", "Ocean", "Pond", "Puddle", "Reservoir", "River cascades", "River delta", "River", "Sea", "Source of a river", "Spring", "Strait", "Stream", "Waterfall", "Well", "Wetland"],
-        "Solar system": [ "Asteroid", "Comet", "Crater", "Earth", "Eclipse", "Galaxy", "Jupiter", "Mars", "Mercury", "Meteorite", "Milky way", "Moon", "Nebula", "Neptune", "Pluto", "Saturn", "Solar system", "Star", "Starry sky", "Uranus", "Venus"],
-        "Weather": [ "Cloud", "Cloudy", "Cold", "Dew", "Fog", "Frost", "Frozen", "Hail", "Hot", "Hurricane", "Ice", "Icicles", "Leaf fall", "Lighting", "Polar lights", "Puddle", "Rain", "Rainbow", "Slippery ice", "Snow", "Snowdrift", "Snowfall", "Snowflake", "Storm", "Sunny", "Sunrise", "Sunset", "Thunder", "Tsunami", "Warm, calm", "Wind, windy"]
-    },
-    "Numbers": {
-        "Counting": [ "Eight", "Five", "Four", "Nine", "One", "Seven", "Six", "Ten", "Three", "Two"],
-        "Numbers": [ "Eight", "Eighteen", "Eleven", "Fifteen", "Five", "Four", "Fourteen", "Nine", "Nineteen", "One", "Seven", "Seventeen", "Six", "Sixteen", "Ten", "Thirteen", "Three", "Twelve", "Twenty", "Two"]
-    },
-    "People": {
-        "Body parts": [ "Abdomen", "Arm", "Back", "Bone", "Bum", "Chest", "Elbow", "Finger", "Fist", "Foot", "Hand", "Head", "Heel", "Hip", "Knee", "Leg", "Nail", "Nape", "Neck", "Palm", "Shoulder", "Skeleton", "Skull", "Sole", "Toe", "Wrist"],
-        "Face": [ "Beard", "Cheek", "Chin", "Ear", "Eye", "Eyebrow", "Eyelashes", "Face", "Forehead", "Freckles", "Hair", "Jaw", "Lip", "Mouth", "Mustache", "Nose", "Nostril", "Tongue", "Tooth", "Wrinkles"],
-        "Family members": [ "Aunt", "Bride", "Brother", "Children", "Couple", "Daughter", "Family", "Father or dad", "Father-in-law (for husband)", "Father-in-law (for wife)", "Grandchildren", "Granddaughter", "Grandfather", "Grandmother", "Grandparents", "Grandson", "Groom", "Husband", "Mother or mom", "Mother-in-law (for husband)", "Mother-in-law (for wife)", "Nephew", "Newborn", "Niece", "Parents", "Pregnant", "Siblings", "Sister", "Son", "Twins", "Uncle", "Wife"],
-        "Jobs and occupations": [ "Accountant", "Analyst", "Astronaut", "Athlete", "Baker", "Bartender", "Blacksmith", "Builder", "Car mechanic", "Carpenter", "Chemist", "Cleaner", "Clerk", "Cook", "Dispatcher", "Diver", "Driver", "Electrician", "Exterminator", "Farmer", "Firefighter", "Fisherman", "Flight attendant", "Florist", "Foreman", "Gardener", "Hairdresser", "Hunter", "Librarian", "Loader", "Mailman", "Massage therapist", "Model", "Monk", "Nurse", "Painter", "Pensioner", "Plumber", "Policewoman", "Priest", "Realtor", "Sailor", "Seamstress", "Secretary", "Security guard", "Seller", "Soldier", "Waiter", "Washer", "Welder", "Worker"],
-        "Professions": [ "Actress", "Architect", "Audio engineer", "Ballerina", "Boss", "Captain", "Clown", "Coach", "Conductor", "Consultant", "Dancer", "Designer", "Doctor", "Engineer", "Entrepreneur", "Investigator", "Journalist", "Judge", "Lawyer", "Magician", "Musician", "Painter", "Photographer", "Pilot", "Politician", "Producer", "Professor", "Programmer", "Reporter", "Scientist", "Sculptor", "Singer", "Street performer", "Teacher", "TV presenter", "Writer"],
-        "Stages": [ "Adult", "Baby", "Boy", "Children", "Girl", "Lady", "Man", "Old man", "Old woman", "Teenager", "Woman", "Youth"]
-    },
-    "School": {
-        "Classroom objects": [ "Abacus", "Backpack", "Board marker", "Book", "Bookshelf", "Calculator", "Chalk", "Chalkboard", "Computer", "Desk", "Eraser", "Globe", "Glue", "Laptop", "Letter tracing", "Letters", "Lunch box", "Marker", "Microscope", "Notebook", "Numbers", "Paper leaf", "Pen", "Pencil case", "Pencil sharpener", "Pencil", "Protractor", "Pupil", "Ruler", "School bus", "School compasses", "School", "Scissors", "Teacher", "Timetable", "Whiteboard"],
-        "School building": [ "Art room", "Auditorium", "Classroom", "Computer room", "Dining room", "Gym", "Hall", "Lab", "Library", "Lockers", "Music class", "Office", "Playground", "Pool", "School yard", "Sports ground", "Toilet"]
-    },
-    "Shapes": {
-        "2D shapes": [ "Acute triangle", "Annulus", "Arch", "Arrow", "Circle", "Crescent", "Cross", "Decagon", "Dodecagon", "Equilateral triangle", "Gear", "Heart", "Heptagon", "Hexagon", "Isosceles triangle", "Kite", "Lens", "Nonagon", "Obtuse triangle", "Octagon", "Oval", "Parallelogram", "Pentagon", "Polygon", "Quadrilateral", "Rectangle", "Rhombus", "Right triangle", "Sector", "Segment", "Semicircle", "Square", "Star", "Trapezoid", "Triangle"],
-        "3D shapes": [ "Cone", "Cube", "Cuboid", "Cylinder", "Dodecahedron", "Ellipsoid", "Frustum", "Hexagonal prism", "Hexagonal pyramid", "Icosahedron", "Octahedron", "Parallelepiped", "Pentagonal prism", "Sphere", "Square pyramid", "Triangular prism", "Triangular pyramid"]
-    },
-    "Transport": {
-        "Aircraft": [ "Aeroplane", "Air balloon", "Biplane", "Convertiplane", "Fighter plane", "Glider", "Helicopter", "Kite", "Parachute", "Rocket", "Satellite", "Space shuttle", "Ultralight", "Zeppelin"],
-        "Bicycle transport": [ "3 wheel bicycle", "4 wheel bicycle", "Baby bike", "Balance bike", "Bicycle trailer", "Bicycle", "Child bike seat", "Cycling helmet", "Electric unicycle", "Kick scooter", "Pedicab", "Recumbent bike", "Segway", "Tandem", "Unicycle", "Velomobile"],
-        "Land transport": [ "Aerial platform", "Ambulance", "Bus", "Camper", "Car carrier trailer", "Car", "Carriage", "Covered wagon", "Double-decker bus", "Fire engine", "Garbage truck", "Loader", "Police car", "Refueler", "School bus", "Sleigh", "Tank", "Taxi", "Tourist bus", "Tractor unit", "Tractor", "Trailer", "Trolleybus", "Truck", "Van", "Vintage"],
-        "Motorcycles": [ "Auto rickshaw", "Cargo motorcycle", "Chopper", "Helmet", "Moped", "Moto gloves", "Motorcycle", "Quadracycle", "Scooter", "Sidecar", "Snowmobile", "Superbike"],
-        "Rail transport": [ "Autorack", "Dump car", "Electric train", "Flatcar", "Funicular", "Goods wagon", "High-speed train", "Hopper car", "Monorail", "Open wagon", "Passenger car", "Railway crane", "Steam train", "Subway", "Tank car", "Tender", "Train", "Tram"],
-        "Water transport": [ "Aircraft carrier", "Boat", "Canoe", "Catamaran", "Container ship", "Cruise ship", "Ferry", "Hovercraft", "Inflatable dinghy", "Kayak", "Motoboat", "Sailboat", "Ship", "Steamship", "Submarine", "Tanker", "Water scooter", "Yacht"]
-    },
-    "Verbs": {
-        "Action verbs": [ "Add", "Bite", "Blow ones nose", "Blow", "Bring up", "Build", "Care", "Catch", "Clap", "Collect, gather", "Comb", "Dance", "Dig", "Dry", "Feed", "Fish", "Fix", "Give", "Hang", "Hide", "Hold", "Kick", "Knock", "Launch", "Lay", "Look into", "Mow", "Open", "Paint", "Peep out", "Play the piano", "Play", "Pour over", "Present", "Press", "Pull", "Put", "Saw", "Scratch", "Shoot", "Sing", "Sit", "Sneeze", "Squeeze", "Stand", "Sunbathe", "Swing", "Tear, rip", "Throw up", "Throw", "Whisper"],
-        "Movement verbs": [ "Carry", "Chase", "Climb", "Crawl", "Descend", "Dive", "Drive", "Fall", "Fly", "Go", "Jump", "Pull", "Push", "Ride", "Roll", "Row", "Run", "Swim", "Walk"],
-        "Routine verbs": [ "Brush teeth", "Button the buttons", "Clean, scrub", "Cook", "Do laundry", "Drink", "Eat", "Feed", "Get dressed", "Gets her hair cut", "Go shopping", "Iron", "Pee", "Play with friends", "Poop", "Put on make-up", "Put on shoes", "Relax", "Shave", "Sit on the potty", "Sleep", "Smoke", "Splash", "Sweep", "Take a bath", "Take a shower", "Tie shoelaces", "Vacuum", "Wake up", "Wash", "Watch TV", "Water", "Work"],
-        "State verbs": [ "Be angry", "Beat", "Call", "Confuse", "Cry", "Defend", "Dream", "Fear", "Grimace", "Has", "Hear", "Hug", "Hurt", "Kiss", "Laugh", "Look", "Pray", "See", "Shout", "Show", "Sniff", "Think", "Yawn"]
-    }
-}
-`);
+let st1_show_trial_interval = null;
+let st1_answer_trial_interval = null;
+let state1_voice_mp3 = {};
+
+let state1_images = {};
+let state1_words = {};
+
 getVoices();
-let state1_audios = {};
+loadScript('images.js');
+loadScript('words.js');
+addEvent(window, 'load', () => {
+    state1_images = getImages();
+    state1_words = getWords();
+});
