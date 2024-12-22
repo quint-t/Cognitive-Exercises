@@ -3,7 +3,7 @@
 Repository size: ~126 MB.
 
 ## Exercises
-1. N-Multi-Back: using short-term memory and working memory to solve tasks in N-Back mode.
+1. Multi N-Back: using short-term memory and working memory to solve tasks in N-Back mode.
 2. Recursive-Solving: using short-term memory and working memory to resolve partially recursive logic relations.
 3. Puzzle-Solving: using short-term memory and working memory to resolve complex relations.
 
