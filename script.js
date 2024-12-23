@@ -129,8 +129,9 @@ function loadSettings() {
     let defParameters = {
         "st1_auto_mode": 20,
         "st1_n": 0,
-        "st1_dynamic_n": combo_st1_dynamic_n.Disable,
         "st1_image_mode": combo_st1_image_mode.Enable,
+        "st1_word_to_image": combo_st1_word_to_image.Enable,
+        "st1_voice_to_image": combo_st1_voice_to_image.Enable,
         "st1_word_mode": combo_st1_word_mode.Enable,
         "st1_word_mode_just_word": combo_st1_word_mode_just_word.Enable,
         "st1_word_mode_meaning": combo_st1_word_mode_meaning.Enable,
@@ -138,7 +139,7 @@ function loadSettings() {
         "st1_word_mode_antonyms": combo_st1_word_mode_antonyms.Enable,
         "st1_voice_index": -2,
         "st1_options": 4,
-        "st1_category_element_mode": combo_st1_category_element_mode.Disable,
+        "st1_word_to_category": combo_st1_word_to_category.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
         "st1_show_trial_time_limit": 0,
         "st1_answer_trial_time_limit": 0,
@@ -402,7 +403,8 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
                 if (not_item_checker(category1, category2, title)) {
                     continue;
                 }
-                list.push([category1, category2, filename, title, [title]]);
+                let real_filename = "images/" + category1 + '/' + category2 + '/' + filename + ".jpg";
+                list.push([category1, category2, real_filename, title, [[title, real_filename]]]);
             }
         }
     }
@@ -416,7 +418,7 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
                     w1[3].toLowerCase().includes(w2[3].toLowerCase()) === false &&
                     w2[3].toLowerCase().includes(w1[3].toLowerCase()) === false &&
                     not_variants_checker(w1[0], w1[1], w1[3], w2[0], w2[1], w2[3]) === false) {
-                    w1[w1.length - 1].push(w2[3]);
+                    w1[w1.length - 1].push([w2[3], w2[2]]);
                 }
             }
         }
@@ -428,7 +430,7 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
                 w1[3].toLowerCase().includes(w2[3].toLowerCase()) === false &&
                 w2[3].toLowerCase().includes(w1[3].toLowerCase()) === false &&
                 not_variants_checker(w1[0], w1[1], w1[3], w2[0], w2[1], w2[3]) === false) {
-                w1[w1.length - 1].push(w2[3]);
+                w1[w1.length - 1].push([w2[3], w2[2]]);
             }
         }
     }
@@ -941,12 +943,43 @@ function createChooser(stateN, options, additionalButtons) {
     return inputDiv;
 }
 
-function updateChooser(options) {
+function updateChooser(options, images = false) {
     let chooserDiv = document.getElementById("chooserDiv");
     let children = chooserDiv.children;
     for (let i = 0, k = 0; i < children.length; i++) {
         if (children[i].nodeName == 'BUTTON') {
-            children[i].innerHTML = (k < options.length) ? options[k] : '-';
+            if (images) {
+                if (k < options.length) {
+                    children[i].style.color = '#ffffff00';
+                    children[i].style.background = 'url("' + options[k][1] + '")';
+                    children[i].style.backgroundSize = 'contain';
+                    children[i].style.backgroundRepeat = 'no-repeat';
+                    children[i].style.backgroundPosition = 'center center';
+                    children[i].innerHTML = options[k][0];
+                    children[i].style.width = '170px';
+                    children[i].style.height = '170px';
+                }
+                else {
+                    children[i].style.color = '';
+                    children[i].style.background = '';
+                    children[i].style.backgroundSize = '';
+                    children[i].style.backgroundRepeat = '';
+                    children[i].style.backgroundPosition = '';
+                    children[i].innerHTML = '-';
+                    children[i].style.width = '';
+                    children[i].style.height = '';
+                }
+            }
+            else {
+                children[i].style.color = '';
+                children[i].style.background = '';
+                children[i].style.backgroundSize = '';
+                children[i].style.backgroundRepeat = '';
+                children[i].style.backgroundPosition = '';
+                children[i].innerHTML = (k < options.length) ? options[k] : '-';
+                children[i].style.width = '';
+                children[i].style.height = '';
+            }
             ++k;
         }
     }
@@ -1105,6 +1138,18 @@ function createParameters(parameters) {
             case "hr": {
                 firstElement = document.createElement("hr");
                 firstElement.style.borderColor = 'hsl(45, 100%, 50%)';
+                secondElement = document.createElement("hr");
+                secondElement.style.borderColor = 'hsl(45, 100%, 50%)';
+                break;
+            }
+            case "hr1": {
+                firstElement = document.createElement("hr");
+                firstElement.style.borderColor = 'hsl(45, 100%, 50%)';
+                secondElement = document.createElement("p");
+                break;
+            }
+            case "hr2": {
+                firstElement = document.createElement("p");
                 secondElement = document.createElement("hr");
                 secondElement.style.borderColor = 'hsl(45, 100%, 50%)';
                 break;
@@ -1382,35 +1427,68 @@ function state1() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st1_n = parseInt(settings['st1_n']);
-                st1_n = Math.min(Math.max(st1_n + 1, 0), 100);
-                setSetting('st1_n', st1_n);
+                let st1_n = toIntOrIntRange(settings['st1_n']);
+                let st1_n_min = st1_n[0];
+                let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
+                let was_diff = (st1_n.length == 2);
+                if (was_diff === false) {
+                    st1_n_min = Math.min(Math.max(st1_n_min + 1, 0), 100);
+                }
+                st1_n_max = Math.min(Math.max(st1_n_max + 1, 0), 100);
+                st1_n_min = Math.min(st1_n_min, st1_n_max);
+                if (was_diff == false) {
+                    st1_n_string = st1_n_min;
+                }
+                else {
+                    st1_n_string = st1_n_min + '-' + st1_n_max;
+                }
+                st1_n = st1_n_min;
+                setSetting('st1_n', st1_n_string);
                 state1();
             },
             function (event) {
-                let st1_n = parseInt(settings['st1_n']);
-                st1_n = Math.min(Math.max(st1_n - 1, 0), 100);
-                setSetting('st1_n', st1_n);
+                let st1_n = toIntOrIntRange(settings['st1_n']);
+                let st1_n_min = st1_n[0];
+                let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
+                let was_diff = (st1_n.length == 2);
+                if (was_diff === false) {
+                    st1_n_min = Math.min(Math.max(st1_n_min - 1, 0), 100);
+                }
+                st1_n_max = Math.min(Math.max(st1_n_max - 1, 0), 100);
+                st1_n_min = Math.min(st1_n_min, st1_n_max);
+                if (was_diff == false) {
+                    st1_n_string = st1_n_min;
+                }
+                else {
+                    st1_n_string = st1_n_min + '-' + st1_n_max;
+                }
+                st1_n = st1_n_min;
+                setSetting('st1_n', st1_n_string);
                 state1();
             },
         ],
         ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-1000]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 1000;
         }],
-        ["st1_n", "<b>Auto mode</b><br>N-back<br>[0:disable|1-100]", "integer", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 100;
+        ["st1_n", "<b>Auto mode</b><br>Min-Max N<br>[0:disable|1-100]", "range", function (xv) {
+            return xv != null &&
+                   0 <= xv[0] && xv[0] <= 100 &&
+                   (xv.length === 1 || 0 <= xv[1] && xv[1] <= 100);
         }],
-        ["st1_dynamic_n", "Dynamic N", "combobox", Object.values(combo_st1_dynamic_n)],
         ["", "", "hr"],
-        ["st1_image_mode", "<b>Image mode</b>", "combobox", Object.values(combo_st1_image_mode)],
-        ["st1_voice_index", "<b>Voice mode</b>", "st1_voice_combobox"],
+        ["st1_image_mode", "<u>Image mode</u>", "combobox", Object.values(combo_st1_image_mode)],
+        ["st1_word_to_image", "Word → Image", "combobox", Object.values(combo_st1_word_to_image)],
+        ["", "", "hr1"],
+        ["st1_voice_index", "<u>Voice mode</u>", "st1_voice_combobox"],
+        ["st1_voice_to_image", "Voice → Image", "combobox", Object.values(combo_st1_voice_to_image)],
+        ["", "", "hr1"],
+        ["st1_word_to_category", "Word → Category", "combobox", Object.values(combo_st1_word_to_category)],
         ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
         ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
         ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
         ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
-        ["st1_category_element_mode", "Category←Element tasks", "combobox", Object.values(combo_st1_category_element_mode)],
         ["", "", "hr"],
-        ["st1_word_mode", "<b>Word mode</b>", "combobox", Object.values(combo_st1_word_mode)],
+        ["st1_word_mode", "<u>Word mode</u>", "combobox", Object.values(combo_st1_word_mode)],
         ["st1_word_mode_just_word", "Just a word", "combobox", Object.values(combo_st1_word_mode_just_word)],
         ["st1_word_mode_meaning", "Meaning", "combobox", Object.values(combo_st1_word_mode_meaning)],
         ["st1_word_mode_synonyms", "Synonyms", "combobox", Object.values(combo_st1_word_mode_synonyms)],
@@ -1518,11 +1596,16 @@ function convertOptionsToString(options) {
 
 function* state1_generator(taskArea) {
     let st1_auto_mode = parseInt(settings['st1_auto_mode']);
-    let st1_n = parseInt(settings['st1_n']);
+    let st1_n = toIntOrIntRange(settings['st1_n']);
+    let st1_n_min = st1_n[0];
+    let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
+    let was_diff = (st1_n.length == 2);
+    st1_n = st1_n_min;
     let st1_options = parseInt(settings['st1_options']);
-    let st1_category_element_mode = settings['st1_category_element_mode'];
+    let st1_word_to_category = settings['st1_word_to_category'];
+    let st1_word_to_image = settings['st1_word_to_image'];
+    let st1_voice_to_image = settings['st1_voice_to_image'];
     let st1_hard_mode = settings['st1_hard_mode'];
-    let st1_dynamic_n = settings['st1_dynamic_n'];
     let st1_show_trial_time_limit = parseInt(settings['st1_show_trial_time_limit']);
     let st1_answer_trial_time_limit = parseInt(settings['st1_answer_trial_time_limit']);
     let st1_image_mode = settings['st1_image_mode'];
@@ -1536,7 +1619,6 @@ function* state1_generator(taskArea) {
     let st1_halloween_category = settings['st1_halloween_category'];
     let st1_family_members_category = settings['st1_family_members_category'];
     let st1_baby_category = settings['st1_baby_category'];
-    let category_element_mode = st1_category_element_mode === combo_st1_category_element_mode.Enable;
     let hard_mode = st1_hard_mode === combo_st1_hard_mode.Enable;
     let auto_increase_counter = 0;
     let clearBefore = true;
@@ -1553,6 +1635,11 @@ function* state1_generator(taskArea) {
             return true;
         }
         if (st1_baby_category == combo_st1_baby_category.Disable && category1 == 'Baby') {
+            return true;
+        }
+        if (st1_word_to_category == combo_st1_word_to_category.Only && (
+            category1 == 'Adjectives' || category1 == 'Baby' || category1 == 'Bedroom' ||
+            category1 == 'Holidays' || category1 == 'Verbs' || category2 == 'Stages')) {
             return true;
         }
         return false;
@@ -1587,7 +1674,7 @@ function* state1_generator(taskArea) {
     let word_generator = wordGetter(state1_words, st1_options, hard_mode);
     let task_list = [];
     let mistakeFlag = false, skip_mode = true, lines = [];
-    st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
+    st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
     let imageDiv = document.getElementById('imageDiv');
     let voiceDiv = document.getElementById('voiceDiv');
     let voiceButton = document.getElementById('voiceButton');
@@ -1600,6 +1687,16 @@ function* state1_generator(taskArea) {
     for (let i = 0; i < st1_options; ++i) {
         skip_plug.push('skip');
     }
+    let st1_n_string = '';
+    if (st1_n_min == st1_n_max) {
+        st1_n_string = st1_n_min;
+        setSetting('st1_n', st1_n_string);
+    }
+    else {
+        st1_n_string = st1_n_min + '-' + st1_n_max;
+        setSetting('st1_n', st1_n_string);
+    }
+    appendText(taskArea, "N = " + st1_n_string + "!\n", clearBefore);
     addHistoryItem([statesToNames.st1]);
     while (true) {
         clearInterval(st1_show_trial_interval);
@@ -1608,14 +1705,25 @@ function* state1_generator(taskArea) {
         voiceDiv.style.display = 'none';
         showTrialTimerImg.style.display = 'none';
         if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
-            st1_n = Math.min(Math.max(st1_n + 1, 0), 20);
-            setSetting('st1_n', st1_n);
+            if (was_diff === false) {
+                st1_n_min = Math.min(Math.max(st1_n_min + 1, 0), 100);
+            }
+            st1_n_max = Math.min(Math.max(st1_n_max + 1, 0), 100);
+            st1_n_min = Math.min(st1_n_min, st1_n_max);
+            if (was_diff == false) {
+                st1_n_string = st1_n_min;
+            }
+            else {
+                st1_n_string = st1_n_min + '-' + st1_n_max;
+            }
+            setSetting('st1_n', st1_n_string);
+            st1_n = st1_n_min;
             auto_increase_counter = 0;
             task_list = [];
             mistakeFlag = false;
             skip_mode = true;
-            st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
-            appendText(taskArea, "N = " + st1_n + "!\n", clearBefore);
+            st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
+            appendText(taskArea, "N = " + st1_n_string + "!\n", clearBefore);
         }
         else if (mistakeFlag) {
             auto_increase_counter = Math.max(0, auto_increase_counter - 2);
@@ -1648,32 +1756,57 @@ function* state1_generator(taskArea) {
             gen_next = images_generator.next();
             if (gen_next.done) {
                 images_generator = imageGetter(state1_images, st1_options, hard_mode, not_item_checker, not_variants_checker);
-                gen_next = images_generator.next(); // [category 1, category 2, filename, title, variants]
+                gen_next = images_generator.next();
             }
+            gen_next = gen_next.value;
+            if (variant == 'image') {
+                if (st1_word_to_image == combo_st1_word_to_image.Enable) {
+                    gen_next.push(randomChoice(['word', 'image']));
+                }
+                else if (st1_word_to_image == combo_st1_word_to_image.Only) {
+                    gen_next.push('word');
+                }
+                else {
+                    gen_next.push('image');
+                }
+            }
+            else {
+                if (st1_voice_to_image == combo_st1_voice_to_image.Enable) {
+                    gen_next.push(randomChoice(['word', 'voice']));
+                }
+                else if (st1_voice_to_image == combo_st1_voice_to_image.Only) {
+                    gen_next.push('word');
+                }
+                else {
+                    gen_next.push('voice');
+                }
+            }
+            // [category 1, category 2, filename, title, variants, task_type]
         }
         else if (variant == 'word-just-one' || variant == 'word-meaning' || variant == 'word-synonyms' || variant == 'word-antonyms') {
             word_generator.next();
             gen_next = word_generator.next(variant);
             if (gen_next.done) {
                 word_generator = wordGetter(state1_words, st1_options, hard_mode);
-                word_generator.next(); // [word, task1, task2, expected, explanation, options]
+                word_generator.next();
                 gen_next = word_generator.next(variant);
             }
+            gen_next = gen_next.value;
+             // [word, task1, task2, expected, explanation, options]
         }
-        if (gen_next == null) {
-            return;
-        }
-        task_list.push([variant, gen_next.value]);
+        task_list.push([variant, gen_next]);
         let prev_n = st1_n, n_prev_task = null, current_task = task_list[task_list.length - 1];
         if (task_list.length - 1 < st1_n) {
             skip_mode = true;
         }
-        else {
-            if (st1_dynamic_n === combo_st1_dynamic_n.Enable) {
-                prev_n = randomInt(0, st1_n); // task_list.length - 1 == st1_n
+        else {  // task_list.length - 1 == st1_n
+            if (st1_n_min != st1_n_max) {
+                prev_n = randomInt(Math.min(st1_n, st1_n_min), Math.min(task_list.length - 1, st1_n_max));
             }
             n_prev_task = task_list[task_list.length - prev_n - 1];
-            task_list = task_list.slice(1);
+            if (task_list.length - 1 >= st1_n_max) {
+                task_list = task_list.slice(1);
+            }
             skip_mode = false;
         }
         if (current_task == null) {
@@ -1683,19 +1816,30 @@ function* state1_generator(taskArea) {
             n_prev_task = current_task;
         }
         let text = '', expected = '', explanation = '';
-        let category_element_mode_active = category_element_mode ? randomChoice([0, 1, 2]) : 0;
+        let category_element_mode_active = 0;
+        if (st1_word_to_category == combo_st1_word_to_category.Only) {
+            category_element_mode_active = randomChoice([1, 2]);
+        }
+        else if (st1_word_to_category == combo_st1_word_to_category.Enable) {
+            category_element_mode_active = randomChoice([0, 1, 2]);
+        }
         if (skip_mode === true) {
             expected = 'skip';
             updateChooser(skip_plug);
         }
         if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
             let image_struct = n_prev_task[1];
+            let task_type = image_struct[5];
+            if (task_type == 'word') {
+                category_element_mode_active = 0;
+            }
             if (category_element_mode_active && (image_struct[0] == 'Adjectives' ||
                 image_struct[0] == 'Baby' ||
                 image_struct[0] == 'Bedroom' ||
                 image_struct[0] == 'Holidays' ||
                 image_struct[0] == 'Verbs' ||
-                image_struct[1] == 'Stages')) {
+                image_struct[1] == 'Stages') &&
+                st1_word_to_category != combo_st1_word_to_category.Only) {
                 category_element_mode_active = 0;
             }
             if (hard_mode) {
@@ -1713,7 +1857,7 @@ function* state1_generator(taskArea) {
                 text += prev_n + '-Back category: ';
                 text += image_struct[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
-            explanation = image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2];
+            explanation = image_struct[0] + " > " + image_struct[1] + " > " + image_struct[3];
             if (skip_mode === false) {
                 let choose_text = '';
                 let options = image_struct[4];
@@ -1725,8 +1869,9 @@ function* state1_generator(taskArea) {
                     expected = image_struct[0];
                     let i = 0;
                     for (let x of options) {
-                        if (x == image_struct[3]) {
-                            options[i] = expected;
+                        if (x[0] == image_struct[3]) {
+                            options[i][0] = expected;
+                            options[i][1] = '';
                         }
                         ++i;
                     }
@@ -1736,17 +1881,33 @@ function* state1_generator(taskArea) {
                     expected = image_struct[1];
                     let i = 0;
                     for (let x of options) {
-                        if (x == image_struct[3]) {
-                            options[i] = expected;
+                        if (x[0] == image_struct[3]) {
+                            options[i][0] = expected;
+                            options[i][1] = '';
                         }
                         ++i;
                     }
                     choose_text = "Choose category:\n";
                 }
                 options = randomShuffle(options);
-                text += choose_text;
-                updateChooser(options);
-                text += convertOptionsToString(options);
+                let options_by_first = [];
+                let i = 0;
+                for (let x of options) {
+                    if (x[0] == expected) {
+                        explanation = '[' + (i + 1) + '] ' + explanation;
+                    }
+                    options_by_first.push([x[0]]);
+                    i += 1;
+                }
+                if (task_type == 'image' || task_type == 'voice') {
+                    options = options_by_first;
+                    text += choose_text;
+                    text += convertOptionsToString(options_by_first);
+                }
+                else if (task_type == 'word') {
+                    text += choose_text.slice(0, -2) + '\n';
+                }
+                updateChooser(options, task_type == 'word');
             }
         }
         else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
@@ -1770,13 +1931,20 @@ function* state1_generator(taskArea) {
         }
         if (current_task[0] == 'image') {
             let image_struct = current_task[1];
-            let image_path = "./images/" + image_struct[0] + '/' + image_struct[1] + '/' + image_struct[2] + ".jpg";
-            let img = imageDiv?.firstChild;
-            img.src = image_path;
-            img.alt = image_path;
+            let task_type = image_struct[5];
+            if (task_type == 'word') {
+                let word = image_struct[3];
+                text += '\nNext word: ' + word + '\n';
+            }
+            else if (task_type == 'image') {
+                let image_path = image_struct[2];
+                let img = imageDiv?.firstChild;
+                img.src = image_path;
+                img.alt = image_path;
+                imageDiv.style.display = '';
+            }
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-            capitalize(current_task[0]) + ': ' + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
-            imageDiv.style.display = '';
+                capitalize(current_task[0]) + ': ' + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[3]);
         }
         else if (current_task[0] == 'voice') {
             let voice_struct = current_task[1];
@@ -1877,7 +2045,7 @@ function* state1_generator(taskArea) {
                 task_list = [];
                 mistakeFlag = false;
                 skip_mode = true;
-                st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n) : 0;
+                st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
                 images_generator = imageGetter(state1_images, st1_options, hard_mode, not_item_checker, not_variants_checker);
                 word_generator = wordGetter(state1_words, st1_options, hard_mode);
                 appendText(taskArea, '', clearBefore);
@@ -4571,10 +4739,6 @@ let combo_st1_word_mode_antonyms = {
     Enable: "Enable",
     Disable: "Disable"
 };
-let combo_st1_dynamic_n = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
 let combo_st1_options = {
     "2": "2",
     "4": "4",
@@ -4582,8 +4746,19 @@ let combo_st1_options = {
     "8": "8",
     "12": "12"
 };
-let combo_st1_category_element_mode = {
+let combo_st1_word_to_category = {
     Enable: "Enable",
+    Only: "Only",
+    Disable: "Disable"
+};
+let combo_st1_word_to_image = {
+    Enable: "Enable",
+    Only: "Only",
+    Disable: "Disable"
+};
+let combo_st1_voice_to_image = {
+    Enable: "Enable",
+    Only: "Only",
     Disable: "Disable"
 };
 let combo_st1_hard_mode = {
