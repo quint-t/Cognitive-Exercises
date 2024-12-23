@@ -492,7 +492,7 @@ function* wordGetter(dictionary, options, hard_mode) {
     list = randomShuffle(list);
     let task_type = '', skip = false;
     for (let x of list) {
-        let task = '', expected = '', explanation = '', options_list = [];
+        let task1 = '', task2 = '', expected = '', explanation = '', options_list = [];
         let word = x[0];
         let meaning = x[1];
         let example = x[2];
@@ -533,7 +533,8 @@ function* wordGetter(dictionary, options, hard_mode) {
         }
         all_synonyms.delete(word);
         if (task_type == 'word-just-one') {
-            task = 'Word:\n ' + capitalize(word) + '\n';
+            task1 = 'Next word: ' + capitalize(word);
+            task2 = 'Word:';
             expected = word;
             let sd_list = [];
             for (let [synonym, depth] of all_synonyms.entries()) {
@@ -556,7 +557,8 @@ function* wordGetter(dictionary, options, hard_mode) {
             }
         }
         else if (task_type == 'word-meaning') {
-            task = 'Meaning of the word:\n ' + meaning + '\n';
+            task1 = 'Next meaning of the word:\n ' + meaning;
+            task2 = 'Word:';
             expected = word;
             explanation = example;
             let ad_list = [];
@@ -581,8 +583,8 @@ function* wordGetter(dictionary, options, hard_mode) {
         }
         else if (task_type == 'word-synonyms' && synonyms.length > 0) {
             expected = randomChoice(synonyms);
-            task = 'Choose synonym of the word:\n ' + capitalize(word) + '\n';
-            task += 'Meaning of the word:\n ' + meaning + '\n';
+            task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
+            task2 = 'Choose synonym of the word:';
             let sd_list = [];
             for (let [synonym, depth] of all_synonyms.entries()) {
                 if (depth != 0) {
@@ -632,8 +634,8 @@ function* wordGetter(dictionary, options, hard_mode) {
         }
         else if (task_type == 'word-antonyms' && antonyms.length > 0) {
             expected = randomChoice(antonyms);
-            task = 'Choose antonym of the word:\n ' + capitalize(word) + '\n';
-            task += 'Meaning of the word:\n ' + meaning + '\n';
+            task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
+            task2 = 'Choose antonym of the word:';
             let ad_list = [];
             for (let [antonym, depth] of all_antonyms.entries()) {
                 if (depth != 0) {
@@ -698,11 +700,12 @@ function* wordGetter(dictionary, options, hard_mode) {
             continue;
         }
         r.push(capitalize(word));
-        r.push(task);
+        r.push(task1);
+        r.push(task2);
         r.push(capitalize(expected));
         r.push(explanation);
         r.push(options_list);
-        yield (r); // word, task, expected, explanation, options
+        yield (r); // word, task1, task2, expected, explanation, options
     }
     return null;
 }
@@ -1400,18 +1403,18 @@ function state1() {
         ["st1_dynamic_n", "Dynamic N", "combobox", Object.values(combo_st1_dynamic_n)],
         ["", "", "hr"],
         ["st1_image_mode", "<b>Image mode</b>", "combobox", Object.values(combo_st1_image_mode)],
+        ["st1_voice_index", "<b>Voice mode</b>", "st1_voice_combobox"],
         ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
         ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
         ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
         ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
+        ["st1_category_element_mode", "Category←Element tasks", "combobox", Object.values(combo_st1_category_element_mode)],
         ["", "", "hr"],
         ["st1_word_mode", "<b>Word mode</b>", "combobox", Object.values(combo_st1_word_mode)],
         ["st1_word_mode_just_word", "Just a word", "combobox", Object.values(combo_st1_word_mode_just_word)],
         ["st1_word_mode_meaning", "Meaning", "combobox", Object.values(combo_st1_word_mode_meaning)],
         ["st1_word_mode_synonyms", "Synonyms", "combobox", Object.values(combo_st1_word_mode_synonyms)],
         ["st1_word_mode_antonyms", "Antonyms", "combobox", Object.values(combo_st1_word_mode_antonyms)],
-        ["", "", "hr"],
-        ["st1_voice_index", "<b>Voice mode</b>", "st1_voice_combobox"],
         ["", "", "hr"],
         ["st1_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 60;
@@ -1420,7 +1423,6 @@ function state1() {
             return xv === 0 || 2 <= xv && xv <= 60;
         }],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
-        ["st1_category_element_mode", "Category←Element tasks", "combobox", Object.values(combo_st1_category_element_mode)],
         ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
         [
             "Default settings", "Clear score", "buttons",
@@ -1545,7 +1547,9 @@ function* state1_generator(taskArea) {
         if (st1_halloween_category == combo_st1_halloween_category.Disable && category2 == 'Halloween') {
             return true;
         }
-        if (st1_family_members_category == combo_st1_family_members_category.Disable && category2 == 'Family members') {
+        if (st1_family_members_category == combo_st1_family_members_category.Disable && (
+            category2 == 'Family members' || category2 == 'Mothers day' ||
+            category2 == 'Valentines day' || category2 == 'Stages')) {
             return true;
         }
         if (st1_baby_category == combo_st1_baby_category.Disable && category1 == 'Baby') {
@@ -1648,11 +1652,11 @@ function* state1_generator(taskArea) {
             }
         }
         else if (variant == 'word-just-one' || variant == 'word-meaning' || variant == 'word-synonyms' || variant == 'word-antonyms') {
-            gen_next = word_generator.next();
+            word_generator.next();
             gen_next = word_generator.next(variant);
             if (gen_next.done) {
                 word_generator = wordGetter(state1_words, st1_options, hard_mode);
-                gen_next = word_generator.next(); // [word, task, expected, explanation, options]
+                word_generator.next(); // [word, task1, task2, expected, explanation, options]
                 gen_next = word_generator.next(variant);
             }
         }
@@ -1752,13 +1756,17 @@ function* state1_generator(taskArea) {
             else {
                 text += prev_n + "-Back (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
-            text += n_prev_task[1][1] + '\n'; // [word, task, expected, explanation, options]
-            expected = n_prev_task[1][2];
-            explanation = n_prev_task[1][3] ? ('\n' + n_prev_task[1][3]) : '';
-            let options = n_prev_task[1][4];
-            options = randomShuffle(options);
-            updateChooser(options);
-            text += 'Choose:\n' + text_to_lines(convertOptionsToString(options), 100, 1, true);
+            if (skip_mode === false) {
+                expected = n_prev_task[1][3]; // [word, task1, task2, expected, explanation, options]
+                explanation = n_prev_task[1][4] ? ('\n' + n_prev_task[1][4]) : '';
+                let options = n_prev_task[1][5];
+                options = randomShuffle(options);
+                updateChooser(options);
+                if (n_prev_task == current_task) {
+                    text += n_prev_task[1][1] + '\n';
+                }
+                text += n_prev_task[1][2] + '\n' + text_to_lines(convertOptionsToString(options), 100, 1, true) + '\n';
+            }
         }
         if (current_task[0] == 'image') {
             let image_struct = current_task[1];
@@ -1767,7 +1775,7 @@ function* state1_generator(taskArea) {
             img.src = image_path;
             img.alt = image_path;
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
+            capitalize(current_task[0]) + ': ' + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[2]);
             imageDiv.style.display = '';
         }
         else if (current_task[0] == 'voice') {
@@ -1776,16 +1784,26 @@ function* state1_generator(taskArea) {
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
             lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
+                capitalize(current_task[0]) + ': ' + voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
             voiceDiv.style.display = '';
         }
         else if (current_task[0] == 'word-just-one' || current_task[0] == 'word-meaning' || current_task[0] == 'word-synonyms' || current_task[0] == 'word-antonyms') {
-            if (n_prev_task != current_task) {
-                text += '\n' + current_task[1][1];
+            if (current_task != n_prev_task || skip_mode) {
+                text += '\n' + current_task[1][1] + '\n';
             }
-            text += '\n';
-            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(current_task[0].replace('-', ' ')) + ' ' + current_task[1][0] + ' -> ' + current_task[1][2]);
+            let line = "N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
+            if (current_task[0] == 'word-just-one') {
+                line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0];
+            }
+            else if (current_task[0] == 'word-meaning') {
+                let meaning = state1_words[current_task[1][0].toLowerCase()][0];
+                meaning = meaning ? (' - ' + meaning) : '';
+                line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0] + meaning;
+            }
+            else {
+                line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0] + ' -> ' + current_task[1][3];
+            }
+            lines.push(line);
         }
         updateLastHistoryItem([lines.join("\n")]);
 
