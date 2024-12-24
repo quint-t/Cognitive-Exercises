@@ -137,12 +137,13 @@ function loadSettings() {
         "st1_word_mode_meaning": combo_st1_word_mode_meaning.Enable,
         "st1_word_mode_synonyms": combo_st1_word_mode_synonyms.Enable,
         "st1_word_mode_antonyms": combo_st1_word_mode_antonyms.Enable,
+        "st1_word_mode_random": combo_st1_word_mode_random.Disable,
         "st1_voice_index": -2,
         "st1_options": 4,
         "st1_word_to_category": combo_st1_word_to_category.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
-        "st1_show_trial_time_limit": 0,
-        "st1_answer_trial_time_limit": 0,
+        "st1_show_trial_time_limit": '0.0',
+        "st1_answer_trial_time_limit": '0.0',
         "st1_insects_category": combo_st1_insects_category.Enable,
         "st1_halloween_category": combo_st1_halloween_category.Enable,
         "st1_family_members_category": combo_st1_family_members_category.Enable,
@@ -494,220 +495,240 @@ function* wordGetter(dictionary, options, hard_mode) {
     list = randomShuffle(list);
     let task_type = '', skip = false;
     for (let x of list) {
-        let task1 = '', task2 = '', expected = '', explanation = '', options_list = [];
-        let word = x[0];
-        let meaning = x[1];
-        let example = x[2];
-        let synonyms = x[3];
-        let antonyms = x[4];
-        let r = [];
-        if (skip === false) {
-            task_type = (yield 'task');
-        }
-        else {
-            skip = false;
-        }
-        let all_synonyms = new Map();
-        let all_antonyms = new Map();
-        let q = [[word, false, 0]];
-        while (q.length > 0) {
-            let [w, is_antonym, depth] = q.pop();
-            if (is_antonym) {
-                if (all_antonyms.has(w)) {
-                    continue;
+        let another_word_flag = false;
+        while (true) {
+            let task1 = '', task2 = '', expected = '', explanation = '', options_list = [];
+            let word = x[0];
+            let meaning = x[1];
+            let example = x[2];
+            let synonyms = x[3];
+            let antonyms = x[4];
+            let r = [];
+            if (skip == false) {
+                task_type = (yield 'task');
+                if (Array.isArray(task_type)) {
+                    let obj = task_type;
+                    task_type = obj[0];
+                    word = obj[1].toLowerCase();
+                    meaning = dictionary[word][0];
+                    example = dictionary[word][1];
+                    synonyms = dictionary[word][2];
+                    antonyms = dictionary[word][3];
+                    another_word_flag = true;
                 }
-                all_antonyms.set(w, depth);
+                else {
+                    another_word_flag = false;
+                }
             }
             else {
-                if (all_synonyms.has(w)) {
-                    continue;
+                skip = false;
+            }
+            let all_synonyms = new Map();
+            let all_antonyms = new Map();
+            let q = [[word, false, 0]];
+            while (q.length > 0) {
+                let [w, is_antonym, depth] = q.pop();
+                if (is_antonym) {
+                    if (all_antonyms.has(w)) {
+                        continue;
+                    }
+                    all_antonyms.set(w, depth);
                 }
-                all_synonyms.set(w, depth);
-            }
-            let synonyms_of_x = dictionary[w] ? dictionary[w][2] : [];
-            for (let syn of synonyms_of_x) {
-                q.push([syn, is_antonym, depth + 1]);
-            }
-            let antonyms_of_x = dictionary[w] ? dictionary[w][3] : [];
-            for (let ant of antonyms_of_x) {
-                q.push([ant, !is_antonym, depth + 1]);
-            }
-        }
-        all_synonyms.delete(word);
-        if (task_type == 'word-just-one') {
-            task1 = 'Next word: ' + capitalize(word);
-            task2 = 'Word:';
-            expected = word;
-            let sd_list = [];
-            for (let [synonym, depth] of all_synonyms.entries()) {
-                if (depth != 0) {
-                    sd_list.push([synonym, depth]);
+                else {
+                    if (all_synonyms.has(w)) {
+                        continue;
+                    }
+                    all_synonyms.set(w, depth);
+                }
+                let synonyms_of_x = dictionary[w] ? dictionary[w][2] : [];
+                for (let syn of synonyms_of_x) {
+                    q.push([syn, is_antonym, depth + 1]);
+                }
+                let antonyms_of_x = dictionary[w] ? dictionary[w][3] : [];
+                for (let ant of antonyms_of_x) {
+                    q.push([ant, !is_antonym, depth + 1]);
                 }
             }
-            sd_list = randomShuffle(sd_list);
-            sd_list.sort((a, b) => -a[1] + b[1]);
-            for (let [synonym, depth] of sd_list) {
-                options_list.push(synonym);
+            all_synonyms.delete(word);
+            if (task_type == 'word-just-one') {
+                task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
+                task2 = 'Word:';
+                expected = word;
+                let sd_list = [];
+                for (let [synonym, depth] of all_synonyms.entries()) {
+                    if (depth != 0) {
+                        sd_list.push([synonym, depth]);
+                    }
+                }
+                sd_list = randomShuffle(sd_list);
+                sd_list.sort((a, b) => -a[1] + b[1]);
+                for (let [synonym, depth] of sd_list) {
+                    options_list.push(synonym);
+                }
+                for (let x of list) {
+                    if (options_list.length >= options) {
+                        break;
+                    }
+                    if (x[0] != word && all_antonyms.has(x[0]) == false) {
+                        options_list.push(x[0]);
+                    }
+                }
             }
-            for (let x of list) {
-                if (options_list.length >= options) {
+            else if (task_type == 'word-meaning') {
+                task1 = 'Next meaning of the word:\n ' + meaning;
+                task2 = 'Word:';
+                expected = word;
+                explanation = example;
+                let ad_list = [];
+                for (let [antonym, depth] of all_antonyms.entries()) {
+                    if (depth != 0) {
+                        ad_list.push([antonym, depth]);
+                    }
+                }
+                ad_list = randomShuffle(ad_list);
+                ad_list.sort((a, b) => -a[1] + b[1]);
+                for (let [antonym, depth] of ad_list) {
+                    options_list.push(antonym);
+                }
+                for (let x of list) {
+                    if (options_list.length >= options) {
+                        break;
+                    }
+                    if (x[0] != word && all_synonyms.has(x[0]) == false) {
+                        options_list.push(x[0]);
+                    }
+                }
+            }
+            else if (task_type == 'word-synonyms' && synonyms.length > 0) {
+                expected = randomChoice(synonyms);
+                task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
+                task2 = 'Choose synonym of the word:';
+                let sd_list = [];
+                for (let [synonym, depth] of all_synonyms.entries()) {
+                    if (depth != 0) {
+                        sd_list.push([synonym, depth]);
+                    }
+                }
+                sd_list = randomShuffle(sd_list);
+                sd_list.sort((a, b) => -a[1] + b[1]);
+                if (hard_mode) {
+                    sd_list = sd_list.slice(0, Math.max(options, sd_list.length / 2));
+                    sd_list = randomShuffle(sd_list);
+                }
+                else {
+                    sd_list = sd_list.slice(Math.min(sd_list.length - options, sd_list.length / 2));
+                    sd_list = randomShuffle(sd_list);
+                }
+                for (let [synonym, depth] of sd_list) {
+                    expected = synonym;
                     break;
                 }
-                if (x[0] != word && all_antonyms.has(x[0]) == false) {
-                    options_list.push(x[0]);
-                }
-            }
-        }
-        else if (task_type == 'word-meaning') {
-            task1 = 'Next meaning of the word:\n ' + meaning;
-            task2 = 'Word:';
-            expected = word;
-            explanation = example;
-            let ad_list = [];
-            for (let [antonym, depth] of all_antonyms.entries()) {
-                if (depth != 0) {
+                let ad_list = [];
+                for (let [antonym, depth] of all_antonyms.entries()) {
                     ad_list.push([antonym, depth]);
                 }
+                ad_list = randomShuffle(ad_list);
+                ad_list.sort((a, b) => -a[1] + b[1]);
+                if (hard_mode) {
+                    ad_list = ad_list.slice(0, Math.max(options, ad_list.length / 2));
+                    ad_list = randomShuffle(ad_list);
+                }
+                else {
+                    ad_list = ad_list.slice(Math.min(ad_list.length - options, ad_list.length / 2));
+                    ad_list = randomShuffle(ad_list);
+                }
+                for (let [antonym, depth] of ad_list) {
+                    options_list.push(antonym);
+                }
+                for (let x of list) {
+                    if (options_list.length >= options) {
+                        break;
+                    }
+                    if (x[0] != word && all_synonyms.has(x[0]) == false) {
+                        options_list.push(x[0]);
+                    }
+                }
+                explanation = capitalize(word) + ' - ' + meaning;
             }
-            ad_list = randomShuffle(ad_list);
-            ad_list.sort((a, b) => -a[1] + b[1]);
-            for (let [antonym, depth] of ad_list) {
-                options_list.push(antonym);
-            }
-            for (let x of list) {
-                if (options_list.length >= options) {
+            else if (task_type == 'word-antonyms' && antonyms.length > 0) {
+                expected = randomChoice(antonyms);
+                task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
+                task2 = 'Choose antonym of the word:';
+                let ad_list = [];
+                for (let [antonym, depth] of all_antonyms.entries()) {
+                    if (depth != 0) {
+                        ad_list.push([antonym, depth]);
+                    }
+                }
+                ad_list = randomShuffle(ad_list);
+                ad_list.sort((a, b) => -a[1] + b[1]);
+                if (hard_mode) {
+                    ad_list = ad_list.slice(0, Math.max(options, ad_list.length / 2));
+                    ad_list = randomShuffle(ad_list);
+                }
+                else {
+                    ad_list = ad_list.slice(Math.min(ad_list.length - options, ad_list.length / 2));
+                    ad_list = randomShuffle(ad_list);
+                }
+                for (let [antonym, depth] of ad_list) {
+                    expected = antonym;
                     break;
                 }
-                if (x[0] != word && all_synonyms.has(x[0]) == false) {
-                    options_list.push(x[0]);
+                let sd_list = [];
+                for (let [synonym, depth] of all_synonyms.entries()) {
+                    if (depth != 0) {
+                        sd_list.push([synonym, depth]);
+                    }
                 }
-            }
-        }
-        else if (task_type == 'word-synonyms' && synonyms.length > 0) {
-            expected = randomChoice(synonyms);
-            task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
-            task2 = 'Choose synonym of the word:';
-            let sd_list = [];
-            for (let [synonym, depth] of all_synonyms.entries()) {
-                if (depth != 0) {
-                    sd_list.push([synonym, depth]);
+                sd_list = randomShuffle(sd_list);
+                sd_list.sort((a, b) => -a[1] + b[1]);
+                if (hard_mode) {
+                    sd_list = sd_list.slice(0, Math.max(options, sd_list.length / 2));
+                    sd_list = randomShuffle(sd_list);
                 }
+                else {
+                    sd_list = sd_list.slice(Math.min(sd_list.length - options, sd_list.length / 2));
+                    sd_list = randomShuffle(sd_list);
+                }
+                for (let [synonym, depth] of sd_list) {
+                    options_list.push(synonym);
+                }
+                for (let x of list) {
+                    if (options_list.length >= options) {
+                        break;
+                    }
+                    if (x[0] != word && all_antonyms.has(x[0]) == false) {
+                        options_list.push(x[0]);
+                    }
+                }
+                explanation = capitalize(word) + ' - ' + meaning;
             }
-            sd_list = randomShuffle(sd_list);
-            sd_list.sort((a, b) => -a[1] + b[1]);
-            if (hard_mode) {
-                sd_list = sd_list.slice(0, Math.max(options, sd_list.length / 2));
-                sd_list = randomShuffle(sd_list);
+            options_list = options_list.slice(0, options - 1);
+            options_list.push(expected);
+            let new_options_list = [];
+            for (let x of options_list) {
+                new_options_list.push(capitalize(x));
             }
-            else {
-                sd_list = sd_list.slice(Math.min(sd_list.length - options, sd_list.length / 2));
-                sd_list = randomShuffle(sd_list);
-            }
-            for (let [synonym, depth] of sd_list) {
-                expected = synonym;
+            options_list = new_options_list;
+            if (options_list.length <= 1) {
+                if (another_word_flag) {
+                    continue;
+                }
+                skip = true;
+                console.log(`${word} skipped`);
                 break;
             }
-            let ad_list = [];
-            for (let [antonym, depth] of all_antonyms.entries()) {
-                ad_list.push([antonym, depth]);
-            }
-            ad_list = randomShuffle(ad_list);
-            ad_list.sort((a, b) => -a[1] + b[1]);
-            if (hard_mode) {
-                ad_list = ad_list.slice(0, Math.max(options, ad_list.length / 2));
-                ad_list = randomShuffle(ad_list);
-            }
-            else {
-                ad_list = ad_list.slice(Math.min(ad_list.length - options, ad_list.length / 2));
-                ad_list = randomShuffle(ad_list);
-            }
-            for (let [antonym, depth] of ad_list) {
-                options_list.push(antonym);
-            }
-            for (let x of list) {
-                if (options_list.length >= options) {
-                    break;
-                }
-                if (x[0] != word && all_synonyms.has(x[0]) == false) {
-                    options_list.push(x[0]);
-                }
-            }
-            explanation = capitalize(word) + ' - ' + meaning;
-        }
-        else if (task_type == 'word-antonyms' && antonyms.length > 0) {
-            expected = randomChoice(antonyms);
-            task1 = 'Next word: ' + capitalize(word) + '\nMeaning of the word:\n ' + meaning;
-            task2 = 'Choose antonym of the word:';
-            let ad_list = [];
-            for (let [antonym, depth] of all_antonyms.entries()) {
-                if (depth != 0) {
-                    ad_list.push([antonym, depth]);
-                }
-            }
-            ad_list = randomShuffle(ad_list);
-            ad_list.sort((a, b) => -a[1] + b[1]);
-            if (hard_mode) {
-                ad_list = ad_list.slice(0, Math.max(options, ad_list.length / 2));
-                ad_list = randomShuffle(ad_list);
-            }
-            else {
-                ad_list = ad_list.slice(Math.min(ad_list.length - options, ad_list.length / 2));
-                ad_list = randomShuffle(ad_list);
-            }
-            for (let [antonym, depth] of ad_list) {
-                expected = antonym;
+            r.push(capitalize(word));
+            r.push(task1);
+            r.push(task2);
+            r.push(capitalize(expected));
+            r.push(explanation);
+            r.push(options_list);
+            yield (r); // word, task1, task2, expected, explanation, options
+            if (another_word_flag == false) {
                 break;
             }
-            let sd_list = [];
-            for (let [synonym, depth] of all_synonyms.entries()) {
-                if (depth != 0) {
-                    sd_list.push([synonym, depth]);
-                }
-            }
-            sd_list = randomShuffle(sd_list);
-            sd_list.sort((a, b) => -a[1] + b[1]);
-            if (hard_mode) {
-                sd_list = sd_list.slice(0, Math.max(options, sd_list.length / 2));
-                sd_list = randomShuffle(sd_list);
-            }
-            else {
-                sd_list = sd_list.slice(Math.min(sd_list.length - options, sd_list.length / 2));
-                sd_list = randomShuffle(sd_list);
-            }
-            for (let [synonym, depth] of sd_list) {
-                options_list.push(synonym);
-            }
-            for (let x of list) {
-                if (options_list.length >= options) {
-                    break;
-                }
-                if (x[0] != word && all_antonyms.has(x[0]) == false) {
-                    options_list.push(x[0]);
-                }
-            }
-            explanation = capitalize(word) + ' - ' + meaning;
         }
-        options_list = options_list.slice(0, options - 1);
-        options_list.push(expected);
-        let new_options_list = [];
-        for (let x of options_list) {
-            new_options_list.push(capitalize(x));
-        }
-        options_list = new_options_list;
-        if (options_list.length <= 1) {
-            skip = true;
-            console.log(`${word} skipped`);
-        }
-        if (skip === true) {
-            continue;
-        }
-        r.push(capitalize(word));
-        r.push(task1);
-        r.push(task2);
-        r.push(capitalize(expected));
-        r.push(explanation);
-        r.push(options_list);
-        yield (r); // word, task1, task2, expected, explanation, options
     }
     return null;
 }
@@ -1115,6 +1136,13 @@ function createParameters(parameters) {
                 secondElement.id = item[0];
                 break;
             }
+            case "float": {
+                firstElement = document.createElement("p");
+                firstElement.innerHTML = item[1];
+                secondElement = createParameterFloatButton(item[0], item[1], item[3]);
+                secondElement.id = item[0];
+                break;
+            }
             case "combobox": {
                 firstElement = document.createElement("p");
                 firstElement.innerHTML = item[1];
@@ -1188,6 +1216,27 @@ function createParameterIntegerButton(param_id, name, condition) {
         let parsed = parseInt(value);
         if (isInt(parsed) && condition(parsed)) {
             event.innerHTML = parsed;
+            setSetting(param_id, event.innerHTML);
+        }
+        else {
+            setSetting(param_id, prevValue);
+            event.innerHTML = prevValue;
+        }
+    };
+    return button;
+}
+
+function createParameterFloatButton(param_id, name, condition) {
+    let button = document.createElement("button");
+    button.classList.add("amberButton");
+    button.innerHTML = settings[param_id];
+    button.onmouseup = function (event) {
+        event = event.target;
+        let prevValue = event.innerHTML;
+        let value = prompt(replaceTags(name, ' '), event.innerHTML);
+        let parsed = parseFloat(value);
+        if ((('' + parsed) == value) && condition(parsed)) {
+            event.innerHTML = Number(parsed).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1});
             setSetting(param_id, event.innerHTML);
         }
         else {
@@ -1493,11 +1542,12 @@ function state1() {
         ["st1_word_mode_meaning", "Meaning", "combobox", Object.values(combo_st1_word_mode_meaning)],
         ["st1_word_mode_synonyms", "Synonyms", "combobox", Object.values(combo_st1_word_mode_synonyms)],
         ["st1_word_mode_antonyms", "Antonyms", "combobox", Object.values(combo_st1_word_mode_antonyms)],
+        ["st1_word_mode_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_word_mode_random)],
         ["", "", "hr"],
-        ["st1_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "integer", function (xv) {
+        ["st1_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "float", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 60;
         }],
-        ["st1_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "integer", function (xv) {
+        ["st1_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "float", function (xv) {
             return xv === 0 || 2 <= xv && xv <= 60;
         }],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
@@ -1606,14 +1656,29 @@ function* state1_generator(taskArea) {
     let st1_word_to_image = settings['st1_word_to_image'];
     let st1_voice_to_image = settings['st1_voice_to_image'];
     let st1_hard_mode = settings['st1_hard_mode'];
-    let st1_show_trial_time_limit = parseInt(settings['st1_show_trial_time_limit']);
-    let st1_answer_trial_time_limit = parseInt(settings['st1_answer_trial_time_limit']);
+    let st1_show_trial_time_limit = parseFloat(settings['st1_show_trial_time_limit']);
+    let st1_answer_trial_time_limit = parseFloat(settings['st1_answer_trial_time_limit']);
     let st1_image_mode = settings['st1_image_mode'];
     let st1_word_mode = settings['st1_word_mode'];
     let st1_word_mode_just_word = settings['st1_word_mode_just_word'];
     let st1_word_mode_meaning = settings['st1_word_mode_meaning'];
     let st1_word_mode_synonyms = settings['st1_word_mode_synonyms'];
     let st1_word_mode_antonyms = settings['st1_word_mode_antonyms'];
+    let st1_word_mode_random = settings['st1_word_mode_random'] == combo_st1_word_mode_random.Enable;
+    let random_tasks_types = [];
+    if (st1_word_mode_random && st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable) {
+        random_tasks_types.push('word-just-one');
+    }
+    if (st1_word_mode_random && st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable) {
+        random_tasks_types.push('word-meaning');
+    }
+    if (st1_word_mode_random && st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable) {
+        random_tasks_types.push('word-synonyms');
+    }
+    if (st1_word_mode_random && st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable) {
+        random_tasks_types.push('word-antonyms');
+    }
+    st1_word_mode_random = random_tasks_types;
     let st1_voice_index = parseInt(settings['st1_voice_index']);
     let st1_insects_category = settings['st1_insects_category'];
     let st1_halloween_category = settings['st1_halloween_category'];
@@ -1786,13 +1851,13 @@ function* state1_generator(taskArea) {
         else if (variant == 'word-just-one' || variant == 'word-meaning' || variant == 'word-synonyms' || variant == 'word-antonyms') {
             word_generator.next();
             gen_next = word_generator.next(variant);
-            if (gen_next.done) {
+            if (gen_next.done ?? true) {
                 word_generator = wordGetter(state1_words, st1_options, hard_mode);
                 word_generator.next();
                 gen_next = word_generator.next(variant);
             }
             gen_next = gen_next.value;
-             // [word, task1, task2, expected, explanation, options]
+            // [word, task1, task2, expected, explanation, options]
         }
         task_list.push([variant, gen_next]);
         let prev_n = st1_n, n_prev_task = null, current_task = task_list[task_list.length - 1];
@@ -1918,6 +1983,15 @@ function* state1_generator(taskArea) {
                 text += prev_n + "-Back (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
             if (skip_mode === false) {
+                if (n_prev_task != current_task && st1_word_mode_random.length > 0 &&
+                    (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms')) {
+                    task_type = randomChoice(st1_word_mode_random);
+                    word_generator.next();
+                    gen_next = word_generator.next([task_type, n_prev_task[1][0]]);  // [task_type, word]
+                    if (!(gen_next.done ?? true)) {
+                        n_prev_task = [task_type, gen_next.value];
+                    }
+                }
                 expected = n_prev_task[1][3]; // [word, task1, task2, expected, explanation, options]
                 explanation = n_prev_task[1][4] ? ('\n' + n_prev_task[1][4]) : '';
                 let options = n_prev_task[1][5];
@@ -1943,7 +2017,7 @@ function* state1_generator(taskArea) {
                 img.alt = image_path;
                 imageDiv.style.display = '';
             }
-            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+            lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
                 capitalize(current_task[0]) + ': ' + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[3]);
         }
         else if (current_task[0] == 'voice') {
@@ -1951,7 +2025,7 @@ function* state1_generator(taskArea) {
             voiceButton.voice_text = voice_struct[3];
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
-            lines.push("N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+            lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
                 capitalize(current_task[0]) + ': ' + voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
             voiceDiv.style.display = '';
         }
@@ -1959,7 +2033,7 @@ function* state1_generator(taskArea) {
             if (current_task != n_prev_task || skip_mode) {
                 text += '\n' + current_task[1][1] + '\n';
             }
-            let line = "N=" + st1_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
+            let line = "N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
             if (current_task[0] == 'word-just-one') {
                 line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0];
             }
@@ -1979,9 +2053,8 @@ function* state1_generator(taskArea) {
         if (st1_show_trial_time_limit > 0) {
             showTrialTimerP.innerHTML = '' + show_trial_timer_var;
             st1_show_trial_interval = setInterval(function () {
-                show_trial_timer_var -= 1;
-                showTrialTimerP.innerHTML = '' + show_trial_timer_var;
-                if (show_trial_timer_var == 0) {
+                show_trial_timer_var -= 0.1;
+                if (show_trial_timer_var <= 0) {
                     appendText(taskArea, "\n", clearBefore);
                     showTrialTimerP.innerHTML = '&nbsp;';
                     showTrialTimerImg.style.display = '';
@@ -1990,7 +2063,10 @@ function* state1_generator(taskArea) {
                     clearInterval(st1_show_trial_interval);
                     return;
                 }
-            }, 1000);
+                else {
+                    showTrialTimerP.innerHTML = '' + Number(show_trial_timer_var).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                }
+            }, 100);
         }
         else {
             showTrialTimerP.innerHTML = '&nbsp;';
@@ -2000,9 +2076,8 @@ function* state1_generator(taskArea) {
         if (st1_answer_trial_time_limit > 0) {
             answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
             st1_answer_trial_interval = setInterval(function () {
-                answer_trial_timer_var -= 1;
-                answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
-                if (answer_trial_timer_var == 0) {
+                answer_trial_timer_var -= 0.1;
+                if (answer_trial_timer_var <= 0) {
                     clearInterval(st1_show_trial_interval);
                     clearInterval(st1_answer_trial_interval);
                     answerTrialTimerP.innerHTML = '&nbsp;';
@@ -2011,7 +2086,10 @@ function* state1_generator(taskArea) {
                     }, 0);
                     return;
                 }
-            }, 1000);
+                else {
+                    answerTrialTimerP.innerHTML = '' + Number(answer_trial_timer_var).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                }
+            }, 100);
         }
         else {
             answerTrialTimerP.innerHTML = '&nbsp;';
@@ -4736,6 +4814,10 @@ let combo_st1_word_mode_synonyms = {
     Disable: "Disable"
 };
 let combo_st1_word_mode_antonyms = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_word_mode_random = {
     Enable: "Enable",
     Disable: "Disable"
 };
