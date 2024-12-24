@@ -1,7 +1,7 @@
 from pathlib import Path
 import json
 
-files = Path(".").glob('**/*.jpg')
+files = Path("../images/").glob('**/*.jpg')
 tree = dict()
 
 replaces = {
@@ -12,7 +12,7 @@ replaces = {
 for filepath in files:
     if 'time_limit.jpg' in filepath.parts:
         continue
-    parts = list(map(str, filepath.parts))
+    parts = list(map(str, filepath.parts[2:]))
     head = tree
     for i in range(len(parts)):
         parts[i] = parts[i].replace('.jpg', '')
@@ -31,10 +31,10 @@ for filepath in files:
     else:
         head.setdefault(parts[-2], list()).append([filename, title])
 
-with open("out.txt", "w") as out_file:
+with open("images.json", "w") as out_file:
     s = json.dumps(tree, sort_keys=True, ensure_ascii=True, indent=4)
     s = s.replace(',\n' + ' ' * 4 * 3, ', ')
-    s = s.replace('[\n' + ' ' * 4 * 3, '[ ')
+    s = s.replace('[\n' + ' ' * 4 * 3, '[')
     s = s.replace('\n' + ' ' * 4 * 2 + ']', ']')
     s = s.replace('\n' + ' ' * 4 * 3 + ']', ']')
     s = s.replace('[' + ' ' * 5 + '"', '["')

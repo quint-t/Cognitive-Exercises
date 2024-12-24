@@ -1,5 +1,3 @@
-function getImages() {
-    return JSON.parse(`
 {
     "Adjectives": {
         "Opposites": ["Artificial", "Beautiful", "Big", "Black and white", "Bottom", "Clean", "Closed", "Cold", "Color", "Curly", "Curve", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Dull", "Edible", "Empty", "Fast", "Fat", "Few", "Flat", "Fragile", "Full", "Happy", "Heavy", "High", "Hot", "Kind", "Left", "Light coloured", "Light", "Long", "Low", "Many", "New", "Old", "Open", "Poisonous", "Poor", "Prickly", "Real", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Simple", "Slim", "Slow", "Small", "Smooth", "Soft", "Sour", "Straight", "Strong", "Sweet", "Thick", "Thin", "Tough", "Ugly", "Unclothed", "Volume", "Wet", "Wicked", "Young"]
@@ -95,6 +93,4 @@ function getImages() {
         "Routine verbs": ["Brush teeth", "Button the buttons", "Clean, scrub", "Cook", "Do laundry", "Drink", "Eat", "Feed", "Get dressed", "Gets her hair cut", "Go shopping", "Iron", "Pee", "Play with friends", "Poop", "Put on make-up", "Put on shoes", "Relax", "Shave", "Sit on the potty", "Sleep", "Smoke", "Splash", "Sweep", "Take a bath", "Take a shower", "Tie shoelaces", "Vacuum", "Wake up", "Wash", "Watch TV", "Water", "Work"],
         "State verbs": ["Be angry", "Beat", "Call", "Confuse", "Cry", "Defend", "Dream", "Fear", "Grimace", "Has", "Hear", "Hug", "Hurt", "Kiss", "Laugh", "Look", "Pray", "See", "Shout", "Show", "Sniff", "Think", "Yawn"]
     }
-}
-    `);
 }
