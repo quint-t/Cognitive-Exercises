@@ -142,8 +142,10 @@ function loadSettings() {
         "st1_options": 4,
         "st1_word_to_category": combo_st1_word_to_category.Disable,
         "st1_hard_mode": combo_st1_hard_mode.Disable,
-        "st1_show_trial_time_limit": '0.0',
-        "st1_answer_trial_time_limit": '0.0',
+        "st1_image_voice_show_trial_time_limit": '0.0',
+        "st1_image_voice_answer_trial_time_limit": '0.0',        
+        "st1_word_mode_show_trial_time_limit": '0.0',
+        "st1_word_mode_answer_trial_time_limit": '0.0',
         "st1_insects_category": combo_st1_insects_category.Enable,
         "st1_halloween_category": combo_st1_halloween_category.Enable,
         "st1_family_members_category": combo_st1_family_members_category.Enable,
@@ -1182,6 +1184,13 @@ function createParameters(parameters) {
                 secondElement.style.borderColor = 'hsl(45, 100%, 50%)';
                 break;
             }
+            case "text": {
+                firstElement = document.createElement("p");
+                firstElement.innerHTML = item[3];
+                secondElement = document.createElement("p");
+                secondElement.innerHTML = item[4];
+                break;
+            }
         }
         if (firstElement == null || secondElement == null) {
             return;
@@ -1293,7 +1302,7 @@ function createVoiceCombobox(param_id, onchangeFunc = null, add_voice_std_option
     let select = document.createElement("select");
     let empty_option = document.createElement("option");
     empty_option.value = -1;
-    empty_option.innerHTML = "-";
+    empty_option.innerHTML = "Disable";
     select.appendChild(empty_option);
     if (add_voice_std_option) {
         let voice_std_option = document.createElement("option");
@@ -1536,22 +1545,32 @@ function state1() {
         ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
         ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
         ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
+        ["st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 60;
+        }],
+        ["st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "float", function (xv) {
+            return xv === 0 || 2 <= xv && xv <= 60;
+        }],
         ["", "", "hr"],
         ["st1_word_mode", "<u>Word mode</u>", "combobox", Object.values(combo_st1_word_mode)],
         ["st1_word_mode_just_word", "Just a word", "combobox", Object.values(combo_st1_word_mode_just_word)],
         ["st1_word_mode_meaning", "Meaning", "combobox", Object.values(combo_st1_word_mode_meaning)],
         ["st1_word_mode_synonyms", "Synonyms", "combobox", Object.values(combo_st1_word_mode_synonyms)],
         ["st1_word_mode_antonyms", "Antonyms", "combobox", Object.values(combo_st1_word_mode_antonyms)],
+        ["", "", "hr1"],
         ["st1_word_mode_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_word_mode_random)],
-        ["", "", "hr"],
-        ["st1_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "float", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 60;
+        ["st1_word_mode_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 60;
         }],
-        ["st1_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "float", function (xv) {
+        ["st1_word_mode_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "float", function (xv) {
             return xv === 0 || 2 <= xv && xv <= 60;
         }],
+        ["", "", "hr"],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["st1_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_hard_mode)],
+        ["", "", "hr"],
+        ["", "", "text", "Images<br>Categories<br>Nate's voice files", `${state1_statistics_images}<br>${state1_statistics_images_categories}<br>${state1_statistics_voice_files}`],
+        ["", "", "text", "Words with meaning<br>Unique Synonyms<br>Unique Antonyms", `${state1_statistics_words}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}`],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -1656,8 +1675,10 @@ function* state1_generator(taskArea) {
     let st1_word_to_image = settings['st1_word_to_image'];
     let st1_voice_to_image = settings['st1_voice_to_image'];
     let st1_hard_mode = settings['st1_hard_mode'];
-    let st1_show_trial_time_limit = parseFloat(settings['st1_show_trial_time_limit']);
-    let st1_answer_trial_time_limit = parseFloat(settings['st1_answer_trial_time_limit']);
+    let st1_image_voice_show_trial_time_limit = parseFloat(settings['st1_image_voice_show_trial_time_limit']);
+    let st1_image_voice_answer_trial_time_limit = parseFloat(settings['st1_image_voice_answer_trial_time_limit']);
+    let st1_word_mode_show_trial_time_limit = parseFloat(settings['st1_word_mode_show_trial_time_limit']);
+    let st1_word_mode_answer_trial_time_limit = parseFloat(settings['st1_word_mode_answer_trial_time_limit']);
     let st1_image_mode = settings['st1_image_mode'];
     let st1_word_mode = settings['st1_word_mode'];
     let st1_word_mode_just_word = settings['st1_word_mode_just_word'];
@@ -1746,8 +1767,8 @@ function* state1_generator(taskArea) {
     let showTrialTimerImg = document.getElementById('showTrialTimerImg');
     let showTrialTimerP = document.getElementById('showTrialTimerP');
     let answerTrialTimerP = document.getElementById('answerTrialTimerP');
-    var show_trial_timer_var = st1_show_trial_time_limit;
-    var answer_trial_timer_var = st1_answer_trial_time_limit;
+    var show_trial_timer_var = 0;
+    var answer_trial_timer_var = 0;
     let skip_plug = [];
     for (let i = 0; i < st1_options; ++i) {
         skip_plug.push('skip');
@@ -1881,18 +1902,18 @@ function* state1_generator(taskArea) {
             n_prev_task = current_task;
         }
         let text = '', expected = '', explanation = '';
-        let category_element_mode_active = 0;
-        if (st1_word_to_category == combo_st1_word_to_category.Only) {
-            category_element_mode_active = randomChoice([1, 2]);
-        }
-        else if (st1_word_to_category == combo_st1_word_to_category.Enable) {
-            category_element_mode_active = randomChoice([0, 1, 2]);
-        }
         if (skip_mode === true) {
             expected = 'skip';
             updateChooser(skip_plug);
         }
         if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
+            let category_element_mode_active = 0;
+            if (st1_word_to_category == combo_st1_word_to_category.Only) {
+                category_element_mode_active = randomChoice([1, 2]);
+            }
+            else if (st1_word_to_category == combo_st1_word_to_category.Enable) {
+                category_element_mode_active = randomChoice([0, 1, 2]);
+            }
             let image_struct = n_prev_task[1];
             let task_type = image_struct[5];
             if (task_type == 'word') {
@@ -2049,8 +2070,13 @@ function* state1_generator(taskArea) {
         }
         updateLastHistoryItem([lines.join("\n")]);
 
-        show_trial_timer_var = st1_show_trial_time_limit;
-        if (st1_show_trial_time_limit > 0) {
+        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
+            show_trial_timer_var = st1_image_voice_show_trial_time_limit;
+        }
+        else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
+            show_trial_timer_var = st1_word_mode_show_trial_time_limit;
+        }
+        if (show_trial_timer_var > 0) {
             showTrialTimerP.innerHTML = '' + show_trial_timer_var;
             st1_show_trial_interval = setInterval(function () {
                 show_trial_timer_var -= 0.1;
@@ -2072,8 +2098,13 @@ function* state1_generator(taskArea) {
             showTrialTimerP.innerHTML = '&nbsp;';
         }
 
-        answer_trial_timer_var = st1_answer_trial_time_limit;
-        if (st1_answer_trial_time_limit > 0) {
+        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
+            answer_trial_timer_var = st1_image_voice_answer_trial_time_limit;
+        }
+        else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
+            answer_trial_timer_var = st1_word_mode_answer_trial_time_limit;
+        }
+        if (answer_trial_timer_var > 0) {
             answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
             st1_answer_trial_interval = setInterval(function () {
                 answer_trial_timer_var -= 0.1;
@@ -4879,10 +4910,55 @@ let state1_voice_mp3 = {};
 let state1_images = {};
 let state1_words = {};
 
+let state1_statistics_images = '';
+let state1_statistics_images_categories = '';
+let state1_statistics_voice_files = '';
+let state1_statistics_words = '';
+let state1_statistics_synonyms = '';
+let state1_statistics_antonyms = '';
+
 getVoices();
 loadScript('images.js');
 loadScript('words.js');
 addEvent(window, 'load', () => {
     state1_images = getImages();
     state1_words = getWords();
+
+    state1_statistics_images = 0;
+    state1_statistics_images_categories = 0;
+    state1_statistics_voice_files = 0;
+    let voice_files_set = new Set();
+    for (const [category1, val1] of Object.entries(state1_images)) {
+        state1_statistics_images_categories += 1;
+        for (const [category2, val2] of Object.entries(val1)) {
+            state1_statistics_images_categories += 1;
+            for (const image of val2) {
+                state1_statistics_images += 1;
+                console.log(image);
+                let image_name = image;
+                if (Array.isArray(image_name)) {
+                    image_name = image_name[0];
+                }
+                voice_files_set.add(image_name);
+            }
+        }
+    }
+    state1_statistics_voice_files = voice_files_set.size;
+
+    state1_statistics_words = 0;
+    state1_statistics_synonyms = 0;
+    state1_statistics_antonyms = 0;
+    let synonyms_set = new Set();
+    let antonyms_set = new Set();
+    for (const [word, params] of Object.entries(state1_words)) {
+        state1_statistics_words += 1;
+        for (let syn of params[2]) {
+            synonyms_set.add(syn);
+        }
+        for (let ant of params[3]) {
+            antonyms_set.add(ant);
+        }
+    }
+    state1_statistics_synonyms = synonyms_set.size;
+    state1_statistics_antonyms = antonyms_set.size;
 });
