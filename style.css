@@ -84,10 +84,6 @@ body {
     height: 50px;
 }
 
-textarea {
-    white-space: pre;
-}
-
 .blackButton:not(.no-hover):hover {
     color: #000000;
     background-color: hsl(45, 100%, 75%);
