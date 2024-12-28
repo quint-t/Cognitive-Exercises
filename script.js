@@ -174,14 +174,18 @@ function loadSettings() {
         "st4_hard_mode": combo_st4_hard_mode.Disable,
         "st4_max_seconds": 10,
         "st4_max_solutions": 1,
-        "state1_wrap": combo_st_wrap.Disable,
-        "state3_wrap": combo_st_wrap.Disable,
-        "state4_wrap": combo_st_wrap.Disable,
+        "state1_wrap": combo_st_wrap.Enable,
+        "state3_wrap": combo_st_wrap.Enable,
+        "state4_wrap": combo_st_wrap.Enable,
         "state1_font_size": 16,
         "state3_font_size": 16,
         "state4_font_size": 16,
         "state1_active_template": "Default",
-        "state1_templates": ""
+        "state1_templates": "",
+        "state3_active_template": "Default",
+        "state3_templates": "",
+        "state4_active_template": "Default",
+        "state4_templates": "",
     };
     let parameters = {};
     Object.keys(defParameters).forEach((param) => {
@@ -1577,7 +1581,7 @@ function new_template(exercise_number, template_name = null) {
     if (template_name == null) {
         return;
     }
-    if (/^([a-zA-Z0-9_]+)$/.test(template_name) == false) {
+    if (/^([a-zA-Z0-9_ ]+)$/.test(template_name) == false) {
         alert('Template name is invalid!');
         return;
     }
@@ -1647,6 +1651,31 @@ function state1() {
             },
         ],
         [
+            "st1_template_choose", "st1_template_new", "template_choose_new",
+            function (event) {
+                choose_template('1', event.target.value);
+                state1();
+            },
+            function (event) {
+                new_template('1');
+                state1();
+            },
+        ],
+        [
+            "st1_template_save", "st1_template_delete", "template_save_delete",
+            function (event) {
+                save_template('1');
+                state1();
+            },
+            function (event) {
+                if (confirm('Are you sure you want to delete the template?')) {
+                    delete_template('1');
+                    state1();
+                }
+            },
+        ],
+        ["", "", "hr"],
+        [
             "Increase level", "Decrease", "buttons",
             function (event) {
                 let st1_n = toIntOrIntRange(settings['st1_n']);
@@ -1687,30 +1716,6 @@ function state1() {
                 st1_n = st1_n_min;
                 setSetting('st1_n', st1_n_string);
                 document.getElementById('st1_n').innerHTML = st1_n_string;
-            },
-        ],
-        [
-            "st1_template_choose", "st1_template_new", "template_choose_new",
-            function (event) {
-                choose_template('1', event.target.value);
-                state1();
-            },
-            function (event) {
-                new_template('1');
-                state1();
-            },
-        ],
-        [
-            "st1_template_save", "st1_template_delete", "template_save_delete",
-            function (event) {
-                save_template('1');
-                state1();
-            },
-            function (event) {
-                if (confirm('Are you sure you want to delete the template?')) {
-                    delete_template('1');
-                    state1();
-                }
             },
         ],
         ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-10000]", "integer", function (xv) {
@@ -1759,7 +1764,6 @@ function state1() {
         ["st1_word_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_word_hard_mode)],
         ["", "", "hr"],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
-        ["", "", "hr"],
         ["state1_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         ["", "", "text", "Categories<br>Images<br>Nate's voice files", `${state1_statistics_images_categories}<br>${state1_statistics_images}<br>${state1_statistics_voice_files}`],
         ["", "", "text", "Words<br>Definitions of the words<br>Synonyms<br>Antonyms", `${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}`],
@@ -1996,10 +2000,12 @@ function* state1_generator(taskArea) {
     if (was_diff === false) {
         st1_n_string = st1_n_min;
         setSetting('st1_n', st1_n_string);
+        save_template('1');
     }
     else {
         st1_n_string = st1_n_min + '-' + st1_n_max;
         setSetting('st1_n', st1_n_string);
+        save_template('1');
     }
     appendText(taskArea, "N = " + st1_n_string + "!\n", clearBefore);
     addHistoryItem([statesToNames.st1]);
@@ -2022,6 +2028,7 @@ function* state1_generator(taskArea) {
                 st1_n_string = st1_n_min + '-' + st1_n_max;
             }
             setSetting('st1_n', st1_n_string);
+            save_template('1');
             st1_n = st1_n_min;
             auto_increase_counter = 0;
             task_list = [];
@@ -3535,6 +3542,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
 }
 
 function state3() {
+    choose_template('3', null);
     currentGenerator = null;
     state = 3;
     clearWidgets();
@@ -3543,12 +3551,38 @@ function state3() {
         [
             "Start", "Back", "buttons",
             function (event) {
+                save_template('3');
                 state3_start();
             },
             function (event) {
                 state3_back();
             },
         ],
+        [
+            "st3_template_choose", "st3_template_new", "template_choose_new",
+            function (event) {
+                choose_template('3', event.target.value);
+                state3();
+            },
+            function (event) {
+                new_template('3');
+                state3();
+            },
+        ],
+        [
+            "st3_template_save", "st3_template_delete", "template_save_delete",
+            function (event) {
+                save_template('3');
+                state3();
+            },
+            function (event) {
+                if (confirm('Are you sure you want to delete the template?')) {
+                    delete_template('3');
+                    state3();
+                }
+            },
+        ],
+        ["", "", "hr"],
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
@@ -3607,6 +3641,7 @@ function state3() {
         ["st3_current_level", "<b>Auto mode</b><br>Current level [1-7]", "integer", function (xv) {
             return 1 <= xv && xv <= 7;
         }],
+        ["", "", "hr"],
         ["st3_minmax_stmts", "Min-Max number of statements [4-12]", "range", function (xv) {
             return xv != null &&
                 4 <= xv[0] && xv[0] <= 12 &&
@@ -3637,6 +3672,7 @@ function state3() {
             },
         ],
     ]));
+    refill_templates('3');
     addWidget(document.createElement('br'));
     addWidget(document.createElement('br'));
     let link = document.createElement('a');
@@ -3800,6 +3836,7 @@ function* state3_generator(taskArea) {
             auto_increase_counter = 0;
             setSetting('st3_stn', n_statements);
             setSetting('st3_current_level', level);
+            save_template('3');
         }
         else if (st3_auto_mode === 0) {
             n_statements = randomInt(stmts_min, stmts_max);
@@ -3812,6 +3849,7 @@ function* state3_generator(taskArea) {
 }
 
 function state4() {
+    choose_template('4', null);
     currentGenerator = null;
     state = 4;
     clearWidgets();
@@ -3820,12 +3858,38 @@ function state4() {
         [
             "Start", "Back", "buttons",
             function (event) {
+                save_template('4');
                 state4_start();
             },
             function (event) {
                 state4_back();
             },
         ],
+        [
+            "st4_template_choose", "st4_template_new", "template_choose_new",
+            function (event) {
+                choose_template('4', event.target.value);
+                state4();
+            },
+            function (event) {
+                new_template('4');
+                state4();
+            },
+        ],
+        [
+            "st4_template_save", "st4_template_delete", "template_save_delete",
+            function (event) {
+                save_template('4');
+                state4();
+            },
+            function (event) {
+                if (confirm('Are you sure you want to delete the template?')) {
+                    delete_template('4');
+                    state4();
+                }
+            },
+        ],
+        ["", "", "hr"],
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
@@ -3955,6 +4019,7 @@ function state4() {
         ["st4_current_level", "<b>Auto mode</b><br>Current level [1-20]", "integer", function (xv) {
             return 1 <= xv && xv <= 20;
         }],
+        ["", "", "hr"],
         ["st4_minmax_attributes", "Min-Max attributes [2-5]", "range", function (xv) {
             return xv != null &&
                 2 <= xv[0] && xv[0] <= 5 &&
@@ -3994,6 +4059,7 @@ function state4() {
             },
         ],
     ]));
+    refill_templates('4');
     addWidget(document.createElement('br'));
     addWidget(document.createElement('br'));
     let link = document.createElement('a');
@@ -4954,6 +5020,7 @@ function* state4_generator(taskArea) {
                 setSetting('st4_current_attributes', n_attributes);
                 setSetting('st4_current_objects', m_objects);
                 setSetting('st4_current_level', level);
+                save_template('4');
             }
         }
         else if (st4_auto_mode === 0) {
@@ -5014,7 +5081,7 @@ function checkVersion() {
     }
     let last_version = parseFloat(localStorage.getItem('VERSION'));
     localStorage.setItem('VERSION', version);
-    if (last_version <= 5.90) {
+    if (last_version <= 5.93) {
         resetAllSettings();
     }
 }
