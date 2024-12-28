@@ -135,7 +135,6 @@ function loadSettings() {
         "st1_voice_to_image": combo_st1_voice_to_image.Enable,
         "st1_voice_index": -2,
         "st1_image_voice_modes_random": combo_st1_image_voice_modes_random.Enable,
-        "st1_word_mode": combo_st1_word_mode.Enable,
         "st1_word_mode_just_word": combo_st1_word_mode_just_word.Enable,
         "st1_word_mode_meaning": combo_st1_word_mode_meaning.Enable,
         "st1_word_mode_synonyms": combo_st1_word_mode_synonyms.Enable,
@@ -1493,6 +1492,14 @@ function stateHistory() {
     clearButton.classList.add('blackButton');
     clearButton.classList.add('w100');
     addWidget(clearButton);
+    let resetButton = createActionButton('Reset all settings', () => {
+        if (confirm('Are you sure you want to reset all settings?')) {
+            resetAllSettings();
+        }
+    });
+    resetButton.classList.add('blackButton');
+    resetButton.classList.add('w100');
+    addWidget(resetButton);
     exHistory.forEach(historyElem => {
         let task = createInputElems();
         let taskDiv = task[0];
@@ -1502,14 +1509,6 @@ function stateHistory() {
         taskArea.style.height = 'auto';
         taskArea.style.height = (taskArea.scrollHeight + 20) + 'px';
     });
-    let resetButton = createActionButton('Reset all settings', () => {
-        if (confirm('Are you sure you want to reset all settings?')) {
-            resetAllSettings();
-        }
-    });
-    resetButton.classList.add('blackButton');
-    resetButton.classList.add('w100');
-    addWidget(resetButton);
 }
 
 function getStrDateTime() {
@@ -1665,7 +1664,6 @@ function state1() {
             "st1_template_save", "st1_template_delete", "template_save_delete",
             function (event) {
                 save_template('1');
-                state1();
             },
             function (event) {
                 if (confirm('Are you sure you want to delete the template?')) {
@@ -1748,11 +1746,10 @@ function state1() {
         }],
         ["st1_image_voice_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_image_voice_hard_mode)],
         ["", "", "hr"],
-        ["st1_word_mode", "<u>Word mode</u>", "combobox", Object.values(combo_st1_word_mode)],
-        ["st1_word_mode_just_word", "Just a word", "combobox", Object.values(combo_st1_word_mode_just_word)],
-        ["st1_word_mode_meaning", "Meaning", "combobox", Object.values(combo_st1_word_mode_meaning)],
-        ["st1_word_mode_synonyms", "Synonyms", "combobox", Object.values(combo_st1_word_mode_synonyms)],
-        ["st1_word_mode_antonyms", "Antonyms", "combobox", Object.values(combo_st1_word_mode_antonyms)],
+        ["st1_word_mode_just_word", "<u>Word → Word</u>", "combobox", Object.values(combo_st1_word_mode_just_word)],
+        ["st1_word_mode_meaning", "<u>Word → Meaning</u>", "combobox", Object.values(combo_st1_word_mode_meaning)],
+        ["st1_word_mode_synonyms", "<u>Word → Synonyms</u>", "combobox", Object.values(combo_st1_word_mode_synonyms)],
+        ["st1_word_mode_antonyms", "<u>Word → Antonyms</u>", "combobox", Object.values(combo_st1_word_mode_antonyms)],
         ["", "", "hr1"],
         ["st1_word_mode_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_word_mode_random)],
         ["st1_word_mode_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
@@ -1815,14 +1812,14 @@ function state1_start() {
         '+': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
-            let newValue = Math.min(20, Math.max(9, fs + 1));
+            let newValue = Math.min(20, Math.max(7, fs + 1));
             setSetting('state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
-            let newValue = Math.min(20, Math.max(9, fs - 1));
+            let newValue = Math.min(20, Math.max(7, fs - 1));
             setSetting('state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
@@ -1884,7 +1881,6 @@ function* state1_generator(taskArea) {
     let st1_image_voice_answer_trial_time_limit = parseFloat(settings['st1_image_voice_answer_trial_time_limit']);
     let st1_word_mode_show_trial_time_limit = parseFloat(settings['st1_word_mode_show_trial_time_limit']);
     let st1_word_mode_answer_trial_time_limit = parseFloat(settings['st1_word_mode_answer_trial_time_limit']);
-    let st1_word_mode = settings['st1_word_mode'];
     let st1_word_mode_just_word = settings['st1_word_mode_just_word'];
     let st1_word_mode_meaning = settings['st1_word_mode_meaning'];
     let st1_word_mode_synonyms = settings['st1_word_mode_synonyms'];
@@ -1958,13 +1954,13 @@ function* state1_generator(taskArea) {
             'voice', 'voice-to-word'],
         [st1_voice_to_image == combo_st1_voice_to_image.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
             'voice', 'voice-to-image'],
-        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable,
+        [st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable,
             'word', 'word-just-one'],
-        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable,
+        [st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable,
             'word', 'word-meaning'],
-        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable,
+        [st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable,
             'word', 'word-synonyms'],
-        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable,
+        [st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable,
             'word', 'word-antonyms'],
     ];
     for (let x of variants) {
@@ -3573,7 +3569,6 @@ function state3() {
             "st3_template_save", "st3_template_delete", "template_save_delete",
             function (event) {
                 save_template('3');
-                state3();
             },
             function (event) {
                 if (confirm('Are you sure you want to delete the template?')) {
@@ -3708,14 +3703,14 @@ function state3_start() {
         '+': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
-            let newValue = Math.min(20, Math.max(9, fs + 1));
+            let newValue = Math.min(20, Math.max(7, fs + 1));
             setSetting('state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
-            let newValue = Math.min(20, Math.max(9, fs - 1));
+            let newValue = Math.min(20, Math.max(7, fs - 1));
             setSetting('state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
@@ -3880,7 +3875,6 @@ function state4() {
             "st4_template_save", "st4_template_delete", "template_save_delete",
             function (event) {
                 save_template('4');
-                state4();
             },
             function (event) {
                 if (confirm('Are you sure you want to delete the template?')) {
@@ -4095,14 +4089,14 @@ function state4_start() {
         '+': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
-            let newValue = Math.min(20, Math.max(9, fs + 1));
+            let newValue = Math.min(20, Math.max(7, fs + 1));
             setSetting('state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
-            let newValue = Math.min(20, Math.max(9, fs - 1));
+            let newValue = Math.min(20, Math.max(7, fs - 1));
             setSetting('state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
@@ -5113,10 +5107,6 @@ let combo_st1_voice_to_image = {
     Disable: "Disable"
 };
 let combo_st1_image_voice_modes_random = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
