@@ -129,18 +129,20 @@ function loadSettings() {
     let defParameters = {
         "st1_auto_mode": 20,
         "st1_n": 0,
-        "st1_image_mode": combo_st1_image_mode.Enable,
         "st1_word_to_image": combo_st1_word_to_image.Enable,
+        "st1_image_to_word": combo_st1_image_to_word.Enable,
+        "st1_voice_to_word": combo_st1_voice_to_word.Enable,
         "st1_voice_to_image": combo_st1_voice_to_image.Enable,
+        "st1_voice_index": -2,
+        "st1_image_voice_modes_random": combo_st1_image_voice_modes_random.Enable,
         "st1_word_mode": combo_st1_word_mode.Enable,
         "st1_word_mode_just_word": combo_st1_word_mode_just_word.Enable,
         "st1_word_mode_meaning": combo_st1_word_mode_meaning.Enable,
         "st1_word_mode_synonyms": combo_st1_word_mode_synonyms.Enable,
         "st1_word_mode_antonyms": combo_st1_word_mode_antonyms.Enable,
         "st1_word_mode_random": combo_st1_word_mode_random.Disable,
-        "st1_voice_index": -2,
         "st1_options": 4,
-        "st1_word_to_category": combo_st1_word_to_category.Disable,
+        "st1_word_to_category": combo_st1_word_to_category.Enable,
         "st1_image_voice_hard_mode": combo_st1_image_voice_hard_mode.Disable,
         "st1_word_hard_mode": combo_st1_word_hard_mode.Disable,
         "st1_image_voice_show_trial_time_limit": '0.0',
@@ -151,7 +153,6 @@ function loadSettings() {
         "st1_halloween_category": combo_st1_halloween_category.Enable,
         "st1_family_members_category": combo_st1_family_members_category.Enable,
         "st1_baby_category": combo_st1_baby_category.Enable,
-        "st1_font_size": 16,
         "st2_auto_mode": 5,
         "st2_boxes": 2,
         "st2_operations": 1,
@@ -163,7 +164,6 @@ function loadSettings() {
         "st3_minmax_stmts": "4-12",
         "st3_minmax_level": "1-7",
         "st3_max_solutions": 1,
-        "st3_font_size": 16,
         "st4_auto_mode": 2,
         "st4_current_attributes": 2,
         "st4_current_objects": 3,
@@ -174,7 +174,14 @@ function loadSettings() {
         "st4_hard_mode": combo_st4_hard_mode.Disable,
         "st4_max_seconds": 10,
         "st4_max_solutions": 1,
-        "st4_font_size": 16,
+        "state1_wrap": combo_st_wrap.Disable,
+        "state3_wrap": combo_st_wrap.Disable,
+        "state4_wrap": combo_st_wrap.Disable,
+        "state1_font_size": 16,
+        "state3_font_size": 16,
+        "state4_font_size": 16,
+        "state1_active_template": "Default",
+        "state1_templates": ""
     };
     let parameters = {};
     Object.keys(defParameters).forEach((param) => {
@@ -288,7 +295,6 @@ function stateN_defaults(st) {
     });
     if (state !== -1) {
         settings = loadSettings();
-        state0();
     }
 }
 
@@ -721,7 +727,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                 console.log(`${word} skipped`);
                 break;
             }
-            r.push(capitalize(word));
+            r.push(word);
             r.push(task1);
             r.push(task2);
             r.push(capitalize(expected));
@@ -766,12 +772,18 @@ function addScore(st, n = 1) {
     localStorage.setItem(st, scores[st] += n);
 }
 
-function createInputElems() {
+function createInputElems(wrap = false) {
     let taskDiv = document.createElement("div");
     taskDiv.id = "taskDiv";
     let taskArea = document.createElement("textarea");
     taskArea.id = "taskArea";
     taskArea.readOnly = true;
+    if (wrap == false) {
+        taskArea.style.whiteSpace = 'pre';
+    }
+    else {
+        taskArea.style.whiteSpace = 'pre-wrap';
+    }
     taskDiv.appendChild(taskArea);
     return [taskDiv, taskArea];
 }
@@ -974,6 +986,7 @@ function updateChooser(options, images = false) {
         if (children[i].nodeName == 'BUTTON') {
             if (images) {
                 if (k < options.length) {
+                    children[i].style.display = '';
                     children[i].style.color = '#ffffff00';
                     children[i].style.background = 'url("' + options[k][1] + '")';
                     children[i].style.backgroundSize = 'contain';
@@ -984,6 +997,7 @@ function updateChooser(options, images = false) {
                     children[i].style.height = '170px';
                 }
                 else {
+                    children[i].style.display = 'none';
                     children[i].style.color = '';
                     children[i].style.background = '';
                     children[i].style.backgroundSize = '';
@@ -1003,6 +1017,12 @@ function updateChooser(options, images = false) {
                 children[i].innerHTML = (k < options.length) ? options[k] : '-';
                 children[i].style.width = '';
                 children[i].style.height = '';
+                if (k < options.length) {
+                    children[i].style.display = '';
+                }
+                else {
+                    children[i].style.display = 'none';
+                }
             }
             ++k;
         }
@@ -1118,6 +1138,19 @@ function createParameters(parameters) {
         let firstElement = null;
         let secondElement = null;
         switch (item[2]) {
+            case "template_choose_new": {
+                firstElement = createTemplateChooser(item[0], item[3]);
+                secondElement = createParameterActionButton(item[1], item[4]);
+                secondElement.innerHTML = 'New';
+                break;
+            }
+            case "template_save_delete": {
+                firstElement = createParameterActionButton(item[0], item[3]);
+                firstElement.innerHTML = 'Save';
+                secondElement = createParameterActionButton(item[1], item[4]);
+                secondElement.innerHTML = 'Delete';
+                break;
+            }
             case "buttons": {
                 firstElement = createParameterActionButton(
                     item[0], item[3]);
@@ -1301,10 +1334,13 @@ function createParameterCombobox(param_id, options, onchangeFunc = null) {
 
 function createVoiceCombobox(param_id, onchangeFunc = null, add_voice_std_option = false) {
     let select = document.createElement("select");
+    /*
     let empty_option = document.createElement("option");
     empty_option.value = -1;
-    empty_option.innerHTML = "Disable";
+    empty_option.innerHTML = "No voice";
     select.appendChild(empty_option);
+    select.value = empty_option.value;
+    */
     if (add_voice_std_option) {
         let voice_std_option = document.createElement("option");
         voice_std_option.value = -2;
@@ -1318,7 +1354,6 @@ function createVoiceCombobox(param_id, onchangeFunc = null, add_voice_std_option
         option.innerHTML = '[Offline] ' + optionValue[2];
         select.appendChild(option);
     });
-    select.value = empty_option.value;
     for (let x of options) {
         if (x[0] == settings[param_id]) {
             select.value = x[0];
@@ -1364,6 +1399,14 @@ function createMenuButton(text, onmouseup) {
     button.innerHTML = text;
     button.onmouseup = onmouseup;
     return button;
+}
+
+function createTemplateChooser(param_id, onmouseup) {
+    let combobox = document.createElement("select");
+    combobox.classList.add("modern_select");
+    combobox.id = param_id;
+    combobox.onchange = onmouseup;
+    return combobox;
 }
 
 function createParameterActionButton(param_id, onmouseup) {
@@ -1418,6 +1461,14 @@ function state0() {
     addWidget(link);
 }
 
+function resetAllSettings() {
+    let storageCopy = Object.assign({}, localStorage);
+    Object.keys(storageCopy).forEach((x) => {
+        localStorage.removeItem(x);
+    });
+    location.reload();
+}
+
 function stateHistory() {
     currentGenerator = null;
     state = -1;
@@ -1447,6 +1498,14 @@ function stateHistory() {
         taskArea.style.height = 'auto';
         taskArea.style.height = (taskArea.scrollHeight + 20) + 'px';
     });
+    let resetButton = createActionButton('Reset all settings', () => {
+        if (confirm('Are you sure you want to reset all settings?')) {
+            resetAllSettings();
+        }
+    });
+    resetButton.classList.add('blackButton');
+    resetButton.classList.add('w100');
+    addWidget(resetButton);
 }
 
 function getStrDateTime() {
@@ -1473,7 +1532,103 @@ function updateLastHistoryItem(historyElem) {
     localStorage.setItem('exHistory', JSON.stringify(exHistory));
 }
 
+function refill_templates(exercise_number) {
+    let active_template = settings['state' + exercise_number + '_active_template'];
+    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    if (!state_n_templates) {
+        active_template = 'Default';
+        new_template(exercise_number, active_template);
+        state_n_templates = settings['state' + exercise_number + '_templates'];
+    }
+    state_n_templates = JSON.parse(state_n_templates);
+    let select = document.getElementById('st' + exercise_number + '_template_choose');
+    select.innerHTML = '';
+    for (const [key, value] of Object.entries(state_n_templates)) {
+        let option = document.createElement('option');
+        option.value = key;
+        option.innerHTML = key;
+        select.appendChild(option);
+    }
+    select.value = active_template;
+    choose_template(exercise_number, active_template);
+}
+
+function choose_template(exercise_number, active_template) {
+    if (active_template == null) {
+        active_template = settings['state' + exercise_number + '_active_template'];
+    }
+    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
+    if (state_n_templates.hasOwnProperty(active_template)) {
+        let template = state_n_templates[active_template];
+        for (let [key, value] of Object.entries(template)) {
+            setSetting(key, value);
+        }
+        setSetting('state' + exercise_number + '_active_template', active_template);
+    }
+}
+
+function new_template(exercise_number, template_name = null) {
+    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
+    if (template_name == null) {
+        template_name = prompt('Enter name of template:');
+    }
+    if (template_name == null) {
+        return;
+    }
+    if (/^([a-zA-Z0-9_]+)$/.test(template_name) == false) {
+        alert('Template name is invalid!');
+        return;
+    }
+    if (state_n_templates.hasOwnProperty(template_name)) {
+        alert('Template already exists!');
+        return;
+    }
+    let new_template_value = {};
+    for (const [key, value] of Object.entries(settings)) {
+        if (key.startsWith('st' + exercise_number + '_')) {
+            new_template_value[key] = value;
+        }
+    }
+    state_n_templates[template_name] = new_template_value;
+    setSetting('state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
+    choose_template(exercise_number, template_name);
+}
+
+function save_template(exercise_number) {
+    let active_template = settings['state' + exercise_number + '_active_template'];
+    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
+    if (state_n_templates.hasOwnProperty(active_template)) {
+        let new_template_value = {};
+        for (const [key, value] of Object.entries(settings)) {
+            if (key.startsWith('st' + exercise_number + '_')) {
+                new_template_value[key] = value;
+            }
+        }
+        state_n_templates[active_template] = new_template_value;
+        setSetting('state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
+    }
+}
+
+function delete_template(exercise_number) {
+    let active_template = settings['state' + exercise_number + '_active_template'];
+    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
+    if (active_template == 'Default') {
+        alert('You cannot delete Default template!');
+        return;
+    }
+    if (state_n_templates.hasOwnProperty(active_template)) {
+        delete state_n_templates[active_template];
+        setSetting('state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
+        choose_template(exercise_number, 'Default');
+    }
+}
+
 function state1() {
+    choose_template('1', null);
     clearInterval(st1_show_trial_interval);
     clearInterval(st1_answer_trial_interval);
     currentGenerator = null;
@@ -1484,6 +1639,7 @@ function state1() {
         [
             "Start", "Back", "buttons",
             function (event) {
+                save_template('1');
                 state1_start();
             },
             function (event) {
@@ -1510,7 +1666,7 @@ function state1() {
                 }
                 st1_n = st1_n_min;
                 setSetting('st1_n', st1_n_string);
-                state1();
+                document.getElementById('st1_n').innerHTML = st1_n_string;
             },
             function (event) {
                 let st1_n = toIntOrIntRange(settings['st1_n']);
@@ -1530,11 +1686,35 @@ function state1() {
                 }
                 st1_n = st1_n_min;
                 setSetting('st1_n', st1_n_string);
+                document.getElementById('st1_n').innerHTML = st1_n_string;
+            },
+        ],
+        [
+            "st1_template_choose", "st1_template_new", "template_choose_new",
+            function (event) {
+                choose_template('1', event.target.value);
+                state1();
+            },
+            function (event) {
+                new_template('1');
                 state1();
             },
         ],
-        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-1000]", "integer", function (xv) {
-            return xv === 0 || 1 <= xv && xv <= 1000;
+        [
+            "st1_template_save", "st1_template_delete", "template_save_delete",
+            function (event) {
+                save_template('1');
+                state1();
+            },
+            function (event) {
+                if (confirm('Are you sure you want to delete the template?')) {
+                    delete_template('1');
+                    state1();
+                }
+            },
+        ],
+        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successful trials<br>[0:disable|1-10000]", "integer", function (xv) {
+            return xv === 0 || 1 <= xv && xv <= 10000;
         }],
         ["st1_n", "<b>Auto mode</b><br>Min-Max N<br>[0|1-100]", "range", function (xv) {
             return xv != null &&
@@ -1542,22 +1722,24 @@ function state1() {
                    (xv.length === 1 || 0 <= xv[1] && xv[1] <= 100);
         }],
         ["", "", "hr"],
-        ["st1_image_mode", "<u>Image mode</u>", "combobox", Object.values(combo_st1_image_mode)],
-        ["st1_word_to_image", "Word → Image", "combobox", Object.values(combo_st1_word_to_image)],
+        ["st1_image_to_word", "<u>Image → Word</u>", "combobox", Object.values(combo_st1_image_to_word)],
+        ["st1_word_to_image", "<u>Word → Image</u>", "combobox", Object.values(combo_st1_word_to_image)],
         ["", "", "hr1"],
-        ["st1_voice_index", "<u>Voice mode</u>", "st1_voice_combobox"],
-        ["st1_voice_to_image", "Voice → Image", "combobox", Object.values(combo_st1_voice_to_image)],
+        ["st1_voice_to_word", "<u>Voice → Word</u>", "combobox", Object.values(combo_st1_voice_to_word)],
+        ["st1_voice_to_image", "<u>Voice → Image</u>", "combobox", Object.values(combo_st1_voice_to_image)],
+        ["st1_voice_index", "Voice", "st1_voice_combobox"],
         ["", "", "hr1"],
         ["st1_word_to_category", "Word → Category", "combobox", Object.values(combo_st1_word_to_category)],
+        ["st1_image_voice_modes_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_image_voice_modes_random)],
         ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
         ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
         ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
         ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
-        ["st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "float", function (xv) {
-            return xv === 0 || 0.1 <= xv && xv <= 60;
+        ["st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
-        ["st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "float", function (xv) {
-            return xv === 0 || 2 <= xv && xv <= 60;
+        ["st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
         ["st1_image_voice_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_image_voice_hard_mode)],
         ["", "", "hr"],
@@ -1568,16 +1750,17 @@ function state1() {
         ["st1_word_mode_antonyms", "Antonyms", "combobox", Object.values(combo_st1_word_mode_antonyms)],
         ["", "", "hr1"],
         ["st1_word_mode_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_word_mode_random)],
-        ["st1_word_mode_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-60]", "float", function (xv) {
-            return xv === 0 || 0.1 <= xv && xv <= 60;
+        ["st1_word_mode_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
-        ["st1_word_mode_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|2-60]", "float", function (xv) {
-            return xv === 0 || 2 <= xv && xv <= 60;
+        ["st1_word_mode_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
         ["st1_word_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_word_hard_mode)],
         ["", "", "hr"],
         ["st1_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["", "", "hr"],
+        ["state1_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         ["", "", "text", "Categories<br>Images<br>Nate's voice files", `${state1_statistics_images_categories}<br>${state1_statistics_images}<br>${state1_statistics_voice_files}`],
         ["", "", "text", "Words<br>Definitions of the words<br>Synonyms<br>Antonyms", `${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}`],
         [
@@ -1585,15 +1768,20 @@ function state1() {
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
                     stateN_defaults('st1');
+                    save_template('1');
+                    state1();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('st1');
+                    save_template('1');
+                    state1();
                 }
             },
         ],
     ]));
+    refill_templates('1');
 }
 
 function state1_back() {
@@ -1602,13 +1790,13 @@ function state1_back() {
 
 function state1_start() {
     clearWidgets();
-    let task = createInputElems();
+    let task = createInputElems(settings['state1_wrap'] == combo_st_wrap.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
     taskDiv.style.height = '150px';
     taskArea.style.height = '155px';
     let st1_options = parseInt(settings['st1_options']);
-    let fs = parseInt(settings['st1_font_size']);
+    let fs = parseInt(settings['state1_font_size']);
     taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(createCaption(statesToNames.st1));
     addWidget(taskDiv);
@@ -1624,14 +1812,14 @@ function state1_start() {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(9, fs + 1));
-            setSetting('st1_font_size', newValue);
+            setSetting('state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(9, fs - 1));
-            setSetting('st1_font_size', newValue);
+            setSetting('state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
     }));
@@ -1682,35 +1870,24 @@ function* state1_generator(taskArea) {
     let st1_options = parseInt(settings['st1_options']);
     let st1_word_to_category = settings['st1_word_to_category'];
     let st1_word_to_image = settings['st1_word_to_image'];
+    let st1_image_to_word = settings['st1_image_to_word'];
+    let st1_voice_to_word = settings['st1_voice_to_word'];
     let st1_voice_to_image = settings['st1_voice_to_image'];
+    let st1_voice_index = parseInt(settings['st1_voice_index']);
     let st1_image_voice_hard_mode = settings['st1_image_voice_hard_mode'];
     let st1_word_hard_mode = settings['st1_word_hard_mode'];
     let st1_image_voice_show_trial_time_limit = parseFloat(settings['st1_image_voice_show_trial_time_limit']);
     let st1_image_voice_answer_trial_time_limit = parseFloat(settings['st1_image_voice_answer_trial_time_limit']);
     let st1_word_mode_show_trial_time_limit = parseFloat(settings['st1_word_mode_show_trial_time_limit']);
     let st1_word_mode_answer_trial_time_limit = parseFloat(settings['st1_word_mode_answer_trial_time_limit']);
-    let st1_image_mode = settings['st1_image_mode'];
     let st1_word_mode = settings['st1_word_mode'];
     let st1_word_mode_just_word = settings['st1_word_mode_just_word'];
     let st1_word_mode_meaning = settings['st1_word_mode_meaning'];
     let st1_word_mode_synonyms = settings['st1_word_mode_synonyms'];
     let st1_word_mode_antonyms = settings['st1_word_mode_antonyms'];
-    let st1_word_mode_random = settings['st1_word_mode_random'] == combo_st1_word_mode_random.Enable;
-    let random_tasks_types = [];
-    if (st1_word_mode_random && st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable) {
-        random_tasks_types.push('word-just-one');
-    }
-    if (st1_word_mode_random && st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable) {
-        random_tasks_types.push('word-meaning');
-    }
-    if (st1_word_mode_random && st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable) {
-        random_tasks_types.push('word-synonyms');
-    }
-    if (st1_word_mode_random && st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable) {
-        random_tasks_types.push('word-antonyms');
-    }
-    st1_word_mode_random = random_tasks_types;
-    let st1_voice_index = parseInt(settings['st1_voice_index']);
+    let st1_image_voice_modes_random_bool = settings['st1_image_voice_modes_random'] == combo_st1_image_voice_modes_random.Enable;
+    let st1_word_mode_random_bool = settings['st1_word_mode_random'] == combo_st1_word_mode_random.Enable;
+
     let st1_insects_category = settings['st1_insects_category'];
     let st1_halloween_category = settings['st1_halloween_category'];
     let st1_family_members_category = settings['st1_family_members_category'];
@@ -1718,7 +1895,8 @@ function* state1_generator(taskArea) {
     let auto_increase_counter = 0;
     let clearBefore = true;
     let not_item_checker = function (category1, category2, title) {
-        if (st1_insects_category == combo_st1_insects_category.Disable && (category2 == 'Insects' || title == 'Spider')) {
+        if (st1_insects_category == combo_st1_insects_category.Disable && (
+            category2 == 'Insects' || title == 'Spider' || title == 'Bee')) {
             return true;
         }
         if (st1_halloween_category == combo_st1_halloween_category.Disable && category2 == 'Halloween') {
@@ -1765,6 +1943,35 @@ function* state1_generator(taskArea) {
         }
         return false;
     };
+    let short_to_full_variant = new Map();
+    let full_to_short_variants = new Map();
+    let variants = [
+        [st1_image_to_word == combo_st1_image_to_word.Enable,
+            'image', 'image-to-word'],
+        [st1_word_to_image == combo_st1_word_to_image.Enable,
+            'image', 'word-to-image'],
+        [st1_voice_to_word == combo_st1_voice_to_word.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
+            'voice', 'voice-to-word'],
+        [st1_voice_to_image == combo_st1_voice_to_image.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
+            'voice', 'voice-to-image'],
+        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable,
+            'word', 'word-just-one'],
+        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable,
+            'word', 'word-meaning'],
+        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable,
+            'word', 'word-synonyms'],
+        [st1_word_mode == combo_st1_word_mode.Enable && st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable,
+            'word', 'word-antonyms'],
+    ];
+    for (let x of variants) {
+        let add_variant_bool = x[0], short_variant = x[1], full_variant = x[2];
+        if (add_variant_bool) {
+            let tmp = short_to_full_variant.get(short_variant) ?? [];
+            tmp.push(full_variant);
+            short_to_full_variant.set(short_variant, tmp);
+            full_to_short_variants.set(full_variant, short_variant);
+        }
+    }
     let images_generator = imageGetter(state1_images, st1_options,
         st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable,
         not_item_checker, not_variants_checker);
@@ -1827,75 +2034,33 @@ function* state1_generator(taskArea) {
             auto_increase_counter = Math.max(0, auto_increase_counter - 2);
             mistakeFlag = false;
         }
-        let variants = [];
-        if (st1_image_mode == combo_st1_image_mode.Enable) {
-            variants.push('image');
-        }
-        if (st1_word_mode == combo_st1_word_mode.Enable) {
-            if (st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable) {
-                variants.push('word-just-one');
-            }
-            if (st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable) {
-                variants.push('word-meaning');
-            }
-            if (st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable) {
-                variants.push('word-synonyms');
-            }
-            if (st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable) {
-                variants.push('word-antonyms');
-            }
-        }
-        if (st1_voice_index >= 0 || st1_voice_index === -2) {
-            variants.push('voice');
-        }
-        let variant = randomChoice(variants);
-        let gen_next = null;
-        if (variant == 'image' || variant == 'voice') {
-            gen_next = images_generator.next();
+        let short_variant = randomChoice(Array.from(short_to_full_variant.keys()));
+        let full_variant = randomChoice(short_to_full_variant.get(short_variant));
+        let variant_data = null;
+        if (short_variant == 'image' || short_variant == 'voice') {
+            let gen_next = images_generator.next();
             if (gen_next.done) {
                 images_generator = imageGetter(state1_images, st1_options,
                     st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable,
                     not_item_checker, not_variants_checker);
                 gen_next = images_generator.next();
             }
-            gen_next = gen_next.value;
-            if (variant == 'image') {
-                if (st1_word_to_image == combo_st1_word_to_image.Enable) {
-                    gen_next.push(randomChoice(['word', 'image']));
-                }
-                else if (st1_word_to_image == combo_st1_word_to_image.Only) {
-                    gen_next.push('word');
-                }
-                else {
-                    gen_next.push('image');
-                }
-            }
-            else {
-                if (st1_voice_to_image == combo_st1_voice_to_image.Enable) {
-                    gen_next.push(randomChoice(['word', 'voice']));
-                }
-                else if (st1_voice_to_image == combo_st1_voice_to_image.Only) {
-                    gen_next.push('word');
-                }
-                else {
-                    gen_next.push('voice');
-                }
-            }
-            // [category 1, category 2, filename, title, variants, task_type]
+            variant_data = gen_next.value;
+            // [category 1, category 2, filename, title, variants]
         }
-        else if (variant == 'word-just-one' || variant == 'word-meaning' || variant == 'word-synonyms' || variant == 'word-antonyms') {
+        else if (short_variant == 'word') {
             word_generator.next();
-            gen_next = word_generator.next(variant);
+            let gen_next = word_generator.next(full_variant);
             if (gen_next.done ?? true) {
                 word_generator = wordGetter(state1_words, st1_options,
                     st1_word_hard_mode == combo_st1_word_hard_mode.Enable);
                 word_generator.next();
-                gen_next = word_generator.next(variant);
+                gen_next = word_generator.next(full_variant);
             }
-            gen_next = gen_next.value;
+            variant_data = gen_next.value;
             // [word, task1, task2, expected, explanation, options]
         }
-        task_list.push([variant, gen_next]);
+        task_list.push([short_variant, full_variant, variant_data]);
         let prev_n = st1_n, n_prev_task = null, current_task = task_list[task_list.length - 1];
         if (task_list.length - 1 < st1_n) {
             skip_mode = true;
@@ -1921,73 +2086,81 @@ function* state1_generator(taskArea) {
             expected = 'skip';
             updateChooser(skip_plug);
         }
-        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
+        short_variant = n_prev_task[0];
+        full_variant = n_prev_task[1];
+        variant_data = n_prev_task[2];
+        if (short_variant == 'image' || short_variant == 'voice') {
+            if (n_prev_task != current_task && st1_image_voice_modes_random_bool) {
+                if (full_variant == 'image-to-word' && full_to_short_variants.has('word-to-image')) {
+                    full_variant = randomChoice(['image-to-word', 'word-to-image']);
+                }
+                else if (full_variant == 'word-to-image' && full_to_short_variants.has('image-to-word')) {
+                    full_variant = randomChoice(['word-to-image', 'image-to-word']);
+                }
+                else if (full_variant == 'voice-to-word' && full_to_short_variants.has('word-to-image')) {
+                    full_variant = randomChoice(['voice-to-word', 'word-to-image']);
+                }
+                else if (full_variant == 'voice-to-image' && full_to_short_variants.has('image-to-word')) {
+                    full_variant = randomChoice(['voice-to-image', 'image-to-word']);
+                }
+                short_variant = full_to_short_variants.get(full_variant);
+            }
             let category_element_mode_active = 0;
-            if (st1_word_to_category == combo_st1_word_to_category.Only) {
-                category_element_mode_active = randomChoice([1, 2]);
+            if (full_variant == 'image-to-word' || full_variant == 'voice-to-word') {
+                if (st1_word_to_category == combo_st1_word_to_category.Only) {
+                    category_element_mode_active = randomChoice([1, 2]);
+                }
+                else if (st1_word_to_category == combo_st1_word_to_category.Enable) {
+                    category_element_mode_active = randomChoice([0, 1, 2]);
+                }
             }
-            else if (st1_word_to_category == combo_st1_word_to_category.Enable) {
-                category_element_mode_active = randomChoice([0, 1, 2]);
-            }
-            let image_struct = n_prev_task[1];
-            let task_type = image_struct[5];
-            if (task_type == 'word') {
-                category_element_mode_active = 0;
-            }
-            if (category_element_mode_active && (image_struct[0] == 'Adjectives' ||
-                image_struct[0] == 'Baby' ||
-                image_struct[0] == 'Bedroom' ||
-                image_struct[0] == 'Holidays' ||
-                image_struct[0] == 'Verbs' ||
-                image_struct[1] == 'Stages') &&
+            if (category_element_mode_active && (
+                variant_data[0] == 'Adjectives' ||
+                variant_data[0] == 'Baby' ||
+                variant_data[0] == 'Bedroom' ||
+                variant_data[0] == 'Holidays' ||
+                variant_data[0] == 'Verbs' ||
+                variant_data[1] == 'Stages') &&
                 st1_word_to_category != combo_st1_word_to_category.Only) {
                 category_element_mode_active = 0;
             }
+            let n_back_str = (skip_mode === false) ? prev_n + '-Back' : 'Next';
             if (st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable) {
-                text += prev_n + "-Back [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
+                text += n_back_str + " [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
             }
             else if (category_element_mode_active) {
                 let element_name = '***';
-                if (n_prev_task[0] == 'image' || st1_n === 0) {
-                    element_name = image_struct[3];
+                if (short_variant == 'image' || st1_n === 0) {
+                    element_name = variant_data[3];
                 }
-                text += prev_n + '-Back element: ';
+                text += n_back_str + ' element: ';
                 text += element_name + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
             else {
-                text += prev_n + '-Back category: ';
-                text += image_struct[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
+                text += n_back_str + ' category: ';
+                text += variant_data[1] + " (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
-            explanation = image_struct[0] + " > " + image_struct[1] + " > " + image_struct[3];
+            explanation = variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3];
             if (skip_mode === false) {
                 let choose_text = '';
-                let options = image_struct[4];
+                let options = variant_data[4];
                 if (category_element_mode_active == 0) {
-                    expected = image_struct[3];
+                    expected = variant_data[3];
                     choose_text = "Choose element:\n";
                 }
-                else if (category_element_mode_active == 1) {
-                    expected = image_struct[0];
-                    let i = 0;
+                else if (category_element_mode_active) {
+                    expected = category_element_mode_active == 1 ? variant_data[0] : variant_data[1];
+                    let i = 0, new_options = [];
                     for (let x of options) {
-                        if (x[0] == image_struct[3]) {
-                            options[i][0] = expected;
-                            options[i][1] = '';
+                        if (x[0] == variant_data[3]) {
+                            new_options.push([expected, '']);
+                        }
+                        else {
+                            new_options.push([x[0], x[1]]);
                         }
                         ++i;
                     }
-                    choose_text = "Choose category:\n";
-                }
-                else if (category_element_mode_active == 2) {
-                    expected = image_struct[1];
-                    let i = 0;
-                    for (let x of options) {
-                        if (x[0] == image_struct[3]) {
-                            options[i][0] = expected;
-                            options[i][1] = '';
-                        }
-                        ++i;
-                    }
+                    options = new_options;
                     choose_text = "Choose category:\n";
                 }
                 options = randomShuffle(options);
@@ -2000,18 +2173,20 @@ function* state1_generator(taskArea) {
                     options_by_first.push([x[0]]);
                     i += 1;
                 }
-                if (task_type == 'image' || task_type == 'voice') {
+                let images_used = false;
+                if (full_variant == 'image-to-word' || full_variant == 'voice-to-word') {
                     options = options_by_first;
                     text += choose_text;
                     text += convertOptionsToString(options_by_first);
                 }
-                else if (task_type == 'word') {
+                else if (full_variant == 'word-to-image' || full_variant == 'voice-to-image') {
                     text += choose_text.slice(0, -2) + '\n';
+                    images_used = true;
                 }
-                updateChooser(options, task_type == 'word');
+                updateChooser(options, images_used);
             }
         }
-        else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
+        else if (short_variant == 'word') {
             if (st1_word_hard_mode == combo_st1_word_hard_mode.Enable) {
                 text += prev_n + "-Back [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
             }
@@ -2019,67 +2194,70 @@ function* state1_generator(taskArea) {
                 text += prev_n + "-Back (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n";
             }
             if (skip_mode === false) {
-                if (n_prev_task != current_task && st1_word_mode_random.length > 0 &&
-                    (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms')) {
-                    task_type = randomChoice(st1_word_mode_random);
+                if (n_prev_task != current_task && st1_word_mode_random_bool) {
+                    let new_full_variant = full_variant;
+                    if (full_variant == 'word-just-one' || full_variant == 'word-synonyms' || full_variant == 'word-antonyms') {
+                        new_full_variant = randomChoice(short_to_full_variant.get('word'));
+                    }
                     word_generator.next();
-                    gen_next = word_generator.next([task_type, n_prev_task[1][0]]);  // [task_type, word]
+                    let gen_next = word_generator.next([new_full_variant, variant_data[0]]);  // [variant, word]
                     if (!(gen_next.done ?? true)) {
-                        n_prev_task = [task_type, gen_next.value];
+                        full_variant = new_full_variant;
+                        variant_data = gen_next.value;
+                        n_prev_task = [short_variant, full_variant, variant_data];
                     }
                 }
-                expected = n_prev_task[1][3]; // [word, task1, task2, expected, explanation, options]
-                explanation = n_prev_task[1][4] ? ('\n' + n_prev_task[1][4]) : '';
-                let options = n_prev_task[1][5];
+                expected = variant_data[3]; // [word, task1, task2, expected, explanation, options]
+                explanation = variant_data[4] ? ('\n' + variant_data[4]) : '';
+                let options = variant_data[5];
                 options = randomShuffle(options);
                 updateChooser(options);
                 if (n_prev_task == current_task) {
-                    text += n_prev_task[1][1] + '\n';
+                    text += variant_data[1] + '\n';
                 }
-                text += n_prev_task[1][2] + '\n' + text_to_lines(convertOptionsToString(options), 100, 1, true) + '\n';
+                text += variant_data[2] + '\n' + text_to_lines(convertOptionsToString(options), 100, 1, true) + '\n';
             }
         }
-        if (current_task[0] == 'image') {
-            let image_struct = current_task[1];
-            let task_type = image_struct[5];
-            if (task_type == 'word') {
-                let word = image_struct[3];
-                text += '\nNext word: ' + word + '\n';
+        short_variant = current_task[0];
+        full_variant = current_task[1];
+        variant_data = current_task[2];
+        if (short_variant == 'image') {
+            if (full_variant == 'word-to-image') {
+                text += '\nNext word: ' + variant_data[3] + '\n';
             }
-            else if (task_type == 'image') {
-                let image_path = image_struct[2];
+            else if (full_variant == 'image-to-word') {
+                let image_path = variant_data[2];
                 let img = imageDiv?.firstChild;
                 img.src = image_path;
                 img.alt = image_path;
                 imageDiv.style.display = '';
             }
             lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(current_task[0]) + ': ' + image_struct[0] + " > " + image_struct[1] + " > " + image_struct[3]);
+                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
         }
-        else if (current_task[0] == 'voice') {
-            let voice_struct = current_task[1];
-            voiceButton.voice_text = voice_struct[3];
+        else if (short_variant == 'voice') {
+            voiceButton.voice_text = variant_data[3];
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
             lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(current_task[0]) + ': ' + voice_struct[0] + " > " + voice_struct[1] + " > " + voice_struct[2]);
+                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[2]);
             voiceDiv.style.display = '';
         }
-        else if (current_task[0] == 'word-just-one' || current_task[0] == 'word-meaning' || current_task[0] == 'word-synonyms' || current_task[0] == 'word-antonyms') {
+        else if (short_variant == 'word') {
             if (current_task != n_prev_task || skip_mode) {
-                text += '\n' + current_task[1][1] + '\n';
+                text += '\n' + variant_data[1] + '\n';
             }
             let line = "N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
-            if (current_task[0] == 'word-just-one') {
-                line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0];
+            if (full_variant == 'word-just-one') {
+                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0]);
             }
-            else if (current_task[0] == 'word-meaning') {
-                let meaning = state1_words[current_task[1][0].toLowerCase()][0];
+            else if (full_variant == 'word-meaning') {
+                let meaning = state1_words[variant_data[0]][0];
                 meaning = meaning ? (' - ' + meaning) : '';
-                line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0] + meaning;
+                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0]) + meaning;
             }
             else {
-                line += capitalize(current_task[0].replace('-', ' ')) + ': ' + current_task[1][0] + ' -> ' + current_task[1][3];
+                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0]) + ' -> ' + variant_data[3];
             }
             lines.push(line);
         }
@@ -2088,7 +2266,7 @@ function* state1_generator(taskArea) {
         if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
             show_trial_timer_var = st1_image_voice_show_trial_time_limit;
         }
-        else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
+        else if (n_prev_task[0] == 'word') {
             show_trial_timer_var = st1_word_mode_show_trial_time_limit;
         }
         if (show_trial_timer_var > 0) {
@@ -2116,7 +2294,7 @@ function* state1_generator(taskArea) {
         if (n_prev_task[0] == 'image' || n_prev_task[0] == 'voice') {
             answer_trial_timer_var = st1_image_voice_answer_trial_time_limit;
         }
-        else if (n_prev_task[0] == 'word-just-one' || n_prev_task[0] == 'word-meaning' || n_prev_task[0] == 'word-synonyms' || n_prev_task[0] == 'word-antonyms') {
+        else if (n_prev_task[0] == 'word') {
             answer_trial_timer_var = st1_word_mode_answer_trial_time_limit;
         }
         if (answer_trial_timer_var > 0) {
@@ -2227,8 +2405,9 @@ function state2() {
                     st2_boxes = st2_boxes + 1;
                 }
                 setSetting('st2_boxes', st2_boxes);
+                document.getElementById('st2_boxes').innerHTML = st2_boxes;
                 setSetting('st2_operations', st2_operations);
-                state2();
+                document.getElementById('st2_operations').innerHTML = st2_operations;
             },
             function (event) {
                 let st2_boxes = parseInt(settings['st2_boxes']);
@@ -2244,8 +2423,9 @@ function state2() {
                     st2_boxes = st2_boxes - 1;
                 }
                 setSetting('st2_boxes', st2_boxes);
+                document.getElementById('st2_boxes').innerHTML = st2_boxes;
                 setSetting('st2_operations', st2_operations);
-                state2();
+                document.getElementById('st2_operations').innerHTML = st2_operations;
             },
         ],
         ["st2_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully completed iterations<br>[0:disable|1-100]", "integer", function (xv) {
@@ -2272,11 +2452,13 @@ function state2() {
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
                     stateN_defaults('st2');
+                    state2();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('st2');
+                    state2();
                 }
             },
         ],
@@ -3388,8 +3570,9 @@ function state3() {
                     level += 1;
                 }
                 setSetting('st3_stn', n_statements);
+                document.getElementById('st3_stn').innerHTML = n_statements;
                 setSetting('st3_current_level', level);
-                state3();
+                document.getElementById('st3_current_level').innerHTML = level;
             },
             function (event) {
                 let st3_stn = parseInt(settings['st3_stn']);
@@ -3410,8 +3593,9 @@ function state3() {
                     level -= 1;
                 }
                 setSetting('st3_stn', n_statements);
+                document.getElementById('st3_stn').innerHTML = n_statements;
                 setSetting('st3_current_level', level);
-                state3();
+                document.getElementById('st3_current_level').innerHTML = level;
             },
         ],
         ["st3_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved puzzles<br>[0:disable|1-100]", "integer", function (xv) {
@@ -3436,16 +3620,19 @@ function state3() {
         ["st3_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
             return 1 <= xv && xv <= 10;
         }],
+        ["state3_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
                     stateN_defaults('st3');
+                    state3();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('st3');
+                    state3();
                 }
             },
         ],
@@ -3468,10 +3655,10 @@ function state3_back() {
 function state3_start() {
     clearWidgets();
     addWidget(createCaption(statesToNames.st3));
-    let task = createInputElems();
+    let task = createInputElems(settings['state3_wrap'] == combo_st_wrap.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
-    let fs = parseInt(settings['st3_font_size']);
+    let fs = parseInt(settings['state3_font_size']);
     taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(taskDiv);
     addWidget(createTableOfSelects(state3, {
@@ -3486,14 +3673,14 @@ function state3_start() {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(9, fs + 1));
-            setSetting('st3_font_size', newValue);
+            setSetting('state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(9, fs - 1));
-            setSetting('st3_font_size', newValue);
+            setSetting('state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
     }));
@@ -3692,9 +3879,11 @@ function state4() {
                     }
                 }
                 setSetting('st4_current_attributes', n_attributes);
+                document.getElementById('st4_current_attributes').innerHTML = n_attributes;
                 setSetting('st4_current_objects', m_objects);
+                document.getElementById('st4_current_objects').innerHTML = m_objects;
                 setSetting('st4_current_level', level);
-                state4();
+                document.getElementById('st4_current_level').innerHTML = level;
             },
             function (event) {
                 let st4_current_attributes = parseInt(settings['st4_current_attributes']);
@@ -3747,9 +3936,11 @@ function state4() {
                     }
                 }
                 setSetting('st4_current_attributes', n_attributes);
+                document.getElementById('st4_current_attributes').innerHTML = n_attributes;
                 setSetting('st4_current_objects', m_objects);
+                document.getElementById('st4_current_objects').innerHTML = m_objects;
                 setSetting('st4_current_level', level);
-                state4();
+                document.getElementById('st4_current_level').innerHTML = level;
             },
         ],
         ["st4_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved puzzles<br>[0:disable|1-100]", "integer", function (xv) {
@@ -3786,16 +3977,19 @@ function state4() {
         ["st4_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
             return 1 <= xv && xv <= 10;
         }],
+        ["state4_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
                     stateN_defaults('st4');
+                    state4();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('st4');
+                    state4();
                 }
             },
         ],
@@ -3818,10 +4012,10 @@ function state4_back() {
 function state4_start() {
     clearWidgets();
     addWidget(createCaption(statesToNames.st4));
-    let task = createInputElems();
+    let task = createInputElems(settings['state4_wrap'] == combo_st_wrap.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
-    let fs = parseInt(settings['st4_font_size']);
+    let fs = parseInt(settings['state4_font_size']);
     taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(taskDiv);
     addWidget(createTableOfSelects(state4, {
@@ -3836,14 +4030,14 @@ function state4_start() {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(9, fs + 1));
-            setSetting('st4_font_size', newValue);
+            setSetting('state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(9, fs - 1));
-            setSetting('st4_font_size', newValue);
+            setSetting('state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
     }));
@@ -4819,17 +5013,10 @@ function checkVersion() {
         }
     }
     let last_version = parseFloat(localStorage.getItem('VERSION'));
-    if (last_version < 5.00) {
-        stateN_defaults('st1');
-        stateN_clear_score('st1');
-        stateN_defaults('st2');
-        stateN_clear_score('st2');
-        stateN_defaults('st3');
-        stateN_clear_score('st3');
-        stateN_defaults('st4');
-        stateN_clear_score('st4');
-    }
     localStorage.setItem('VERSION', version);
+    if (last_version <= 5.90) {
+        resetAllSettings();
+    }
 }
 
 let state = -1;
@@ -4842,7 +5029,23 @@ let statesToNames = {
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
 };
-let combo_st1_image_mode = {
+let combo_st1_word_to_image = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_image_to_word = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_voice_to_word = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_voice_to_image = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_image_voice_modes_random = {
     Enable: "Enable",
     Disable: "Disable"
 };
@@ -4882,16 +5085,6 @@ let combo_st1_word_to_category = {
     Only: "Only",
     Disable: "Disable"
 };
-let combo_st1_word_to_image = {
-    Enable: "Enable",
-    Only: "Only",
-    Disable: "Disable"
-};
-let combo_st1_voice_to_image = {
-    Enable: "Enable",
-    Only: "Only",
-    Disable: "Disable"
-};
 let combo_st1_image_voice_hard_mode = {
     Enable: "Enable",
     Disable: "Disable"
@@ -4917,6 +5110,10 @@ let combo_st1_insects_category = {
     Disable: "Disable"
 };
 let combo_st4_hard_mode = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st_wrap = {
     Enable: "Enable",
     Disable: "Disable"
 };
