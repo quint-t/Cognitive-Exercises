@@ -52,7 +52,10 @@ Array.prototype.slice_ext = function (start = null, end = null, step = null) {
 }
 
 function capitalize(string) {
-    return string[0].toUpperCase() + string.slice(1);
+    if ((typeof string === 'string' || string instanceof String) && string.length >= 1) {
+        return string[0].toUpperCase() + string.slice(1);
+    }
+    return '';
 }
 
 function getVoices() {
@@ -293,7 +296,7 @@ function replaceTags(str, replace_string = '') {
         return false;
     else
         str = str.toString();
-    return str.replace(/(<([^>]+)>)+/ig, replace_string);
+    return str.replaceAll(/(<([^>]+)>)+/ig, replace_string);
 }
 
 function stateN_defaults(st) {
@@ -460,6 +463,53 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
     return null;
 }
 
+function download_settings(event) {
+    let storageCopy = Object.assign({}, localStorage);
+    let data = Object.entries(storageCopy);
+    let blob = new Blob([JSON.stringify(data)],{
+        type: "text"
+    });
+    let element = document.createElement('a');
+    element.style.display = "none";
+    element.setAttribute("href", URL.createObjectURL(blob));
+    let date_string = new Date().toLocaleDateString();
+    let time_string = new Date().toLocaleTimeString();
+    date_string = date_string.replaceAll('.', '-');
+    time_string = time_string.replaceAll(':', '-');
+    element.setAttribute("download", `${date_string}_${time_string}_Cognitive-Exercises.json`);
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
+function upload_settings(event) {
+    let element = document.createElement('input');
+    element.id = 'file_upload';
+    element.type = 'file';
+    element.onchange = function (event) {
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            let f = event.target.files[0];
+            if (f) {
+                let r = new FileReader;
+                r.addEventListener("load", (function(event) {
+                    let json_parsed = JSON.parse(event.target.result);
+                    for (const kv of json_parsed) {
+                        let k = kv[0], v = kv[1];
+                        localStorage.setItem(k, v);
+                    }
+                    location.reload();
+                }));
+                r.readAsText(f);
+            }
+        } else {
+            alert("This functionality not supported by your browser.")
+        }
+    }
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
 function text_to_lines(text, n_symbols_per_line, indent = 0, pre_indent = true, preserve_endlines = true) {
     let words = text.split(' '), new_words = [];
     for (let w of words) {
@@ -501,7 +551,7 @@ function text_to_lines(text, n_symbols_per_line, indent = 0, pre_indent = true, 
     }
     let result = new_lines.join('\n');
     if (pre_indent == false) {
-        result = result.replace(/^\s+/, '');
+        result = result.replaceAll(/^\s+/g, '');
     }
     return result;
 }
@@ -1377,6 +1427,15 @@ function createParameters(parameters) {
                 secondElement.id = item[0];
                 break;
             }
+            case "text_button": {
+                firstElement = document.createElement("input");
+                firstElement.type = "text";
+                firstElement.value = item[0];
+                firstElement.classList.add('modern_select');
+                secondElement = createParameterActionButton(null, item[3], firstElement);
+                secondElement.innerHTML = item[1];
+                break;
+            }
             case "st1_voice_combobox": {
                 firstElement = document.createElement("p");
                 firstElement.innerHTML = item[1];
@@ -1632,12 +1691,21 @@ function createTemplateChooser(param_id, onmouseup) {
     return combobox;
 }
 
-function createParameterActionButton(param_id, onmouseup) {
+function createParameterActionButton(param_id, onmouseup, data_from = null) {
     let button = document.createElement("button");
     button.classList.add("amberButton");
-    button.innerHTML = param_id;
-    button.id = param_id;
-    button.onmouseup = onmouseup;
+    if (param_id != null) {
+        button.innerHTML = param_id;
+        button.id = param_id;
+    }
+    if (data_from != null) {
+        button.onmouseup = function (event) {
+            onmouseup(data_from, event);
+        };
+    }
+    else {
+        button.onmouseup = onmouseup;
+    }
     return button;
 }
 
@@ -1666,6 +1734,13 @@ function state0() {
     historyButton.classList.add('blackButton');
     historyButton.classList.add('w100');
     addWidget(historyButton);
+
+    let settingsButton = createActionButton('Settings', () => {
+        stateSettings();
+    });
+    settingsButton.classList.add('blackButton');
+    settingsButton.classList.add('w100');
+    addWidget(settingsButton);
 
     let clearScoresButton = createActionButton('Clear scores', () => {
         if (confirm('Are you sure you want to clear the scores?')) {
@@ -1712,14 +1787,6 @@ function stateHistory() {
     clearButton.classList.add('blackButton');
     clearButton.classList.add('w100');
     addWidget(clearButton);
-    let resetButton = createActionButton('Reset all settings', () => {
-        if (confirm('Are you sure you want to reset all settings?')) {
-            resetAllSettings();
-        }
-    });
-    resetButton.classList.add('blackButton');
-    resetButton.classList.add('w100');
-    addWidget(resetButton);
     exHistory.forEach(historyElem => {
         let task = createInputElems();
         let taskDiv = task[0];
@@ -1729,6 +1796,142 @@ function stateHistory() {
         taskArea.style.height = 'auto';
         taskArea.style.height = (taskArea.scrollHeight + 20) + 'px';
     });
+}
+
+function stateSettings() {
+    currentGenerator = null;
+    state = -1;
+    clearWidgets();
+    let backButton = createActionButton('Back', () => {
+        state0();
+    });
+    backButton.classList.add('blackButton');
+    backButton.classList.add('w100');
+    addWidget(backButton);
+
+    let downloadButton = createActionButton('Export settings', (event) => {
+        download_settings(event);
+    });
+    downloadButton.classList.add('blackButton');
+    downloadButton.classList.add('w100');
+    addWidget(downloadButton);
+
+    let uploadButton = createActionButton('Import settings', (event) => {
+        upload_settings(event);
+    });
+    uploadButton.classList.add('blackButton');
+    uploadButton.classList.add('w100');
+    addWidget(uploadButton);
+
+    let resetButton = createActionButton('Reset all settings', () => {
+        if (confirm('Are you sure you want to reset all settings?')) {
+            resetAllSettings();
+        }
+    });
+    resetButton.classList.add('blackButton');
+    resetButton.classList.add('w100');
+    addWidget(resetButton);
+}
+
+function state1WordInfo(text) {
+    let s = [];
+    if (state1_words[text] != null) {
+        for (let definition of state1_words[text]) {
+            let part_of_speech = definition[0];
+            let meaning = definition[1];
+            let example = definition[2];
+            let synonyms = definition[3];
+            let antonyms = definition[4];
+            let similar_words = definition[5];
+            text = capitalize(text.toLowerCase());
+            s.push(`${text} (${part_of_speech}) - ${meaning}.`);
+            if (example != null && example.length > 0) {
+                s.push(`${example}.`);
+            }
+            if (synonyms.length > 0) {
+                s.push(`Synonyms: ${synonyms.join(', ')}.`);
+            }
+            if (antonyms.length > 0) {
+                s.push(`Antonyms: ${antonyms.join(', ')}.`);
+            }
+            if (similar_words.length > 0) {
+                s.push(`Similar words: ${similar_words.join(', ')}.`);
+            }
+            s.push("");
+        }
+    }
+    else {
+        let synonyms = [];
+        let antonyms = [];
+        let similar_words = [];
+        for (const [word, definitions] of Object.entries(state1_words)) {
+            for (const definition of definitions) {
+                for (let syn of definition[3]) {
+                    if (syn == text) {
+                        synonyms.push(word);
+                    }
+                }
+                for (let ant of definition[4]) {
+                    if (ant == text) {
+                        antonyms.push(word);
+                    }
+                }
+                for (let sim of definition[5]) {
+                    if (sim == text) {
+                        similar_words.push(word);
+                    }
+                }
+            }
+        }
+        text = capitalize(text.toLowerCase());
+        if (synonyms.length > 0) {
+            s.push(`${text} - is a synonym for: ${synonyms.join(', ')}.`);
+        }
+        if (antonyms.length > 0) {
+            s.push(`${text} - is an antonym for: ${antonyms.join(', ')}.`);
+        }
+        if (similar_words.length > 0) {
+            s.push(`${text} - is a similar word for: ${similar_words.join(', ')}.`);
+        }
+    }
+    if (s.length > 0) {
+        s = s.join('\n\n');
+        currentGenerator = null;
+        state = -1;
+        clearWidgets();
+        let backButton = createActionButton('Back', () => {
+            state1();
+        });
+        backButton.classList.add('blackButton');
+        backButton.classList.add('w100');
+        addWidget(backButton);
+
+        addWidget(document.createElement('br'));
+        addWidget(document.createElement('br'));
+
+        input_element = document.createElement("input");
+        input_element.type = "text";
+        input_element.value = text;
+        input_element.classList.add('modern_select');
+        input_element.style.maxWidth = '280px';
+        button_element = createParameterActionButton(null, function () {
+            state1WordInfo(input_element.value.toLowerCase());
+        }, input_element);
+        button_element.innerHTML = 'Info';
+        addWidget(input_element);
+        addWidget(button_element);
+
+        let infoArea = document.createElement("textarea");
+        infoArea.id = "taskArea";
+        infoArea.readOnly = true;
+        infoArea.style.whiteSpace = 'pre-wrap';
+        infoArea.innerHTML = s;
+        infoArea.style.height = '300px';
+        addWidget(infoArea);
+    }
+    else {
+        alert('No word found!');
+    }
 }
 
 function getStrDateTime() {
@@ -1854,6 +2057,13 @@ function state1() {
     choose_template('1', null);
     clearInterval(st1_show_trial_interval);
     clearInterval(st1_answer_trial_interval);
+    let random_word = '', words_list = [];
+    for (const [word, params] of Object.entries(state1_words)) {
+        words_list.push(word);
+    }
+    if (words_list.length > 0) {
+        random_word = capitalize(randomChoice(words_list));
+    }
     currentGenerator = null;
     state = 1;
     clearWidgets();
@@ -1953,7 +2163,7 @@ function state1() {
         ["st1_voice_index", "Voice", "st1_voice_combobox"],
         ["", "", "hr1"],
         ["st1_word_to_category", "Word to Category", "combobox", Object.values(combo_st1_word_to_category)],
-        ["st1_image_voice_modes_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_image_voice_modes_random)],
+        ["st1_image_voice_modes_random", "Random task each time<br>for one trial", "combobox", Object.values(combo_st1_image_voice_modes_random)],
         ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
         ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
         ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
@@ -1969,9 +2179,9 @@ function state1() {
         ["", "", "hr"],
         ["st1_word_mode_just_word", "<u>Word to Word</u>", "combobox", Object.values(combo_st1_word_mode_just_word)],
         ["st1_word_mode_meaning", "<u>Meaning to Word</u>", "combobox", Object.values(combo_st1_word_mode_meaning)],
-        ["st1_word_mode_synonyms", "<u>Word to Synonyms</u>", "combobox", Object.values(combo_st1_word_mode_synonyms)],
-        ["st1_word_mode_antonyms", "<u>Word to Antonyms</u>", "combobox", Object.values(combo_st1_word_mode_antonyms)],
-        ["st1_word_mode_similar_words", "<u>Word to Similar words</u>", "combobox", Object.values(combo_st1_word_mode_similar_words)],
+        ["st1_word_mode_synonyms", "<u>Word to Synonym</u>", "combobox", Object.values(combo_st1_word_mode_synonyms)],
+        ["st1_word_mode_antonyms", "<u>Word to Antonym</u>", "combobox", Object.values(combo_st1_word_mode_antonyms)],
+        ["st1_word_mode_similar_words", "<u>Word to Similar word</u>", "combobox", Object.values(combo_st1_word_mode_similar_words)],
         ["", "", "hr1"],
         ["st1_word_mode_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_word_mode_random)],
         ["st1_word_mode_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
@@ -1995,8 +2205,21 @@ function state1() {
             }
         }],
         ["state1_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
+        ["", "", "hr"],
+        ["Hello", "Speak", "text_button", function (input_element) {
+            let text = input_element.value;
+            let select = document.getElementById('st1_voice_index');
+            if (text != null && text.length > 0 && select != null) {
+                st1_speak(text.toLowerCase(), select.value);
+            }
+        }],
+        [random_word, "Info", "text_button", function (input_element) {
+            let text = input_element.value.toLowerCase();
+            state1WordInfo(text);
+        }],
+        ["", "", "hr"],
         ["", "", "text", "Categories<br>Images<br>Nate's voice files", `${state1_statistics_images_categories}<br>${state1_statistics_images}<br>${state1_statistics_voice_files}`],
-        ["", "", "text", "Dictionary<br>Words<br>Definitions of the words<br>Synonyms<br>Antonyms<br>Similar words", `${state1_dictionary_source}<br>${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}<br>${state1_statistics_similar_words}`],
+        ["", "", "text", "Dictionary<br>Words<br>Words with definitions<br>Definitions of the words<br>Synonyms<br>Antonyms<br>Similar words", `${state1_dictionary_source}<br>${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_words_definitions}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}<br>${state1_statistics_similar_words}`],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -2312,8 +2535,8 @@ function* state1_generator(taskArea) {
                 if (y.length <= 2) {
                     continue;
                 }
-                x = x.toLowerCase().replace(/\W/g, '');
-                y = y.toLowerCase().replace(/\W/g, '');
+                x = x.toLowerCase().replaceAll(/\W/g, '');
+                y = y.toLowerCase().replaceAll(/\W/g, '');
                 if (x.includes(y) || y.includes(x)) {
                     return true;
                 }
@@ -2392,6 +2615,9 @@ function* state1_generator(taskArea) {
         imageDiv.style.display = 'none';
         voiceDiv.style.display = 'none';
         showTrialTimerImg.style.display = 'none';
+        let img = imageDiv.firstChild;
+        img.src = '';
+        img.alt = '';
         if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
             if (was_diff === false) {
                 st1_n_min = Math.min(Math.max(st1_n_min + 1, 0), 100);
@@ -2625,7 +2851,7 @@ function* state1_generator(taskArea) {
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
             lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[2]);
+                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
             voiceDiv.style.display = '';
         }
         else if (short_variant == 'word') {
@@ -4743,7 +4969,7 @@ function formatPremise(list_for_format, string_format) {
         let substr = '{' + i + '}';
         let index = string_format.indexOf(substr);
         if (index >= 0) {
-            string_format = string_format.replace(substr, list_for_format[i]);
+            string_format = string_format.replaceAll(substr, list_for_format[i]);
         }
         else {
             if (++i >= list_for_format.length) {
@@ -5729,6 +5955,7 @@ let state1_statistics_voice_files = '';
 let state1_dictionary_source = '';
 let state1_statistics_unique_words = '';
 let state1_statistics_words_with_meaning = '';
+let state1_statistics_words_definitions = '';
 let state1_statistics_synonyms = '';
 let state1_statistics_antonyms = '';
 let state1_statistics_similar_words = '';
@@ -5778,14 +6005,17 @@ window.addEventListener('load', () => {
                 }
                 voice_files_set.add(image_name);
                 state1_voice_title_to_filename[image_name] = file_name;
+                state1_voice_title_to_filename[image_name.toLowerCase()] = file_name;
                 state1_voice_title_to_filename[file_name] = file_name;
             }
         }
     }
     state1_voice_title_to_filename['Hello'] = 'Hello';
+    state1_voice_title_to_filename['hello'] = 'Hello';
     state1_statistics_voice_files = voice_files_set.size;
 
     state1_statistics_words_with_meaning = 0;
+    state1_statistics_words_definitions = 0;
     state1_statistics_unique_words = 0;
     state1_statistics_synonyms = 0;
     state1_statistics_antonyms = 0;
@@ -5796,8 +6026,9 @@ window.addEventListener('load', () => {
     let words_set = new Set();
     for (const [word, definitions] of Object.entries(state1_words)) {
         words_set.add(word);
+        state1_statistics_words_with_meaning += (definitions.length > 0 ? 1 : 0);
         for (const definition of definitions) {
-            state1_statistics_words_with_meaning += 1;
+            state1_statistics_words_definitions += 1;
             for (let syn of definition[3]) {
                 words_set.add(syn);
                 synonyms_set.add(syn);
