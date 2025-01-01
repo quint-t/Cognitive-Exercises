@@ -165,6 +165,8 @@ function loadSettings() {
         "st3_minmax_stmts": "4-12",
         "st3_minmax_level": "1-7",
         "st3_max_solutions": 1,
+        "st3_show_puzzle_time_limit": '0.0',
+        "st3_answer_puzzle_time_limit": '0.0',
         "st4_auto_mode": 2,
         "st4_current_attributes": 2,
         "st4_current_objects": 3,
@@ -175,6 +177,9 @@ function loadSettings() {
         "st4_hard_mode": combo_st4_hard_mode.Disable,
         "st4_max_seconds": 10,
         "st4_max_solutions": 1,
+        "st4_show_puzzle_time_limit": '0.0',
+        "st4_answer_puzzle_time_limit": '0.0',
+        "state1_words_dictionary": combo_state1_words_dictionary.Wordsmyth,
         "state1_wrap": combo_st_wrap.Enable,
         "state3_wrap": combo_st_wrap.Enable,
         "state4_wrap": combo_st_wrap.Enable,
@@ -910,7 +915,6 @@ function* wordGetter(dictionary, options, hard_mode) {
     }
 }
 
-
 function range(start, stop, step = 1) {
     let a = [], b = start;
     if (step > 0) {
@@ -1248,7 +1252,26 @@ function createTableOfSelects(stateN, additionalButtons = null) {
     enterButton.classList.add("blackButton");
     enterButton.classList.add("w60");
     backButton.classList.add("blackButton");
+
+    let showPuzzleTimerDiv = document.createElement('div');
+    showPuzzleTimerDiv.id = 'showPuzzleTimerDiv';
+    let showPuzzleTimerP = document.createElement('p');
+    showPuzzleTimerP.id = 'showPuzzleTimerP';
+    showPuzzleTimerP.style.margin = '5px';
+    showPuzzleTimerDiv.appendChild(showPuzzleTimerP);
+    showPuzzleTimerDiv.style.display = '';
+
+    let answerPuzzleTimerDiv = document.createElement('div');
+    answerPuzzleTimerDiv.id = 'answerPuzzleTimerDiv';
+    let answerPuzzleTimerP = document.createElement('p');
+    answerPuzzleTimerP.id = 'answerPuzzleTimerP';
+    answerPuzzleTimerP.style.margin = '5px';
+    answerPuzzleTimerDiv.appendChild(answerPuzzleTimerP);
+    answerPuzzleTimerDiv.style.display = '';
+
+    inputDiv.appendChild(showPuzzleTimerDiv);
     inputDiv.appendChild(tableDiv);
+    inputDiv.appendChild(answerPuzzleTimerDiv);
     inputDiv.appendChild(enterButton);
     inputDiv.appendChild(hr);
     if (additionalDiv != null) {
@@ -1490,11 +1513,23 @@ function createParameterCombobox(param_id, options, onchangeFunc = null) {
     });
     select.value = settings[param_id];
     select.classList.add("modern_select");
+    select.onclick = function (event) {
+        select.setAttribute('previous', select.value);
+    };
     select.onchange = function (event) {
         event = event.target;
-        setSetting(param_id, event.value);
+        let prev_value = select.getAttribute('previous');
         if (onchangeFunc != null) {
-            onchangeFunc(event.value);
+            if (onchangeFunc(event.value)) {
+                setSetting(param_id, event.value);
+                select.setAttribute('previous', event.value);
+            }
+            else {
+                select.value = prev_value;
+            }
+        }
+        else {
+            setSetting(param_id, event.value);
         }
     }
     return select;
@@ -1825,7 +1860,7 @@ function state1() {
     addWidget(createCaption(statesToNames.st1));
     addWidget(createParameters([
         [
-            "Start", "Back", "buttons",
+            "Save & Start", "Back", "buttons",
             function (event) {
                 save_template('1');
                 state1_start();
@@ -1948,9 +1983,20 @@ function state1() {
         ["st1_word_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_word_hard_mode)],
         ["st1_word_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["", "", "hr"],
+        ["state1_words_dictionary", "Dictionary of words", "combobox", Object.values(combo_state1_words_dictionary), function (xv) {
+            if (confirm('Are you sure you want to choose ' + xv + '?')) {
+                setSetting('state1_words_dictionary', xv);
+                save_template('1');
+                location.reload();
+                return true;
+            }
+            else {
+                return false;
+            }
+        }],
         ["state1_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         ["", "", "text", "Categories<br>Images<br>Nate's voice files", `${state1_statistics_images_categories}<br>${state1_statistics_images}<br>${state1_statistics_voice_files}`],
-        ["", "", "text", "Words<br>Definitions of the words<br>Synonyms<br>Antonyms<br>Similar words", `${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}<br>${state1_statistics_similar_words}`],
+        ["", "", "text", "Dictionary<br>Words<br>Definitions of the words<br>Synonyms<br>Antonyms<br>Similar words", `${state1_dictionary_source}<br>${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}<br>${state1_statistics_similar_words}`],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -3880,6 +3926,8 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
 }
 
 function state3() {
+    clearInterval(st3_show_puzzle_interval);
+    clearInterval(st3_answer_puzzle_interval);
     choose_template('3', null);
     currentGenerator = null;
     state = 3;
@@ -3887,7 +3935,7 @@ function state3() {
     addWidget(createCaption(statesToNames.st3));
     addWidget(createParameters([
         [
-            "Start", "Back", "buttons",
+            "Save & Start", "Back", "buttons",
             function (event) {
                 save_template('3');
                 state3_start();
@@ -3992,6 +4040,13 @@ function state3() {
         ["st3_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
             return 1 <= xv && xv <= 10;
         }],
+        ["st3_show_puzzle_time_limit", "Show puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 86400;
+        }],
+        ["st3_answer_puzzle_time_limit", "Answer puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 86400;
+        }],
+        ["", "", "hr"],
         ["state3_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         [
             "Default settings", "Clear score", "buttons",
@@ -4081,13 +4136,19 @@ function* state3_generator(taskArea) {
     setSetting('st3_stn', n_statements);
     setSetting('st3_current_level', level);
     save_template('3');
+    let showPuzzleTimerP = document.getElementById('showPuzzleTimerP');
+    let answerPuzzleTimerP = document.getElementById('answerPuzzleTimerP');
+    var show_puzzle_timer_var = 0;
+    var answer_puzzle_timer_var = 0;
+    let st3_show_puzzle_time_limit = parseInt(settings['st3_show_puzzle_time_limit']);
+    let st3_answer_puzzle_time_limit = parseInt(settings['st3_answer_puzzle_time_limit']);
     let auto_increase_counter = 0;
     while (true) {
         let [solutions, statements] = generateRecursiveRiddle(n_statements, level, st3_max_solutions);
         let header = [''].concat(range(2, n_statements + 1).map(x => '' + x));
         let htmlTable = [header, ['Value']];
         for (let _ of header.slice(1)) {
-            htmlTable[1].push(['False', 'True']);
+            htmlTable[1].push(['True', 'False']);
         }
         let solutions_strings = [];
         let expected_array = [];
@@ -4113,6 +4174,52 @@ function* state3_generator(taskArea) {
         taskArea.scrollLeft = 0;
         let first = true;
         let mistake = false, cnt = 1;
+
+        show_puzzle_timer_var = st3_show_puzzle_time_limit;
+        if (show_puzzle_timer_var > 0) {
+            showPuzzleTimerP.innerHTML = '' + show_puzzle_timer_var;
+            st3_show_puzzle_interval = setInterval(function () {
+                show_puzzle_timer_var -= 0.1;
+                if (show_puzzle_timer_var <= 0) {
+                    appendText(taskArea, "Time limit!\n", clearBefore);
+                    showPuzzleTimerP.innerHTML = '&nbsp;';
+                    clearInterval(st3_show_puzzle_interval);
+                    return;
+                }
+                else {
+                    showPuzzleTimerP.innerHTML = '' + Number(show_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                }
+            }, 100);
+        }
+        else {
+            showPuzzleTimerP.innerHTML = '&nbsp;';
+            showPuzzleTimerP.style.display = 'none';
+        }
+
+        answer_puzzle_timer_var = st3_answer_puzzle_time_limit;
+        if (answer_puzzle_timer_var > 0) {
+            answerPuzzleTimerP.innerHTML = '' + answer_puzzle_timer_var;
+            st3_answer_puzzle_interval = setInterval(function () {
+                answer_puzzle_timer_var -= 0.1;
+                if (answer_puzzle_timer_var <= 0) {
+                    clearInterval(st3_show_puzzle_interval);
+                    clearInterval(st3_answer_puzzle_interval);
+                    answerPuzzleTimerP.innerHTML = '&nbsp;';
+                    setTimeout(function () {
+                        currentGenerator.next('-NO-ANSWER-');
+                    }, 0);
+                    return;
+                }
+                else {
+                    answerPuzzleTimerP.innerHTML = '' + Number(answer_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                }
+            }, 100);
+        }
+        else {
+            answerPuzzleTimerP.innerHTML = '&nbsp;';
+            answerPuzzleTimerP.style.display = 'none';
+        }
+
         while (true) {
             let actual = '';
             if (first) {
@@ -4124,6 +4231,12 @@ function* state3_generator(taskArea) {
             }
             actual = actual.toUpperCase();
             if (actual === '-SKIP-') {
+                appendText(taskArea, '', clearBefore);
+                break;
+            }
+            if (actual == '-NO-ANSWER-') {
+                appendText(taskArea, '', clearBefore);
+                mistake = true;
                 break;
             }
             if (actual === '-ANSWER-') {
@@ -4189,6 +4302,8 @@ function* state3_generator(taskArea) {
 }
 
 function state4() {
+    clearInterval(st4_show_puzzle_interval);
+    clearInterval(st4_answer_puzzle_interval);
     choose_template('4', null);
     currentGenerator = null;
     state = 4;
@@ -4196,7 +4311,7 @@ function state4() {
     addWidget(createCaption(statesToNames.st4));
     addWidget(createParameters([
         [
-            "Start", "Back", "buttons",
+            "Save & Start", "Back", "buttons",
             function (event) {
                 save_template('4');
                 state4_start();
@@ -4381,6 +4496,13 @@ function state4() {
         ["st4_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
             return 1 <= xv && xv <= 10;
         }],
+        ["st4_show_puzzle_time_limit", "Show puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 86400;
+        }],
+        ["st4_answer_puzzle_time_limit", "Answer puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 86400;
+        }],
+        ["", "", "hr"],
         ["state4_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
         [
             "Default settings", "Clear score", "buttons",
@@ -5228,7 +5350,15 @@ function* state4_generator(taskArea) {
         }
         return a[0] - b[0];
     });
+    let showPuzzleTimerP = document.getElementById('showPuzzleTimerP');
+    let answerPuzzleTimerP = document.getElementById('answerPuzzleTimerP');
+    var show_puzzle_timer_var = 0;
+    var answer_puzzle_timer_var = 0;
+    let st4_show_puzzle_time_limit = parseInt(settings['st4_show_puzzle_time_limit']);
+    let st4_answer_puzzle_time_limit = parseInt(settings['st4_answer_puzzle_time_limit']);
     while (true) {
+        clearInterval(st4_show_puzzle_interval);
+        clearInterval(st4_answer_puzzle_interval);
         let header = [''].concat(range(1, m_objects + 1).map(x => '' + x));
         let chosenKinds = randomShuffle(kinds).slice(0, n_attributes).sort();
         let table = [], htmlTable = [header];
@@ -5294,6 +5424,52 @@ function* state4_generator(taskArea) {
         addHistoryItem([puzzle_text + '\n' + "Answer:\n" + answer]);
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
+
+        show_puzzle_timer_var = st4_show_puzzle_time_limit;
+        if (show_puzzle_timer_var > 0) {
+            showPuzzleTimerP.innerHTML = '' + show_puzzle_timer_var;
+            st4_show_puzzle_interval = setInterval(function () {
+                show_puzzle_timer_var -= 0.1;
+                if (show_puzzle_timer_var <= 0) {
+                    appendText(taskArea, "Time limit!\n", clearBefore);
+                    showPuzzleTimerP.innerHTML = '&nbsp;';
+                    clearInterval(st4_show_puzzle_interval);
+                    return;
+                }
+                else {
+                    showPuzzleTimerP.innerHTML = '' + Number(show_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                }
+            }, 100);
+        }
+        else {
+            showPuzzleTimerP.innerHTML = '&nbsp;';
+            showPuzzleTimerP.style.display = 'none';
+        }
+
+        answer_puzzle_timer_var = st4_answer_puzzle_time_limit;
+        if (answer_puzzle_timer_var > 0) {
+            answerPuzzleTimerP.innerHTML = '' + answer_puzzle_timer_var;
+            st4_answer_puzzle_interval = setInterval(function () {
+                answer_puzzle_timer_var -= 0.1;
+                if (answer_puzzle_timer_var <= 0) {
+                    clearInterval(st4_show_puzzle_interval);
+                    clearInterval(st4_answer_puzzle_interval);
+                    answerPuzzleTimerP.innerHTML = '&nbsp;';
+                    setTimeout(function () {
+                        currentGenerator.next('-NO-ANSWER-');
+                    }, 0);
+                    return;
+                }
+                else {
+                    answerPuzzleTimerP.innerHTML = '' + Number(answer_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                }
+            }, 100);
+        }
+        else {
+            answerPuzzleTimerP.innerHTML = '&nbsp;';
+            answerPuzzleTimerP.style.display = 'none';
+        }
+
         let first = true;
         let mistake = false, cnt = 1;
         while (true) {
@@ -5307,6 +5483,12 @@ function* state4_generator(taskArea) {
             }
             actual = actual.toUpperCase();
             if (actual === '-SKIP-') {
+                appendText(taskArea, '', clearBefore);
+                break;
+            }
+            if (actual == '-NO-ANSWER-') {
+                mistake = true;
+                appendText(taskArea, '', clearBefore);
                 break;
             }
             if (actual === '-ANSWER-') {
@@ -5397,15 +5579,6 @@ function loadScript(url, head_or_body = 'head') {
     }
     else {
         document.body.appendChild(script);
-    }
-}
-
-function addEvent(element, eventName, fn) {
-    if (element.addEventListener) {
-        element.addEventListener(eventName, fn, false);
-    }
-    else if (element.attachEvent) {
-        element.attachEvent('on' + eventName, fn);
     }
 }
 
@@ -5523,6 +5696,10 @@ let combo_st4_hard_mode = {
     Enable: "Enable",
     Disable: "Disable"
 };
+let combo_state1_words_dictionary = {
+    Wordsmyth: "Wordsmyth",
+    WordsmythPro: "Wordsmyth Pro"
+};
 let combo_st_wrap = {
     Enable: "Enable",
     Disable: "Disable"
@@ -5537,12 +5714,19 @@ let st1_answer_trial_interval = null;
 let state1_voice_title_to_filename = {};
 let state1_voice_mp3 = {};
 
+let st3_show_puzzle_interval = null;
+let st3_answer_puzzle_interval = null;
+let st4_show_puzzle_interval = null;
+let st4_answer_puzzle_interval = null;
+
 let state1_images = {};
 let state1_words = {};
 
 let state1_statistics_images = '';
 let state1_statistics_images_categories = '';
 let state1_statistics_voice_files = '';
+
+let state1_dictionary_source = '';
 let state1_statistics_unique_words = '';
 let state1_statistics_words_with_meaning = '';
 let state1_statistics_synonyms = '';
@@ -5551,10 +5735,31 @@ let state1_statistics_similar_words = '';
 
 getVoices();
 loadScript('images.js');
-loadScript('words.js');
-addEvent(window, 'load', () => {
+
+if (localStorage.getItem('state1_words_dictionary') == null ||
+    localStorage.getItem('state1_words_dictionary') == combo_state1_words_dictionary.Wordsmyth) {
+    localStorage.setItem('state1_words_dictionary', combo_state1_words_dictionary.Wordsmyth);
+    loadScript('wordsmyth.js');
+}
+else if (localStorage.getItem('state1_words_dictionary') == combo_state1_words_dictionary.WordsmythPro) {
+    loadScript('wordsmyth_pro.js');
+}
+else {
+    var getWords = () => {
+        return {};
+    };
+}
+
+window.addEventListener('load', () => {
     state1_images = getImages();
     state1_words = getWords();
+
+    try {
+        state1_dictionary_source = localStorage.getItem('state1_words_dictionary');
+    }
+    catch (err) {
+        console.log(err);
+    }
 
     state1_statistics_images = 0;
     state1_statistics_images_categories = 0;
