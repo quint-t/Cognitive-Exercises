@@ -155,8 +155,10 @@ function loadSettings() {
         "st1_word_mode_answer_trial_time_limit": '0.0',
         "st1_insects_category": combo_st1_insects_category.Enable,
         "st1_halloween_category": combo_st1_halloween_category.Enable,
-        "st1_family_members_category": combo_st1_family_members_category.Enable,
         "st1_baby_category": combo_st1_baby_category.Enable,
+        "st1_family_members_category": combo_st1_family_members_category.Enable,
+        "st1_holidays_category": combo_st1_holidays_category.Enable,
+        "st1_body_category": combo_st1_body_category.Enable,
         "st2_auto_mode": 5,
         "st2_boxes": 2,
         "st2_operations": 1,
@@ -472,11 +474,9 @@ function download_settings(event) {
     let element = document.createElement('a');
     element.style.display = "none";
     element.setAttribute("href", URL.createObjectURL(blob));
-    let date_string = new Date().toLocaleDateString();
-    let time_string = new Date().toLocaleTimeString();
-    date_string = date_string.replaceAll('.', '-');
-    time_string = time_string.replaceAll(':', '-');
-    element.setAttribute("download", `${date_string}_${time_string}_Cognitive-Exercises.json`);
+    console.log(getStrDateTime());
+    let datetime_string = getStrDateTime().replaceAll(':', '.').replaceAll(' ', '_');
+    element.setAttribute("download", `${datetime_string}_Cognitive-Exercises.json`);
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -1922,12 +1922,13 @@ function state1WordInfo(text) {
         addWidget(button_element);
 
         let infoArea = document.createElement("textarea");
-        infoArea.id = "taskArea";
+        infoArea.id = "infoArea";
         infoArea.readOnly = true;
         infoArea.style.whiteSpace = 'pre-wrap';
-        infoArea.innerHTML = s;
-        infoArea.style.height = '300px';
+        infoArea.innerHTML = s.trim();
         addWidget(infoArea);
+        infoArea.style.height = 'auto';
+        infoArea.style.height = (infoArea.scrollHeight + 20) + 'px';
     }
     else {
         alert('No word found!');
@@ -1935,7 +1936,7 @@ function state1WordInfo(text) {
 }
 
 function getStrDateTime() {
-    return new Date().toLocaleString();
+    return new Date().toISOString().replace('T', ' ').replaceAll('-', '.').slice(0, 19);
 }
 
 function formatHistoryElem(historyElem) {
@@ -2164,10 +2165,6 @@ function state1() {
         ["", "", "hr1"],
         ["st1_word_to_category", "Word to Category", "combobox", Object.values(combo_st1_word_to_category)],
         ["st1_image_voice_modes_random", "Random task each time<br>for one trial", "combobox", Object.values(combo_st1_image_voice_modes_random)],
-        ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
-        ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
-        ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
-        ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
         ["st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
@@ -2176,6 +2173,13 @@ function state1() {
         }],
         ["st1_image_voice_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_image_voice_hard_mode)],
         ["st1_image_voice_options", "Options", "combobox", Object.values(combo_st1_options)],
+        ["", "", "hr1"],
+        ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
+        ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
+        ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
+        ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
+        ["st1_holidays_category", "Category 'Official holidays'", "combobox", Object.values(combo_st1_holidays_category)],
+        ["st1_body_category", "Category 'Body'", "combobox", Object.values(combo_st1_body_category)],
         ["", "", "hr"],
         ["st1_word_mode_just_word", "<u>Word to Word</u>", "combobox", Object.values(combo_st1_word_mode_just_word)],
         ["st1_word_mode_meaning", "<u>Meaning to Word</u>", "combobox", Object.values(combo_st1_word_mode_meaning)],
@@ -2357,135 +2361,150 @@ function* state1_generator(taskArea) {
 
     let st1_insects_category = settings['st1_insects_category'];
     let st1_halloween_category = settings['st1_halloween_category'];
-    let st1_family_members_category = settings['st1_family_members_category'];
     let st1_baby_category = settings['st1_baby_category'];
+    let st1_family_members_category = settings['st1_family_members_category'];
+    let st1_holidays_category = settings['st1_holidays_category'];
+    let st1_body_category = settings['st1_body_category'];
     let auto_increase_counter = 0;
     let clearBefore = true;
     let not_item_checker = function (category1, category2, title) {
         title = title.toLowerCase();
         if (st1_insects_category == combo_st1_insects_category.Disable && (
             category2 == 'Insects' ||
-            title.includes('anemone') ||
-            title.includes('artificial') ||
-            title.includes('bat') ||
-            title.includes('bee') ||
-            title.includes('coral') ||
-            title.includes('crab') ||
-            title.includes('crayfish') ||
-            title.includes('jellyfish') ||
-            title.includes('lobster') ||
-            title.includes('mole') ||
-            title.includes('nautilus') ||
-            title.includes('octopus') ||
-            title.includes('poop') ||
-            title.includes('proposal') ||
-            title.includes('romper') ||
-            title.includes('seahorse') ||
-            title.includes('shrimp') ||
-            title.includes('slim') ||
-            title.includes('snail') ||
-            title.includes('spider') ||
-            title.includes('squid') ||
-            title.includes('starfish') ||
-            title.includes('urchin') ||
-            title.includes('walrus')
+            title == 'artificial' ||
+            title == 'bat' ||
+            title == 'bee' ||
+            category2 == 'Sea animals' && title.includes('coral') ||
+            title == 'crab' ||
+            title == 'crayfish' ||
+            title == 'giant squid' ||
+            title == 'jellyfish' ||
+            title == 'lobster' ||
+            title == 'mole' ||
+            title == 'nautilus' ||
+            title == 'octopus' ||
+            title == 'poop' ||
+            title == 'proposal' ||
+            title == 'romper' ||
+            title == 'sea anemone' ||
+            title == 'sea urchin' ||
+            title == 'shrimp' ||
+            title == 'slim' ||
+            title == 'snail' ||
+            title == 'spider' ||
+            title == 'squid' ||
+            title == 'starfish' ||
+            title == 'walrus'
         )) {
             return true;
         }
         if (st1_halloween_category == combo_st1_halloween_category.Disable && (
             category2 == 'Halloween' ||
-            title.includes('clown') ||
-            title.includes('feat') ||
-            title.includes('grimace') ||
-            title.includes('kind') ||
-            title.includes('kite') ||
-            title.includes('pumpkin') ||
-            title.includes('shout') ||
-            title.includes('spider') ||
-            title.includes('wicked')
+            title == 'clown' ||
+            title == 'fear' ||
+            title == 'grimace' ||
+            title == 'kind' ||
+            category2 == 'Aircraft' && title == 'kite' ||
+            title == 'pumpkin' ||
+            title == 'shout' ||
+            title == 'spider' ||
+            title == 'wicked'
         )) {
             return true;
         }
-        if ((st1_baby_category == combo_st1_baby_category.Disable ||
-            st1_family_members_category == combo_st1_family_members_category.Disable) && (
+        if (st1_baby_category == combo_st1_baby_category.Disable && (
             category1 == 'Baby' ||
             category1 == 'School' ||
             category2 == 'Counting' ||
             category2 == 'Mothers day' ||
-            title.includes('angel') ||
-            title.includes('aunt') ||
+            title == 'angel' ||
+            title == 'aunt' ||
+            title == 'balance bike' ||
+            title == 'blow ones nose' ||
+            title == 'blow' ||
+            title == 'boy' ||
+            title == 'brother' ||
+            title == 'brush teeth' ||
+            title == 'build' ||
+            title == 'care' ||
+            title == 'clap' ||
+            title == 'climb' ||
+            title == 'coach' ||
+            title == 'collect, gather' ||
+            title == 'communion' ||
+            title == 'crawl' ||
+            title == 'cry' ||
+            title == 'curly' ||
+            title == 'dad' ||
+            title == 'daughter' ||
+            title == 'descend' ||
+            title == 'do laundry' ||
+            title == 'dressed' ||
+            title == 'family' ||
+            title == 'feed' ||
+            title == 'friendship' ||
+            title == 'get dressed' ||
+            title == 'girl' ||
+            title == 'grandson' ||
+            title == 'grimace' ||
+            title == 'hide' ||
+            title == 'hug' ||
+            title == 'hurt' ||
+            title == 'kind' ||
+            title == 'kiss' ||
+            category2 == 'Aircraft' && title == 'kite' ||
+            title == 'lady' ||
+            title == 'mom' ||
+            title == 'mother' ||
+            title == 'nephew' ||
+            title == 'newborn' ||
+            title == 'niece' ||
+            title == 'parent' ||
+            title == 'peep out' ||
+            title == 'play the piano' ||
+            title == 'play with friends' ||
+            title == 'play' ||
+            title == 'playpen' ||
+            title == 'playroom' ||
+            title == 'pray' ||
+            title == 'pregnant' ||
+            title == 'press' ||
+            category2 == "Movement verbs" && title == 'pull' ||
+            title == 'push' ||
+            title == 'put on make-up' ||
+            title == 'put on shoes' ||
+            title == 'put' ||
+            title == 'relax' ||
+            title == 'roll' ||
+            title == 'run' ||
+            title == 'shoot' ||
+            title == 'shout' ||
+            title == 'sister' ||
+            title == 'sit on the potty' ||
+            title == 'sit' ||
+            title == 'sleep' ||
+            title == 'son' ||
+            title == 'splash' ||
+            title == 'sweep' ||
+            title == 'swing' ||
+            title == 'take a bath' ||
+            title == 'teacher' ||
+            title == 'teenager' ||
+            title == 'throw up' ||
+            title == 'throw' ||
+            title == 'tie shoelaces' ||
+            title == 'uncle' ||
+            title == 'unclothed' ||
+            title == 'walk' ||
+            title == 'watch tv' ||
+            title == 'whisper' ||
+            title == 'yawn' ||
             title.includes('baby') ||
-            title.includes('balance bike') ||
-            title.includes('blow') ||
-            title.includes('boy') ||
-            title.includes('brother') ||
-            title.includes('brush teeth') ||
-            title.includes('build') ||
-            title.includes('care') ||
             title.includes('child') ||
-            title.includes('clap') ||
-            title.includes('climb') ||
-            title.includes('coach') ||
-            title.includes('collect, gather') ||
-            title.includes('communion') ||
-            title.includes('crawl') ||
-            title.includes('cry') ||
-            title.includes('curly') ||
-            title.includes('dad') ||
             title.includes('daughter') ||
-            title.includes('descend') ||
-            title.includes('do laundry') ||
-            title.includes('dressed') ||
-            title.includes('family') ||
             title.includes('father') ||
-            title.includes('feed') ||
-            title.includes('friendship') ||
-            title.includes('girl') ||
-            title.includes('grimace') ||
-            title.includes('hide') ||
-            title.includes('hug') ||
-            title.includes('hurt') ||
-            title.includes('kind') ||
-            title.includes('kiss') ||
-            title.includes('kite') ||
-            title.includes('lady') ||
-            title.includes('mom') ||
             title.includes('mother') ||
-            title.includes('nephew') ||
-            title.includes('newborn') ||
-            title.includes('niece') ||
-            title.includes('parent') ||
-            title.includes('peep out') ||
-            title.includes('play') ||
-            title.includes('pray') ||
-            title.includes('pregnant') ||
-            title.includes('press') ||
-            title.includes('pull') ||
-            title.includes('push') ||
-            title.includes('put') ||
-            title.includes('relax') ||
-            title.includes('roll') ||
-            title.includes('run') ||
-            title.includes('shoot') ||
-            title.includes('shout') ||
-            title.includes('sister') ||
-            title.includes('sit') ||
-            title.includes('sleep') ||
-            title.includes('son') ||
-            title.includes('splash') ||
-            title.includes('sweep') ||
-            title.includes('swing') ||
-            title.includes('take a bath') ||
-            title.includes('teacher') ||
-            title.includes('teenager') ||
-            title.includes('throw') ||
-            title.includes('tie shoelaces') ||
-            title.includes('uncle') ||
-            title.includes('unclothed') ||
-            title.includes('walk') ||
-            title.includes('watch tv') ||
-            title.includes('whisper') ||
-            title.includes('yawn')
+            title.includes('parent')
         )) {
             return true;
         }
@@ -2494,15 +2513,41 @@ function* state1_generator(taskArea) {
             category2 == 'Valentines day' ||
             category2 == 'Family members' ||
             category2 == 'Stages' ||
-            title.includes('bring up') ||
-            title.includes('clean, scrub') ||
-            title.includes('get dressed') ||
-            title.includes('hold') ||
-            title.includes('icon') ||
-            title.includes('present') ||
-            title.includes('put on shoes') ||
-            title.includes('wake up') ||
-            title.includes('young')
+            title == 'bring up' ||
+            title == 'care' ||
+            title == 'clean, scrub' ||
+            title == 'feed' ||
+            title == 'get dressed' ||
+            title == 'hold' ||
+            title == 'hug' ||
+            title == 'icon' ||
+            title == 'kiss' ||
+            title == 'play with friends' ||
+            title == 'play' ||
+            title == 'present' ||
+            title == 'push' ||
+            title == 'put on shoes' ||
+            title == 'throw up' ||
+            title == 'wake up' ||
+            title == 'walk' ||
+            title == 'whisper' ||
+            title == 'young' ||
+            title.includes('child') ||
+            title.includes('daughter') ||
+            title.includes('father') ||
+            title.includes('mother') ||
+            title.includes('parent')
+        )) {
+            return true;
+        }
+        if (st1_holidays_category == combo_st1_holidays_category.Disable && (
+            category1 == 'Holidays'
+        )) {
+            return true;
+        }
+        if (st1_body_category == combo_st1_body_category.Disable && (
+            category2 == 'Body parts' ||
+            category2 == 'Face'
         )) {
             return true;
         }
@@ -5907,6 +5952,14 @@ let combo_st1_baby_category = {
     Disable: "Disable"
 };
 let combo_st1_family_members_category = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_holidays_category = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_st1_body_category = {
     Enable: "Enable",
     Disable: "Disable"
 };
