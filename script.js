@@ -10,7 +10,7 @@ Array.prototype.sum = function () {
     return this.reduce(function (a, b) { return a + b; }, 0);
 };
 
-Array.prototype.slice_ext = function (start = null, end = null, step = null) {
+Array.prototype.sliceExt = function (start = null, end = null, step = null) {
     if (this.length === 0) {
         return [];
     }
@@ -102,10 +102,10 @@ function getMain() {
 
 function loadScores() {
     let defScores = {
-        "st1": 0,
-        "st2": 0,
-        "st3": 0,
-        "st4": 0
+        "ce_st1": 0,
+        "ce_st2": 0,
+        "ce_st3": 0,
+        "ce_st4": 0
     };
     let scores = {};
     Object.keys(defScores).forEach((st) => {
@@ -121,7 +121,7 @@ function loadScores() {
 }
 
 function loadHistory() {
-    let history = localStorage.getItem('exHistory');
+    let history = localStorage.getItem('ce_history');
     if (history == null) {
         return [];
     }
@@ -130,73 +130,78 @@ function loadHistory() {
 
 function loadSettings() {
     let defParameters = {
-        "st1_auto_mode": 20,
-        "st1_n": 0,
-        "st1_word_to_image": combo_st1_word_to_image.Enable,
-        "st1_image_to_word": combo_st1_image_to_word.Enable,
-        "st1_voice_to_word": combo_st1_voice_to_word.Enable,
-        "st1_voice_to_image": combo_st1_voice_to_image.Enable,
-        "st1_voice_index": -2,
-        "st1_image_voice_modes_random": combo_st1_image_voice_modes_random.Enable,
-        "st1_word_mode_just_word": combo_st1_word_mode_just_word.Enable,
-        "st1_word_mode_meaning": combo_st1_word_mode_meaning.Enable,
-        "st1_word_mode_synonyms": combo_st1_word_mode_synonyms.Enable,
-        "st1_word_mode_antonyms": combo_st1_word_mode_antonyms.Enable,
-        "st1_word_mode_similar_words": combo_st1_word_mode_similar_words.Enable,
-        "st1_word_mode_random": combo_st1_word_mode_random.Disable,
-        "st1_image_voice_options": 4,
-        "st1_word_options": 4,
-        "st1_word_to_category": combo_st1_word_to_category.Enable,
-        "st1_image_voice_hard_mode": combo_st1_image_voice_hard_mode.Disable,
-        "st1_word_hard_mode": combo_st1_word_hard_mode.Disable,
-        "st1_image_voice_show_trial_time_limit": '0.0',
-        "st1_image_voice_answer_trial_time_limit": '0.0',
-        "st1_word_mode_show_trial_time_limit": '0.0',
-        "st1_word_mode_answer_trial_time_limit": '0.0',
-        "st1_insects_category": combo_st1_insects_category.Enable,
-        "st1_halloween_category": combo_st1_halloween_category.Enable,
-        "st1_baby_category": combo_st1_baby_category.Enable,
-        "st1_family_members_category": combo_st1_family_members_category.Enable,
-        "st1_holidays_category": combo_st1_holidays_category.Enable,
-        "st1_body_category": combo_st1_body_category.Enable,
-        "st2_auto_mode": 5,
-        "st2_boxes": 2,
-        "st2_operations": 1,
-        "st2_minmax_operations": "1-5",
-        "st2_minmax_number": "1-5",
-        "st3_auto_mode": 3,
-        "st3_stn": 4,
-        "st3_current_level": 1,
-        "st3_minmax_stmts": "4-12",
-        "st3_minmax_level": "1-7",
-        "st3_max_solutions": 1,
-        "st3_show_puzzle_time_limit": '0.0',
-        "st3_answer_puzzle_time_limit": '0.0',
-        "st4_auto_mode": 2,
-        "st4_current_attributes": 2,
-        "st4_current_objects": 3,
-        "st4_current_level": 1,
-        "st4_minmax_attributes": "2-5",
-        "st4_minmax_objects": "3-5",
-        "st4_minmax_level": "1-20",
-        "st4_hard_mode": combo_st4_hard_mode.Disable,
-        "st4_max_seconds": 10,
-        "st4_max_solutions": 1,
-        "st4_show_puzzle_time_limit": '0.0',
-        "st4_answer_puzzle_time_limit": '0.0',
-        "state1_words_dictionary": combo_state1_words_dictionary.Wordsmyth,
-        "state1_wrap": combo_st_wrap.Enable,
-        "state3_wrap": combo_st_wrap.Enable,
-        "state4_wrap": combo_st_wrap.Enable,
-        "state1_font_size": 16,
-        "state3_font_size": 16,
-        "state4_font_size": 16,
-        "state1_active_template": "Default",
-        "state1_templates": "",
-        "state3_active_template": "Default",
-        "state3_templates": "",
-        "state4_active_template": "Default",
-        "state4_templates": "",
+        "ce_state1_active_template": "Default",
+        "ce_state1_templates": "",
+        "ce_state1_wrap": combo_enable_disable.Enable,
+        "ce_state1_font_size": 16,
+        "ce_state1_words_dictionary": combo_state1_words_dictionary.Wordsmyth,
+
+        "ce_st1_auto_mode": 60,
+        "ce_st1_min_max_n": 0,
+        "ce_st1_image_to_word": combo_enable_disable.Enable,
+        "ce_st1_word_to_image": combo_enable_disable.Enable,
+        "ce_st1_voice_to_word": combo_enable_disable.Enable,
+        "ce_st1_voice_to_image": combo_enable_disable.Enable,
+        "ce_st1_voice_index": -2,
+        "ce_st1_image_voice_word_to_category": combo_enable_only_disable.Enable,
+        "ce_st1_image_voice_random_task_each_time": combo_enable_disable.Enable,
+        "ce_st1_image_voice_show_trial_time_limit": '0.0',
+        "ce_st1_image_voice_answer_trial_time_limit": '0.0',
+        "ce_st1_image_voice_hard_mode": combo_enable_disable.Disable,
+        "ce_st1_image_voice_options": 4,
+        "ce_st1_image_voice_insects_category": combo_enable_disable.Enable,
+        "ce_st1_image_voice_halloween_category": combo_enable_disable.Enable,
+        "ce_st1_image_voice_baby_category": combo_enable_disable.Enable,
+        "ce_st1_image_voice_family_members_category": combo_enable_disable.Enable,
+        "ce_st1_image_voice_holidays_category": combo_enable_disable.Enable,
+        "ce_st1_image_voice_body_category": combo_enable_disable.Enable,
+        "ce_st1_word_to_word": combo_enable_disable.Enable,
+        "ce_st1_meaning_to_word": combo_enable_disable.Enable,
+        "ce_st1_word_to_synonym": combo_enable_disable.Enable,
+        "ce_st1_word_to_antonym": combo_enable_disable.Enable,
+        "ce_st1_word_to_similar_word": combo_enable_disable.Enable,
+        "ce_st1_find_word_in_sentence": combo_enable_disable.Enable,
+        "ce_st1_word_random_task_each_time": combo_enable_disable.Enable,
+        "ce_st1_word_show_trial_time_limit": '0.0',
+        "ce_st1_word_answer_trial_time_limit": '0.0',
+        "ce_st1_word_hard_mode": combo_enable_disable.Disable,
+        "ce_st1_word_options": 4,
+
+        "ce_st2_auto_mode": 5,
+        "ce_st2_boxes": 2,
+        "ce_st2_operations": 1,
+        "ce_st2_min_max_operations": "1-5",
+        "ce_st2_min_max_number": "1-5",
+
+        "ce_state3_active_template": "Default",
+        "ce_state3_templates": "",
+        "ce_state3_wrap": combo_enable_disable.Enable,
+        "ce_state3_font_size": 16,
+        "ce_st3_auto_mode": 3,
+        "ce_st3_current_number_of_statements": 4,
+        "ce_st3_current_level": 1,
+        "ce_st3_min_max_number_of_statements": "4-12",
+        "ce_st3_min_max_level": "1-7",
+        "ce_st3_max_solutions": 1,
+        "ce_st3_show_puzzle_time_limit": '0.0',
+        "ce_st3_answer_puzzle_time_limit": '0.0',
+
+        "ce_state4_active_template": "Default",
+        "ce_state4_templates": "",
+        "ce_state4_wrap": combo_enable_disable.Enable,
+        "ce_state4_font_size": 16,
+        "ce_st4_auto_mode": 2,
+        "ce_st4_current_attributes": 2,
+        "ce_st4_current_objects": 3,
+        "ce_st4_current_level": 1,
+        "ce_st4_min_max_attributes": "2-5",
+        "ce_st4_min_max_objects": "3-5",
+        "ce_st4_min_max_level": "1-20",
+        "ce_st4_hard_mode": combo_enable_disable.Disable,
+        "ce_st4_max_seconds_to_wait": 10,
+        "ce_st4_max_solutions": 1,
+        "ce_st4_show_puzzle_time_limit": '0.0',
+        "ce_st4_answer_puzzle_time_limit": '0.0',
     };
     let parameters = {};
     Object.keys(defParameters).forEach((param) => {
@@ -219,7 +224,7 @@ function setSetting(key, value) {
 function getScoredText(text, st = null) {
     st = ((st == null) ? state : st);
     if (st === 1 || st === 2 || st === 3 || st === 4) {
-        let score = scores['st' + st];
+        let score = scores['ce_st' + st];
         return '[' + score + '] ' + text + ' [' + score + ']';
     }
     return 'Enter';
@@ -474,7 +479,6 @@ function download_settings(event) {
     let element = document.createElement('a');
     element.style.display = "none";
     element.setAttribute("href", URL.createObjectURL(blob));
-    console.log(getStrDateTime());
     let datetime_string = getStrDateTime().replaceAll(':', '.').replaceAll(' ', '_');
     element.setAttribute("download", `${datetime_string}_Cognitive-Exercises.json`);
     document.body.appendChild(element);
@@ -569,7 +573,7 @@ function* wordGetter(dictionary, options, hard_mode) {
             while (true) {
                 let task1 = '', task2 = '', expected = '', explanation = '', options_list = [];
                 let word = list_item[0];
-                let definition = hard_mode ? randomChoice(list_item[1]) : list_item[1][0];
+                let definition = randomChoice(list_item[1]);
                 let part_of_speech = definition[0];
                 let meaning = definition[1];
                 let example = definition[2];
@@ -693,7 +697,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                     all_antonyms.delete(w);
                     all_similar_words.delete(w);
                 }
-                if (task_type == 'word-just-one') {
+                if (task_type == 'word-to-word') {
                     task1 = 'Next word: ' + capitalize(word);
                     if (part_of_speech.length > 0) {
                         task1 += ' (' + part_of_speech + ')';
@@ -720,7 +724,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                     }
                 }
-                else if (task_type == 'word-meaning') {
+                else if (task_type == 'meaning-to-word') {
                     task1 = 'Next meaning of the word';
                     if (part_of_speech.length > 0) {
                         task1 += ' (' + part_of_speech + ')';
@@ -748,7 +752,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                     }
                 }
-                else if (task_type == 'word-synonyms' && synonyms.length > 0) {
+                else if (task_type == 'word-to-synonym' && synonyms.length > 0) {
                     expected = randomChoice(synonyms);
                     task1 = 'Next word: ' + capitalize(word);
                     if (part_of_speech.length > 0) {
@@ -810,7 +814,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                     }
                 }
-                else if (task_type == 'word-antonyms' && antonyms.length > 0) {
+                else if (task_type == 'word-to-antonym' && antonyms.length > 0) {
                     expected = randomChoice(antonyms);
                     task1 = 'Next word: ' + capitalize(word);
                     if (part_of_speech.length > 0) {
@@ -848,7 +852,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         if (options_list.length >= options) {
                             break;
                         }
-                        if (x[0] != word && all_antonyms.has(x[0]) == false) {
+                        if (x[0] != word && all_antonyms.has(x[0]) == false && all_similar_words.has(x[0]) == false) {
                             options_list.push(x[0]);
                         }
                     }
@@ -872,7 +876,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                     }
                 }
-                else if (task_type == 'word-similar-words' && similar_words.length > 0) {
+                else if (task_type == 'word-to-similar-word' && similar_words.length > 0) {
                     expected = randomChoice(similar_words);
                     task1 = 'Next word: ' + capitalize(word);
                     if (part_of_speech.length > 0) {
@@ -931,6 +935,22 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                         if (expected_meaning.length > 0) {
                             explanation = (capitalize(expected) + ' - ' + expected_meaning + '\n').concat(explanation);
+                        }
+                    }
+                }
+                else if (task_type == 'find-word-in-sentence' && example.length > word.length) {
+                    task1 = 'Next sentence: ' + example;
+                    task2 = 'Choose word (' + part_of_speech + '):';
+                    expected = word;
+                    explanation = another_word_flag ? '' : example;
+                    for (let x of randomShuffle(list)) {
+                        if (options_list.length >= options) {
+                            break;
+                        }
+                        if (x[0] != word && all_synonyms.has(x[0]) == false &&
+                            all_antonyms.has(x[0]) == false && all_similar_words.has(x[0]) == false
+                        ) {
+                            options_list.push(x[0]);
                         }
                     }
                 }
@@ -1141,6 +1161,9 @@ function createChooser(stateN, options, additionalButtons) {
         if (isInt(voice_index) && voice_index !== -1) {
             st1_speak(voiceButton.voice_text, voiceButton.voice_index);
         }
+    }
+    voiceButton.ondblclick = function () {
+        alert(voiceButton.voice_text);
     }
     voiceDiv.appendChild(voiceButton);
     voiceDiv.style.display = 'none';
@@ -1425,6 +1448,7 @@ function createParameters(parameters) {
                 firstElement.innerHTML = item[1];
                 secondElement = createParameterCombobox(item[0], item[3], item.length >= 5 ? item[4] : null);
                 secondElement.id = item[0];
+                secondElement.style.maxWidth = '135px';
                 break;
             }
             case "text_button": {
@@ -1436,7 +1460,7 @@ function createParameters(parameters) {
                 secondElement.innerHTML = item[1];
                 break;
             }
-            case "st1_voice_combobox": {
+            case "ce_st1_voice_combobox": {
                 firstElement = document.createElement("p");
                 firstElement.innerHTML = item[1];
                 secondElement = createVoiceCombobox(item[0], function (value) {
@@ -1452,8 +1476,12 @@ function createParameters(parameters) {
             case "hr": {
                 firstElement = document.createElement("hr");
                 firstElement.style.borderColor = 'hsl(45, 100%, 50%)';
+                firstElement.style.backgroundColor = 'hsl(45, 100%, 50%)';
+                firstElement.style.height = '3px';
                 secondElement = document.createElement("hr");
                 secondElement.style.borderColor = 'hsl(45, 100%, 50%)';
+                secondElement.style.backgroundColor = 'hsl(45, 100%, 50%)';
+                secondElement.style.height = '3px';
                 break;
             }
             case "hr1": {
@@ -1656,6 +1684,7 @@ function stop_any_audio() {
 
 function st1_speak(text, voice_index) {
     stop_any_audio();
+    text = text.trim();
     if (voice_index >= 0) {
         speak(text, voice_index);
         return;
@@ -1744,7 +1773,7 @@ function state0() {
 
     let clearScoresButton = createActionButton('Clear scores', () => {
         if (confirm('Are you sure you want to clear the scores?')) {
-            stateN_clear_score(['st1', 'st2', 'st3', 'st4']);
+            stateN_clear_score(['ce_st1', 'ce_st2', 'ce_st3', 'ce_st4']);
         }
     });
     clearScoresButton.classList.add('blackButton');
@@ -1779,15 +1808,15 @@ function stateHistory() {
     addWidget(backButton);
     let clearButton = createActionButton('Clear history', () => {
         if (confirm('Are you sure you want to clear the history?')) {
-            localStorage.removeItem('exHistory');
-            exHistory = loadHistory();
+            localStorage.removeItem('ce_history');
+            ce_history = loadHistory();
             state0();
         }
     });
     clearButton.classList.add('blackButton');
     clearButton.classList.add('w100');
     addWidget(clearButton);
-    exHistory.forEach(historyElem => {
+    ce_history.forEach(historyElem => {
         let task = createInputElems();
         let taskDiv = task[0];
         let taskArea = task[1];
@@ -1936,7 +1965,9 @@ function state1WordInfo(text) {
 }
 
 function getStrDateTime() {
-    return new Date().toISOString().replace('T', ' ').replaceAll('-', '.').slice(0, 19);
+    let dts = new Date((new Date().setHours(new Date().getHours() - (new Date().getTimezoneOffset() / 60)))).toISOString();
+    dts = dts.replace('T', ' ').replaceAll('-', '.').slice(0, 19);
+    return dts;
 }
 
 function formatHistoryElem(historyElem) {
@@ -1946,29 +1977,29 @@ function formatHistoryElem(historyElem) {
 
 function addHistoryItem(historyElem) {
     historyElem = historyElem.join('\n');
-    exHistory.unshift(formatHistoryElem(historyElem));
-    if (exHistory.length > 25) {
-        exHistory = exHistory.slice(0, 25);
+    ce_history.unshift(formatHistoryElem(historyElem));
+    if (ce_history.length > 25) {
+        ce_history = ce_history.slice(0, 25);
     }
-    localStorage.setItem('exHistory', JSON.stringify(exHistory));
+    localStorage.setItem('ce_history', JSON.stringify(ce_history));
 }
 
 function updateLastHistoryItem(historyElem) {
     historyElem = historyElem.join('\n');
-    exHistory[0] = formatHistoryElem(historyElem);
-    localStorage.setItem('exHistory', JSON.stringify(exHistory));
+    ce_history[0] = formatHistoryElem(historyElem);
+    localStorage.setItem('ce_history', JSON.stringify(ce_history));
 }
 
 function refill_templates(exercise_number) {
-    let active_template = settings['state' + exercise_number + '_active_template'];
-    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    let active_template = settings['ce_state' + exercise_number + '_active_template'];
+    let state_n_templates = settings['ce_state' + exercise_number + '_templates'];
     if (!state_n_templates) {
         active_template = 'Default';
         new_template(exercise_number, active_template);
-        state_n_templates = settings['state' + exercise_number + '_templates'];
+        state_n_templates = settings['ce_state' + exercise_number + '_templates'];
     }
     state_n_templates = JSON.parse(state_n_templates);
-    let select = document.getElementById('st' + exercise_number + '_template_choose');
+    let select = document.getElementById('ce_st' + exercise_number + '_template_choose');
     select.innerHTML = '';
     for (const [key, value] of Object.entries(state_n_templates)) {
         let option = document.createElement('option');
@@ -1982,21 +2013,21 @@ function refill_templates(exercise_number) {
 
 function choose_template(exercise_number, active_template) {
     if (active_template == null) {
-        active_template = settings['state' + exercise_number + '_active_template'];
+        active_template = settings['ce_state' + exercise_number + '_active_template'];
     }
-    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    let state_n_templates = settings['ce_state' + exercise_number + '_templates'];
     state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
     if (state_n_templates.hasOwnProperty(active_template)) {
         let template = state_n_templates[active_template];
         for (let [key, value] of Object.entries(template)) {
             setSetting(key, value);
         }
-        setSetting('state' + exercise_number + '_active_template', active_template);
+        setSetting('ce_state' + exercise_number + '_active_template', active_template);
     }
 }
 
 function new_template(exercise_number, template_name = null) {
-    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    let state_n_templates = settings['ce_state' + exercise_number + '_templates'];
     state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
     if (template_name == null) {
         template_name = prompt('Enter name of template:');
@@ -2014,34 +2045,34 @@ function new_template(exercise_number, template_name = null) {
     }
     let new_template_value = {};
     for (const [key, value] of Object.entries(settings)) {
-        if (key.startsWith('st' + exercise_number + '_')) {
+        if (key.startsWith('ce_st' + exercise_number + '_')) {
             new_template_value[key] = value;
         }
     }
     state_n_templates[template_name] = new_template_value;
-    setSetting('state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
+    setSetting('ce_state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
     choose_template(exercise_number, template_name);
 }
 
 function save_template(exercise_number) {
-    let active_template = settings['state' + exercise_number + '_active_template'];
-    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    let active_template = settings['ce_state' + exercise_number + '_active_template'];
+    let state_n_templates = settings['ce_state' + exercise_number + '_templates'];
     state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
     if (state_n_templates.hasOwnProperty(active_template)) {
         let new_template_value = {};
         for (const [key, value] of Object.entries(settings)) {
-            if (key.startsWith('st' + exercise_number + '_')) {
+            if (key.startsWith('ce_st' + exercise_number + '_')) {
                 new_template_value[key] = value;
             }
         }
         state_n_templates[active_template] = new_template_value;
-        setSetting('state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
+        setSetting('ce_state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
     }
 }
 
 function delete_template(exercise_number) {
-    let active_template = settings['state' + exercise_number + '_active_template'];
-    let state_n_templates = settings['state' + exercise_number + '_templates'];
+    let active_template = settings['ce_state' + exercise_number + '_active_template'];
+    let state_n_templates = settings['ce_state' + exercise_number + '_templates'];
     state_n_templates = JSON.parse(state_n_templates ? state_n_templates : '{}');
     if (active_template == 'Default') {
         alert('You cannot delete Default template!');
@@ -2049,7 +2080,7 @@ function delete_template(exercise_number) {
     }
     if (state_n_templates.hasOwnProperty(active_template)) {
         delete state_n_templates[active_template];
-        setSetting('state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
+        setSetting('ce_state' + exercise_number + '_templates', JSON.stringify(state_n_templates));
         choose_template(exercise_number, 'Default');
     }
 }
@@ -2081,7 +2112,7 @@ function state1() {
             },
         ],
         [
-            "st1_template_choose", "st1_template_new", "template_choose_new",
+            "ce_st1_template_choose", "ce_st1_template_new", "template_choose_new",
             function (event) {
                 choose_template('1', event.target.value);
                 state1();
@@ -2092,7 +2123,7 @@ function state1() {
             },
         ],
         [
-            "st1_template_save", "st1_template_delete", "template_save_delete",
+            "ce_st1_template_save", "ce_st1_template_delete", "template_save_delete",
             function (event) {
                 save_template('1');
             },
@@ -2107,7 +2138,7 @@ function state1() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st1_n = toIntOrIntRange(settings['st1_n']);
+                let st1_n = toIntOrIntRange(settings['ce_st1_min_max_n']);
                 let st1_n_min = st1_n[0];
                 let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
                 let was_diff = (st1_n.length == 2);
@@ -2123,11 +2154,11 @@ function state1() {
                     st1_n_string = st1_n_min + '-' + st1_n_max;
                 }
                 st1_n = st1_n_min;
-                setSetting('st1_n', st1_n_string);
-                document.getElementById('st1_n').innerHTML = st1_n_string;
+                setSetting('ce_st1_min_max_n', st1_n_string);
+                document.getElementById('ce_st1_min_max_n').innerHTML = st1_n_string;
             },
             function (event) {
-                let st1_n = toIntOrIntRange(settings['st1_n']);
+                let st1_n = toIntOrIntRange(settings['ce_st1_min_max_n']);
                 let st1_n_min = st1_n[0];
                 let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
                 let was_diff = (st1_n.length == 2);
@@ -2143,63 +2174,64 @@ function state1() {
                     st1_n_string = st1_n_min + '-' + st1_n_max;
                 }
                 st1_n = st1_n_min;
-                setSetting('st1_n', st1_n_string);
-                document.getElementById('st1_n').innerHTML = st1_n_string;
+                setSetting('ce_st1_min_max_n', st1_n_string);
+                document.getElementById('ce_st1_min_max_n').innerHTML = st1_n_string;
             },
         ],
-        ["st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every K successful trials<br>[0:disable|1-10000]", "integer", function (xv) {
+        ["ce_st1_auto_mode", "<b>Auto mode</b><br>Move to the next level every K successful trials<br>[0:disable|1-10000]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 10000;
         }],
-        ["st1_n", "<b>Auto mode</b><br>Min-Max N<br>[0|1-100]", "range", function (xv) {
+        ["ce_st1_min_max_n", "<b>Auto mode</b><br>Min-Max N<br>[0|1-100]", "range", function (xv) {
             return xv != null &&
                    0 <= xv[0] && xv[0] <= 100 &&
                    (xv.length === 1 || 0 <= xv[1] && xv[1] <= 100);
         }],
         ["", "", "hr"],
-        ["st1_image_to_word", "<u>Image to Word</u>", "combobox", Object.values(combo_st1_image_to_word)],
-        ["st1_word_to_image", "<u>Word to Image</u>", "combobox", Object.values(combo_st1_word_to_image)],
+        ["ce_st1_image_to_word", "<u>Image to Word</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_to_image", "<u>Word to Image</u>", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr1"],
-        ["st1_voice_to_word", "<u>Voice to Word</u>", "combobox", Object.values(combo_st1_voice_to_word)],
-        ["st1_voice_to_image", "<u>Voice to Image</u>", "combobox", Object.values(combo_st1_voice_to_image)],
-        ["st1_voice_index", "Voice", "st1_voice_combobox"],
+        ["ce_st1_voice_to_word", "<u>Voice to Word</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_voice_to_image", "<u>Voice to Image</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_voice_index", "Voice", "ce_st1_voice_combobox"],
         ["", "", "hr1"],
-        ["st1_word_to_category", "Word to Category", "combobox", Object.values(combo_st1_word_to_category)],
-        ["st1_image_voice_modes_random", "Random task each time<br>for one trial", "combobox", Object.values(combo_st1_image_voice_modes_random)],
-        ["st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+        ["ce_st1_image_voice_word_to_category", "Word to Category", "combobox", Object.values(combo_enable_only_disable)],
+        ["ce_st1_image_voice_random_task_each_time", "Random task each time<br>for one trial", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
-        ["st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+        ["ce_st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
-        ["st1_image_voice_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_image_voice_hard_mode)],
-        ["st1_image_voice_options", "Options", "combobox", Object.values(combo_st1_options)],
+        ["ce_st1_image_voice_hard_mode", "Hard mode", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["", "", "hr1"],
-        ["st1_insects_category", "Category 'Insects'", "combobox", Object.values(combo_st1_insects_category)],
-        ["st1_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_st1_halloween_category)],
-        ["st1_baby_category", "Category 'Baby'", "combobox", Object.values(combo_st1_baby_category)],
-        ["st1_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_st1_family_members_category)],
-        ["st1_holidays_category", "Category 'Official holidays'", "combobox", Object.values(combo_st1_holidays_category)],
-        ["st1_body_category", "Category 'Body'", "combobox", Object.values(combo_st1_body_category)],
+        ["ce_st1_image_voice_insects_category", "Category 'Insects'", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_halloween_category", "Category 'Halloween'", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_baby_category", "Category 'Baby'", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_family_members_category", "Category 'Family members'", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_holidays_category", "Category 'Official holidays'", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_voice_body_category", "Category 'Body'", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr"],
-        ["st1_word_mode_just_word", "<u>Word to Word</u>", "combobox", Object.values(combo_st1_word_mode_just_word)],
-        ["st1_word_mode_meaning", "<u>Meaning to Word</u>", "combobox", Object.values(combo_st1_word_mode_meaning)],
-        ["st1_word_mode_synonyms", "<u>Word to Synonym</u>", "combobox", Object.values(combo_st1_word_mode_synonyms)],
-        ["st1_word_mode_antonyms", "<u>Word to Antonym</u>", "combobox", Object.values(combo_st1_word_mode_antonyms)],
-        ["st1_word_mode_similar_words", "<u>Word to Similar word</u>", "combobox", Object.values(combo_st1_word_mode_similar_words)],
+        ["ce_st1_word_to_word", "<u>Word to Word</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_meaning_to_word", "<u>Meaning to Word</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_to_synonym", "<u>Word to Synonym</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_to_antonym", "<u>Word to Antonym</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_to_similar_word", "<u>Word to Similar word</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_find_word_in_sentence", "<u>Find word in sentence</u>", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr1"],
-        ["st1_word_mode_random", "Random task each time<br>for one word", "combobox", Object.values(combo_st1_word_mode_random)],
-        ["st1_word_mode_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+        ["ce_st1_word_random_task_each_time", "Random task each time<br>for one word", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
-        ["st1_word_mode_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
+        ["ce_st1_word_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 120;
         }],
-        ["st1_word_hard_mode", "Hard mode", "combobox", Object.values(combo_st1_word_hard_mode)],
-        ["st1_word_options", "Options", "combobox", Object.values(combo_st1_options)],
+        ["ce_st1_word_hard_mode", "Hard mode", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["", "", "hr"],
-        ["state1_words_dictionary", "Dictionary of words", "combobox", Object.values(combo_state1_words_dictionary), function (xv) {
+        ["ce_state1_words_dictionary", "Dictionary of words", "combobox", Object.values(combo_state1_words_dictionary), function (xv) {
             if (confirm('Are you sure you want to choose ' + xv + '?')) {
-                setSetting('state1_words_dictionary', xv);
+                setSetting('ce_state1_words_dictionary', xv);
                 save_template('1');
                 location.reload();
                 return true;
@@ -2208,11 +2240,11 @@ function state1() {
                 return false;
             }
         }],
-        ["state1_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
+        ["ce_state1_wrap", "Wrap text", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr"],
         ["Hello", "Speak", "text_button", function (input_element) {
             let text = input_element.value;
-            let select = document.getElementById('st1_voice_index');
+            let select = document.getElementById('ce_st1_voice_index');
             if (text != null && text.length > 0 && select != null) {
                 st1_speak(text.toLowerCase(), select.value);
             }
@@ -2228,14 +2260,14 @@ function state1() {
             "Default settings", "Clear score", "buttons",
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
-                    stateN_defaults('st1');
+                    stateN_defaults('ce_st1');
                     save_template('1');
                     state1();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
-                    stateN_clear_score('st1');
+                    stateN_clear_score('ce_st1');
                     save_template('1');
                     state1();
                 }
@@ -2251,15 +2283,15 @@ function state1_back() {
 
 function state1_start() {
     clearWidgets();
-    let task = createInputElems(settings['state1_wrap'] == combo_st_wrap.Enable);
+    let task = createInputElems(settings['ce_state1_wrap'] == combo_enable_disable.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
     taskDiv.style.height = '150px';
     taskArea.style.height = '155px';
-    let st1_image_voice_options = parseInt(settings['st1_image_voice_options']);
-    let st1_word_options = parseInt(settings['st1_word_options']);
+    let st1_image_voice_options = parseInt(settings['ce_st1_image_voice_options']);
+    let st1_word_options = parseInt(settings['ce_st1_word_options']);
     let st1_options = Math.max(st1_image_voice_options, st1_word_options);
-    let fs = parseInt(settings['state1_font_size']);
+    let fs = parseInt(settings['ce_state1_font_size']);
     taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(createCaption(statesToNames.st1));
     addWidget(taskDiv);
@@ -2281,14 +2313,14 @@ function state1_start() {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(7, fs + 1));
-            setSetting('state1_font_size', newValue);
+            setSetting('ce_state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(7, fs - 1));
-            setSetting('state1_font_size', newValue);
+            setSetting('ce_state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
     }));
@@ -2330,46 +2362,47 @@ function convertOptionsToString(options) {
 }
 
 function* state1_generator(taskArea) {
-    let st1_auto_mode = parseInt(settings['st1_auto_mode']);
-    let st1_n = toIntOrIntRange(settings['st1_n']);
+    let st1_auto_mode = parseInt(settings['ce_st1_auto_mode']);
+    let st1_n = toIntOrIntRange(settings['ce_st1_min_max_n']);
     let st1_n_min = st1_n[0];
     let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
     let was_diff = (st1_n.length == 2);
     st1_n = st1_n_min;
-    let st1_image_voice_options = parseInt(settings['st1_image_voice_options']);
-    let st1_word_options = parseInt(settings['st1_word_options']);
+    let st1_image_voice_options = parseInt(settings['ce_st1_image_voice_options']);
+    let st1_word_options = parseInt(settings['ce_st1_word_options']);
     let st1_options = Math.max(st1_image_voice_options, st1_word_options);
-    let st1_word_to_category = settings['st1_word_to_category'];
-    let st1_word_to_image = settings['st1_word_to_image'];
-    let st1_image_to_word = settings['st1_image_to_word'];
-    let st1_voice_to_word = settings['st1_voice_to_word'];
-    let st1_voice_to_image = settings['st1_voice_to_image'];
-    let st1_voice_index = parseInt(settings['st1_voice_index']);
-    let st1_image_voice_hard_mode = settings['st1_image_voice_hard_mode'];
-    let st1_word_hard_mode = settings['st1_word_hard_mode'];
-    let st1_image_voice_show_trial_time_limit = parseFloat(settings['st1_image_voice_show_trial_time_limit']);
-    let st1_image_voice_answer_trial_time_limit = parseFloat(settings['st1_image_voice_answer_trial_time_limit']);
-    let st1_word_mode_show_trial_time_limit = parseFloat(settings['st1_word_mode_show_trial_time_limit']);
-    let st1_word_mode_answer_trial_time_limit = parseFloat(settings['st1_word_mode_answer_trial_time_limit']);
-    let st1_word_mode_just_word = settings['st1_word_mode_just_word'];
-    let st1_word_mode_meaning = settings['st1_word_mode_meaning'];
-    let st1_word_mode_synonyms = settings['st1_word_mode_synonyms'];
-    let st1_word_mode_antonyms = settings['st1_word_mode_antonyms'];
-    let st1_word_mode_similar_words = settings['st1_word_mode_similar_words'];
-    let st1_image_voice_modes_random_bool = settings['st1_image_voice_modes_random'] == combo_st1_image_voice_modes_random.Enable;
-    let st1_word_mode_random_bool = settings['st1_word_mode_random'] == combo_st1_word_mode_random.Enable;
+    let st1_word_to_category = settings['ce_st1_image_voice_word_to_category'];
+    let st1_word_to_image = settings['ce_st1_word_to_image'];
+    let st1_image_to_word = settings['ce_st1_image_to_word'];
+    let st1_voice_to_word = settings['ce_st1_voice_to_word'];
+    let st1_voice_to_image = settings['ce_st1_voice_to_image'];
+    let st1_voice_index = parseInt(settings['ce_st1_voice_index']);
+    let st1_image_voice_hard_mode = settings['ce_st1_image_voice_hard_mode'];
+    let st1_word_hard_mode = settings['ce_st1_word_hard_mode'];
+    let st1_image_voice_show_trial_time_limit = parseFloat(settings['ce_st1_image_voice_show_trial_time_limit']);
+    let st1_image_voice_answer_trial_time_limit = parseFloat(settings['ce_st1_image_voice_answer_trial_time_limit']);
+    let st1_word_mode_show_trial_time_limit = parseFloat(settings['ce_st1_word_show_trial_time_limit']);
+    let st1_word_mode_answer_trial_time_limit = parseFloat(settings['ce_st1_word_answer_trial_time_limit']);
+    let st1_word_to_word = settings['ce_st1_word_to_word'];
+    let st1_meaning_to_word = settings['ce_st1_meaning_to_word'];
+    let st1_word_to_synonym = settings['ce_st1_word_to_synonym'];
+    let st1_word_to_antonym = settings['ce_st1_word_to_antonym'];
+    let st1_word_to_similar_word = settings['ce_st1_word_to_similar_word'];
+    let st1_find_word_in_sentence = settings['ce_st1_find_word_in_sentence'];
+    let st1_image_voice_modes_random_bool = settings['ce_st1_image_voice_random_task_each_time'] == combo_enable_disable.Enable;
+    let st1_word_mode_random_bool = settings['ce_st1_word_random_task_each_time'] == combo_enable_disable.Enable;
 
-    let st1_insects_category = settings['st1_insects_category'];
-    let st1_halloween_category = settings['st1_halloween_category'];
-    let st1_baby_category = settings['st1_baby_category'];
-    let st1_family_members_category = settings['st1_family_members_category'];
-    let st1_holidays_category = settings['st1_holidays_category'];
-    let st1_body_category = settings['st1_body_category'];
+    let st1_insects_category = settings['ce_st1_image_voice_insects_category'];
+    let st1_halloween_category = settings['ce_st1_image_voice_halloween_category'];
+    let st1_baby_category = settings['ce_st1_image_voice_baby_category'];
+    let st1_family_members_category = settings['ce_st1_image_voice_family_members_category'];
+    let st1_holidays_category = settings['ce_st1_image_voice_holidays_category'];
+    let st1_body_category = settings['ce_st1_image_voice_body_category'];
     let auto_increase_counter = 0;
     let clearBefore = true;
     let not_item_checker = function (category1, category2, title) {
         title = title.toLowerCase();
-        if (st1_insects_category == combo_st1_insects_category.Disable && (
+        if (st1_insects_category == combo_enable_disable.Disable && (
             category2 == 'Insects' ||
             title == 'artificial' ||
             title == 'bat' ||
@@ -2398,7 +2431,7 @@ function* state1_generator(taskArea) {
         )) {
             return true;
         }
-        if (st1_halloween_category == combo_st1_halloween_category.Disable && (
+        if (st1_halloween_category == combo_enable_disable.Disable && (
             category2 == 'Halloween' ||
             title == 'clown' ||
             title == 'fear' ||
@@ -2412,7 +2445,7 @@ function* state1_generator(taskArea) {
         )) {
             return true;
         }
-        if (st1_baby_category == combo_st1_baby_category.Disable && (
+        if (st1_baby_category == combo_enable_disable.Disable && (
             category1 == 'Baby' ||
             category1 == 'School' ||
             category2 == 'Counting' ||
@@ -2508,7 +2541,7 @@ function* state1_generator(taskArea) {
         )) {
             return true;
         }
-        if (st1_family_members_category == combo_st1_family_members_category.Disable && (
+        if (st1_family_members_category == combo_enable_disable.Disable && (
             category2 == 'Mothers day' ||
             category2 == 'Valentines day' ||
             category2 == 'Family members' ||
@@ -2540,18 +2573,18 @@ function* state1_generator(taskArea) {
         )) {
             return true;
         }
-        if (st1_holidays_category == combo_st1_holidays_category.Disable && (
+        if (st1_holidays_category == combo_enable_disable.Disable && (
             category1 == 'Holidays'
         )) {
             return true;
         }
-        if (st1_body_category == combo_st1_body_category.Disable && (
+        if (st1_body_category == combo_enable_disable.Disable && (
             category2 == 'Body parts' ||
             category2 == 'Face'
         )) {
             return true;
         }
-        if (st1_word_to_category == combo_st1_word_to_category.Only && (
+        if (st1_word_to_category == combo_enable_only_disable.Only && (
             category1 == 'Adjectives' ||
             category1 == 'Baby' ||
             category1 == 'Bedroom' ||
@@ -2592,24 +2625,26 @@ function* state1_generator(taskArea) {
     let short_to_full_variant = new Map();
     let full_to_short_variants = new Map();
     let variants = [
-        [st1_image_to_word == combo_st1_image_to_word.Enable,
+        [st1_image_to_word == combo_enable_disable.Enable,
             'image', 'image-to-word'],
-        [st1_word_to_image == combo_st1_word_to_image.Enable,
+        [st1_word_to_image == combo_enable_disable.Enable,
             'image', 'word-to-image'],
-        [st1_voice_to_word == combo_st1_voice_to_word.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
+        [st1_voice_to_word == combo_enable_disable.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
             'voice', 'voice-to-word'],
-        [st1_voice_to_image == combo_st1_voice_to_image.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
+        [st1_voice_to_image == combo_enable_disable.Enable && (st1_voice_index >= 0 || st1_voice_index === -2),
             'voice', 'voice-to-image'],
-        [st1_word_mode_just_word == combo_st1_word_mode_just_word.Enable,
-            'word', 'word-just-one'],
-        [st1_word_mode_meaning == combo_st1_word_mode_meaning.Enable,
-            'word', 'word-meaning'],
-        [st1_word_mode_synonyms == combo_st1_word_mode_synonyms.Enable,
-            'word', 'word-synonyms'],
-        [st1_word_mode_antonyms == combo_st1_word_mode_antonyms.Enable,
-            'word', 'word-antonyms'],
-        [st1_word_mode_similar_words == combo_st1_word_mode_similar_words.Enable,
-            'word', 'word-similar-words'],
+        [st1_word_to_word == combo_enable_disable.Enable,
+            'word', 'word-to-word'],
+        [st1_meaning_to_word == combo_enable_disable.Enable,
+            'word', 'meaning-to-word'],
+        [st1_word_to_synonym == combo_enable_disable.Enable,
+            'word', 'word-to-synonym'],
+        [st1_word_to_antonym == combo_enable_disable.Enable,
+            'word', 'word-to-antonym'],
+        [st1_word_to_similar_word == combo_enable_disable.Enable,
+            'word', 'word-to-similar-word'],
+        [st1_find_word_in_sentence == combo_enable_disable.Enable,
+            'word', 'find-word-in-sentence'],
     ];
     for (let x of variants) {
         let add_variant_bool = x[0], short_variant = x[1], full_variant = x[2];
@@ -2621,10 +2656,10 @@ function* state1_generator(taskArea) {
         }
     }
     let images_generator = imageGetter(state1_images, st1_image_voice_options,
-        st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable,
+        st1_image_voice_hard_mode == combo_enable_disable.Enable,
         not_item_checker, not_variants_checker);
     let word_generator = wordGetter(state1_words, st1_word_options,
-        st1_word_hard_mode == combo_st1_word_hard_mode.Enable);
+        st1_word_hard_mode == combo_enable_disable.Enable);
     let task_list = [];
     let mistakeFlag = false, skip_mode = true, lines = [];
     st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
@@ -2643,12 +2678,12 @@ function* state1_generator(taskArea) {
     let st1_n_string = '';
     if (was_diff === false) {
         st1_n_string = st1_n_min;
-        setSetting('st1_n', st1_n_string);
+        setSetting('ce_st1_min_max_n', st1_n_string);
         save_template('1');
     }
     else {
         st1_n_string = st1_n_min + '-' + st1_n_max;
-        setSetting('st1_n', st1_n_string);
+        setSetting('ce_st1_min_max_n', st1_n_string);
         save_template('1');
     }
     appendText(taskArea, "N = " + st1_n_string + "!\n", clearBefore);
@@ -2675,7 +2710,7 @@ function* state1_generator(taskArea) {
             else {
                 st1_n_string = st1_n_min + '-' + st1_n_max;
             }
-            setSetting('st1_n', st1_n_string);
+            setSetting('ce_st1_min_max_n', st1_n_string);
             save_template('1');
             st1_n = st1_n_min;
             auto_increase_counter = 0;
@@ -2696,7 +2731,7 @@ function* state1_generator(taskArea) {
             let gen_next = images_generator.next();
             if (gen_next.done) {
                 images_generator = imageGetter(state1_images, st1_image_voice_options,
-                    st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
                 gen_next = images_generator.next();
             }
@@ -2708,7 +2743,7 @@ function* state1_generator(taskArea) {
             let gen_next = word_generator.next(full_variant);
             if (gen_next.done ?? true) {
                 word_generator = wordGetter(state1_words, st1_word_options,
-                    st1_word_hard_mode == combo_st1_word_hard_mode.Enable);
+                    st1_word_hard_mode == combo_enable_disable.Enable);
                 word_generator.next();
                 gen_next = word_generator.next(full_variant);
             }
@@ -2762,10 +2797,10 @@ function* state1_generator(taskArea) {
             }
             let category_element_mode_active = 0;
             if (full_variant == 'image-to-word' || full_variant == 'voice-to-word') {
-                if (st1_word_to_category == combo_st1_word_to_category.Only) {
+                if (st1_word_to_category == combo_enable_only_disable.Only) {
                     category_element_mode_active = randomChoice([1, 2]);
                 }
-                else if (st1_word_to_category == combo_st1_word_to_category.Enable) {
+                else if (st1_word_to_category == combo_enable_only_disable.Enable) {
                     category_element_mode_active = randomChoice([0, 1, 2]);
                 }
             }
@@ -2776,11 +2811,11 @@ function* state1_generator(taskArea) {
                 variant_data[0] == 'Holidays' ||
                 variant_data[0] == 'Verbs' ||
                 variant_data[1] == 'Stages'
-            ) && st1_word_to_category != combo_st1_word_to_category.Only) {
+            ) && st1_word_to_category != combo_enable_only_disable.Only) {
                 category_element_mode_active = 0;
             }
             let n_back_str = (skip_mode === false) ? prev_n + '-Back' : 'Next';
-            if (st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable) {
+            if (st1_image_voice_hard_mode == combo_enable_disable.Enable) {
                 text += n_back_str + " [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
             }
             else if (category_element_mode_active) {
@@ -2843,7 +2878,7 @@ function* state1_generator(taskArea) {
         }
         else if (short_variant == 'word') {
             // [[word_capitalized, task1, task2, expected_capitalized, explanation, options_list], [word, definition]]
-            if (st1_word_hard_mode == combo_st1_word_hard_mode.Enable) {
+            if (st1_word_hard_mode == combo_enable_disable.Enable) {
                 text += prev_n + "-Back [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n";
             }
             else {
@@ -2852,7 +2887,8 @@ function* state1_generator(taskArea) {
             if (skip_mode === false) {
                 if (n_prev_task != current_task && st1_word_mode_random_bool) {
                     let new_full_variant = full_variant;
-                    if (full_variant == 'word-just-one' || full_variant == 'word-synonyms' || full_variant == 'word-antonyms' || full_variant == 'word-similar-words') {
+                    if (full_variant == 'word-to-word' || full_variant == 'word-to-synonym' ||
+                        full_variant == 'word-to-antonym' || full_variant == 'word-to-similar-word') {
                         new_full_variant = randomChoice(short_to_full_variant.get('word'));
                     }
                     word_generator.next();
@@ -2904,10 +2940,10 @@ function* state1_generator(taskArea) {
                 text += '\n' + variant_data[0][1] + '\n';
             }
             let line = "N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
-            if (full_variant == 'word-just-one') {
+            if (full_variant == 'word-to-word') {
                 line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]);
             }
-            else if (full_variant == 'word-meaning') {
+            else if (full_variant == 'meaning-to-word') {
                 let meaning = variant_data[1][1][1];/// todo
                 meaning = meaning ? (' - ' + meaning) : '';
                 line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + meaning;
@@ -3011,10 +3047,10 @@ function* state1_generator(taskArea) {
                 skip_mode = true;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
                 images_generator = imageGetter(state1_images, st1_image_voice_options,
-                    st1_image_voice_hard_mode == combo_st1_image_voice_hard_mode.Enable,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
                 word_generator = wordGetter(state1_words, st1_word_options,
-                    st1_word_hard_mode == combo_st1_word_hard_mode.Enable);
+                    st1_word_hard_mode == combo_enable_disable.Enable);
                 appendText(taskArea, '', clearBefore);
                 break;
             }
@@ -3023,7 +3059,7 @@ function* state1_generator(taskArea) {
             if (status) {
                 if (skip_mode === false) {
                     auto_increase_counter += 1;
-                    addScore('st1', st1_n + 1);
+                    addScore('ce_st1', st1_n + 1);
                 }
                 appendText(taskArea, '', clearBefore);
                 break;
@@ -3054,11 +3090,11 @@ function state2() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st2_boxes = parseInt(settings['st2_boxes']);
-                let st2_operations = parseInt(settings['st2_operations']);
-                let st2_minmax_operations = toIntOrIntRange(settings['st2_minmax_operations']);
-                let st2_min_operations = st2_minmax_operations[0];
-                let st2_max_operations = st2_minmax_operations.length == 2 ? st2_minmax_operations[1] : st2_min_operations;
+                let st2_boxes = parseInt(settings['ce_st2_boxes']);
+                let st2_operations = parseInt(settings['ce_st2_operations']);
+                let st2_min_max_operations = toIntOrIntRange(settings['ce_st2_min_max_operations']);
+                let st2_min_operations = st2_min_max_operations[0];
+                let st2_max_operations = st2_min_max_operations.length == 2 ? st2_min_max_operations[1] : st2_min_operations;
                 if (st2_operations < st2_max_operations) {
                     st2_operations += 1;
                 }
@@ -3066,17 +3102,17 @@ function state2() {
                     st2_operations = st2_min_operations;
                     st2_boxes = st2_boxes + 1;
                 }
-                setSetting('st2_boxes', st2_boxes);
-                document.getElementById('st2_boxes').innerHTML = st2_boxes;
-                setSetting('st2_operations', st2_operations);
-                document.getElementById('st2_operations').innerHTML = st2_operations;
+                setSetting('ce_st2_boxes', st2_boxes);
+                document.getElementById('ce_st2_boxes').innerHTML = st2_boxes;
+                setSetting('ce_st2_operations', st2_operations);
+                document.getElementById('ce_st2_operations').innerHTML = st2_operations;
             },
             function (event) {
-                let st2_boxes = parseInt(settings['st2_boxes']);
-                let st2_operations = parseInt(settings['st2_operations']);
-                let st2_minmax_operations = toIntOrIntRange(settings['st2_minmax_operations']);
-                let st2_min_operations = st2_minmax_operations[0];
-                let st2_max_operations = st2_minmax_operations.length == 2 ? st2_minmax_operations[1] : st2_min_operations;
+                let st2_boxes = parseInt(settings['ce_st2_boxes']);
+                let st2_operations = parseInt(settings['ce_st2_operations']);
+                let st2_min_max_operations = toIntOrIntRange(settings['ce_st2_min_max_operations']);
+                let st2_min_operations = st2_min_max_operations[0];
+                let st2_max_operations = st2_min_max_operations.length == 2 ? st2_min_max_operations[1] : st2_min_operations;
                 if (st2_operations > st2_min_operations) {
                     st2_operations -= 1;
                 }
@@ -3084,27 +3120,27 @@ function state2() {
                     st2_operations = st2_max_operations;
                     st2_boxes = st2_boxes - 1;
                 }
-                setSetting('st2_boxes', st2_boxes);
-                document.getElementById('st2_boxes').innerHTML = st2_boxes;
-                setSetting('st2_operations', st2_operations);
-                document.getElementById('st2_operations').innerHTML = st2_operations;
+                setSetting('ce_st2_boxes', st2_boxes);
+                document.getElementById('ce_st2_boxes').innerHTML = st2_boxes;
+                setSetting('ce_st2_operations', st2_operations);
+                document.getElementById('ce_st2_operations').innerHTML = st2_operations;
             },
         ],
-        ["st2_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully completed iterations<br>[0:disable|1-100]", "integer", function (xv) {
+        ["ce_st2_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully completed iterations<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st2_boxes", "<b>Auto mode</b><br>Number of boxes [2-25]", "integer", function (xv) {
+        ["ce_st2_boxes", "<b>Auto mode</b><br>Number of boxes [2-25]", "integer", function (xv) {
             return 2 <= xv && xv <= 25;
         }],
-        ["st2_operations", "<b>Auto mode</b><br>Number of operations [1-5]", "integer", function (xv) {
+        ["ce_st2_operations", "<b>Auto mode</b><br>Number of operations [1-5]", "integer", function (xv) {
             return 1 <= xv && xv <= 5;
         }],
-        ["st2_minmax_operations", "Min-Max operations [1-5]", "range", function (xv) {
+        ["ce_st2_min_max_operations", "Min-Max operations [1-5]", "range", function (xv) {
             return xv != null &&
                 1 <= xv[0] && xv[0] <= 5 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 5);
         }],
-        ["st2_minmax_number", "Min-Max number of item to add/subtract [1-10]", "range", function (xv) {
+        ["ce_st2_min_max_number", "Min-Max number of item to add/subtract [1-10]", "range", function (xv) {
             return xv != null &&
                 1 <= xv[0] && xv[0] <= 10 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 10);
@@ -3113,13 +3149,13 @@ function state2() {
             "Default settings", "Clear score", "buttons",
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
-                    stateN_defaults('st2');
+                    stateN_defaults('ce_st2');
                     state2();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
-                    stateN_clear_score('st2');
+                    stateN_clear_score('ce_st2');
                     state2();
                 }
             },
@@ -3142,8 +3178,8 @@ function state2_start() {
     exButtons['Retry'] = () => { currentGenerator.next('-RETRY-') };
     exButtons['Answer'] = () => { currentGenerator.next('-ANSWER-') };
     exButtons['Values'] = () => { currentGenerator.next('-VALUES-') };
-    addWidget(createKeyboard(asciiDigits, state2, exButtons,
-        ['3', '6', '9'], Array.from(asciiDigits).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
+    addWidget(createKeyboard(numbersPanelSymbols, state2, exButtons,
+        ['3', '6', '9'], Array.from(numbersPanelSymbols).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
     currentGenerator = state2_generator(taskArea);
     currentGenerator.next();
 }
@@ -3157,15 +3193,15 @@ function formatSt2(dict) {
 }
 
 function* state2_generator(taskArea) {
-    let st2_auto_mode = parseInt(settings['st2_auto_mode']);
-    let st2_boxes = parseInt(settings['st2_boxes']);
-    let st2_operations = parseInt(settings['st2_operations']);
-    let st2_minmax_operations = toIntOrIntRange(settings['st2_minmax_operations']);
-    let st2_minmax_number = toIntOrIntRange(settings['st2_minmax_number']);
-    let st2_min_operations = st2_minmax_operations[0];
-    let st2_max_operations = st2_minmax_operations.length == 2 ? st2_minmax_operations[1] : st2_min_operations;
-    let st2_min_number = st2_minmax_number[0];
-    let st2_max_number = st2_minmax_number.length == 2 ? st2_minmax_number[1] : st2_min_number;
+    let st2_auto_mode = parseInt(settings['ce_st2_auto_mode']);
+    let st2_boxes = parseInt(settings['ce_st2_boxes']);
+    let st2_operations = parseInt(settings['ce_st2_operations']);
+    let st2_min_max_operations = toIntOrIntRange(settings['ce_st2_min_max_operations']);
+    let st2_min_max_number = toIntOrIntRange(settings['ce_st2_min_max_number']);
+    let st2_min_operations = st2_min_max_operations[0];
+    let st2_max_operations = st2_min_max_operations.length == 2 ? st2_min_max_operations[1] : st2_min_operations;
+    let st2_min_number = st2_min_max_number[0];
+    let st2_max_number = st2_min_max_number.length == 2 ? st2_min_max_number[1] : st2_min_number;
     st2_operations = Math.min(Math.max(st2_operations, st2_min_operations), st2_max_operations);
     let clearBefore = true, first = true;
     let words = [
@@ -3232,7 +3268,7 @@ function* state2_generator(taskArea) {
                 if (tries <= 1 && sequenceModeMistake === false) {
                     if (mistake === false && string_elem == 'Box #' + st2_boxes) {
                         iteration += 1;
-                        addScore('st2', st2_boxes - 1 + st2_operations - 1);
+                        addScore('ce_st2', st2_boxes - 1 + st2_operations - 1);
                     }
                     if (st2_auto_mode !== 0 && iteration >= st2_auto_mode) {
                         iteration = 0;
@@ -3243,8 +3279,8 @@ function* state2_generator(taskArea) {
                             st2_operations = st2_min_operations;
                             st2_boxes = st2_boxes + 1;
                         }
-                        setSetting('st2_boxes', st2_boxes);
-                        setSetting('st2_operations', st2_operations);
+                        setSetting('ce_st2_boxes', st2_boxes);
+                        setSetting('ce_st2_operations', st2_operations);
                         yield* state2_generator(taskArea);
                         return;
                     }
@@ -3323,7 +3359,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         for (let i = 0; i < stmt.length; ++i) {
             lst.push([i, stmt[i]]);
         }
-        lst = lst.slice_ext(...slc);
+        lst = lst.sliceExt(...slc);
         for (let [x, _] of lst) {
             if (x === i) {
                 return false;
@@ -3336,7 +3372,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(null, i);
+                let slice = stmt.sliceExt(null, i);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3352,7 +3388,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1);
+                let slice = stmt.sliceExt(i + 1);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3369,7 +3405,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(null, args[2]);
+                let slice = stmt.sliceExt(null, args[2]);
                 if (slice.length == args[2] && args[2] > args[1] && args[2] > 1 && check_for_exclusive(stmt, i, [null, args[2]])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3385,7 +3421,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(-args[2]);
+                let slice = stmt.sliceExt(-args[2]);
                 if (slice.length == args[2] && args[2] > args[1] && args[2] > 1 && check_for_exclusive(stmt, i, [-args[2], null])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3401,7 +3437,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i - args[2], i);
+                let slice = stmt.sliceExt(i - args[2], i);
                 if (slice.length == args[2] && args[2] > args[1] && args[2] > 1) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3417,7 +3453,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1, i + 1 + args[2]);
+                let slice = stmt.sliceExt(i + 1, i + 1 + args[2]);
                 if (slice.length == args[2] && args[2] > args[1] && args[2] > 1) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3434,7 +3470,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(0 + args[2], null, 2);
+                let slice = stmt.sliceExt(0 + args[2], null, 2);
                 if (slice.length >= args[1] && check_for_exclusive(stmt, i, [0 + args[2], null, 2])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3451,7 +3487,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(0 + args[2], i, 2);
+                let slice = stmt.sliceExt(0 + args[2], i, 2);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3467,7 +3503,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1 + ((i % 2) == args[2]), null, 2);
+                let slice = stmt.sliceExt(i + 1 + ((i % 2) == args[2]), null, 2);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() == args[1];
@@ -3484,7 +3520,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, stmt_index_arg, stmt_index_arg, stmt_index_arg],
             function (stmt, i, args) {
-                let slice = args.slice_ext(2);
+                let slice = args.sliceExt(2);
                 let set = new Set();
                 set.add(i);
                 set.add(args[2]);
@@ -3558,7 +3594,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(null, i);
+                let slice = stmt.sliceExt(null, i);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3574,7 +3610,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1);
+                let slice = stmt.sliceExt(i + 1);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3591,7 +3627,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(null, i);
+                let slice = stmt.sliceExt(null, i);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3607,7 +3643,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1);
+                let slice = stmt.sliceExt(i + 1);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3624,7 +3660,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(null, args[2]);
+                let slice = stmt.sliceExt(null, args[2]);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1 && check_for_exclusive(stmt, i, [null, args[2]])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3640,7 +3676,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(-args[2]);
+                let slice = stmt.sliceExt(-args[2]);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1 && check_for_exclusive(stmt, i, [-args[2], null])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3656,7 +3692,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i - args[2], i);
+                let slice = stmt.sliceExt(i - args[2], i);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3672,7 +3708,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1, i + 1 + args[2]);
+                let slice = stmt.sliceExt(i + 1, i + 1 + args[2]);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3689,7 +3725,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(null, args[2]);
+                let slice = stmt.sliceExt(null, args[2]);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1 && check_for_exclusive(stmt, i, [null, args[2]])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3705,7 +3741,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(-args[2]);
+                let slice = stmt.sliceExt(-args[2]);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1 && check_for_exclusive(stmt, i, [-args[2], null])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3721,7 +3757,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i - args[2], i);
+                let slice = stmt.sliceExt(i - args[2], i);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3737,7 +3773,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, number_of_stmt_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1, i + 1 + args[2]);
+                let slice = stmt.sliceExt(i + 1, i + 1 + args[2]);
                 if (slice.length === args[2] && args[2] > args[1] && args[2] > 1) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3754,7 +3790,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(args[2], null, 2);
+                let slice = stmt.sliceExt(args[2], null, 2);
                 if (slice.length >= args[1] && check_for_exclusive(stmt, i, [args[2], null, 2])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3771,7 +3807,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(args[2], null, 2);
+                let slice = stmt.sliceExt(args[2], null, 2);
                 if (slice.length >= args[1] && check_for_exclusive(stmt, i, [args[2], null, 2])) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3788,7 +3824,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(args[2], i, 2);
+                let slice = stmt.sliceExt(args[2], i, 2);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3804,7 +3840,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1 + ((i % 2) == args[2]), null, 2);
+                let slice = stmt.sliceExt(i + 1 + ((i % 2) == args[2]), null, 2);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() >= args[1];
@@ -3821,7 +3857,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(args[2], i, 2);
+                let slice = stmt.sliceExt(args[2], i, 2);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -3837,7 +3873,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         [
             [false_true_arg, number_of_stmt_arg, even_odd_arg],
             function (stmt, i, args) {
-                let slice = stmt.slice_ext(i + 1 + ((i % 2) == args[2]), null, 2);
+                let slice = stmt.sliceExt(i + 1 + ((i % 2) == args[2]), null, 2);
                 if (slice.length > args[1]) {
                     let x1 = stmt[i];
                     let x2 = slice.map((x) => x == args[0]).sum() <= args[1];
@@ -4090,7 +4126,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
             all_args = [[]];
         }
         all_args = randomShuffle(all_args);
-        args_list.push([all_args.slice_ext(0, 100), check_function, format_function]);
+        args_list.push([all_args.sliceExt(0, 100), check_function, format_function]);
     }
     let stmt_values = [];
     let statements = [];
@@ -4117,7 +4153,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
             }
             if (variants.length > 0) {
                 variants = randomShuffle(variants);
-                stmt_variants.push(variants.slice_ext(0, 2));
+                stmt_variants.push(variants.sliceExt(0, 2));
                 continue;
             }
             stmt_variants = [];
@@ -4163,7 +4199,7 @@ function generateRecursiveRiddle(number_of_statements, level = 8, max_solutions 
         let products_spi = arrayProduct(...tmp_list);
         for (let product_spi of products_spi) {
             let product_pis = new Set(product_spi[0][1]);
-            for (let [_, p_pi] of product_spi.slice_ext(1)) {
+            for (let [_, p_pi] of product_spi.sliceExt(1)) {
                 product_pis = setIntersection(product_pis, p_pi);
                 if (product_pis.size === 0) {
                     break;
@@ -4216,7 +4252,7 @@ function state3() {
             },
         ],
         [
-            "st3_template_choose", "st3_template_new", "template_choose_new",
+            "ce_st3_template_choose", "ce_st3_template_new", "template_choose_new",
             function (event) {
                 choose_template('3', event.target.value);
                 state3();
@@ -4227,7 +4263,7 @@ function state3() {
             },
         ],
         [
-            "st3_template_save", "st3_template_delete", "template_save_delete",
+            "ce_st3_template_save", "ce_st3_template_delete", "template_save_delete",
             function (event) {
                 save_template('3');
             },
@@ -4242,10 +4278,10 @@ function state3() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st3_stn = parseInt(settings['st3_stn']);
-                let st3_current_level = parseInt(settings['st3_current_level']);
-                let st3_minmax_stmts = toIntOrIntRange(settings['st3_minmax_stmts']);
-                let st3_minmax_level = toIntOrIntRange(settings['st3_minmax_level']);
+                let st3_stn = parseInt(settings['ce_st3_current_number_of_statements']);
+                let st3_current_level = parseInt(settings['ce_st3_current_level']);
+                let st3_minmax_stmts = toIntOrIntRange(settings['ce_st3_min_max_number_of_statements']);
+                let st3_minmax_level = toIntOrIntRange(settings['ce_st3_min_max_level']);
                 let stmts_min = st3_minmax_stmts[0];
                 let stmts_max = st3_minmax_stmts.length === 2 ? st3_minmax_stmts[1] : stmts_min;
                 let level_min = st3_minmax_level[0];
@@ -4259,16 +4295,16 @@ function state3() {
                 else if (level < level_max) {
                     level += 1;
                 }
-                setSetting('st3_stn', n_statements);
-                document.getElementById('st3_stn').innerHTML = n_statements;
-                setSetting('st3_current_level', level);
-                document.getElementById('st3_current_level').innerHTML = level;
+                setSetting('ce_st3_current_number_of_statements', n_statements);
+                document.getElementById('ce_st3_current_number_of_statements').innerHTML = n_statements;
+                setSetting('ce_st3_current_level', level);
+                document.getElementById('ce_st3_current_level').innerHTML = level;
             },
             function (event) {
-                let st3_stn = parseInt(settings['st3_stn']);
-                let st3_current_level = parseInt(settings['st3_current_level']);
-                let st3_minmax_stmts = toIntOrIntRange(settings['st3_minmax_stmts']);
-                let st3_minmax_level = toIntOrIntRange(settings['st3_minmax_level']);
+                let st3_stn = parseInt(settings['ce_st3_current_number_of_statements']);
+                let st3_current_level = parseInt(settings['ce_st3_current_level']);
+                let st3_minmax_stmts = toIntOrIntRange(settings['ce_st3_min_max_number_of_statements']);
+                let st3_minmax_level = toIntOrIntRange(settings['ce_st3_min_max_level']);
                 let stmts_min = st3_minmax_stmts[0];
                 let stmts_max = st3_minmax_stmts.length === 2 ? st3_minmax_stmts[1] : stmts_min;
                 let level_min = st3_minmax_level[0];
@@ -4282,54 +4318,54 @@ function state3() {
                 else if (level > level_min) {
                     level -= 1;
                 }
-                setSetting('st3_stn', n_statements);
-                document.getElementById('st3_stn').innerHTML = n_statements;
-                setSetting('st3_current_level', level);
-                document.getElementById('st3_current_level').innerHTML = level;
+                setSetting('ce_st3_current_number_of_statements', n_statements);
+                document.getElementById('ce_st3_current_number_of_statements').innerHTML = n_statements;
+                setSetting('ce_st3_current_level', level);
+                document.getElementById('ce_st3_current_level').innerHTML = level;
             },
         ],
-        ["st3_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved puzzles<br>[0:disable|1-100]", "integer", function (xv) {
+        ["ce_st3_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved puzzles<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st3_stn", "<b>Auto mode</b><br>Current number of statements [4-12]", "integer", function (xv) {
+        ["ce_st3_current_number_of_statements", "<b>Auto mode</b><br>Current number of statements [4-12]", "integer", function (xv) {
             return 4 <= xv && xv <= 12;
         }],
-        ["st3_current_level", "<b>Auto mode</b><br>Current level [1-7]", "integer", function (xv) {
+        ["ce_st3_current_level", "<b>Auto mode</b><br>Current level [1-7]", "integer", function (xv) {
             return 1 <= xv && xv <= 7;
         }],
         ["", "", "hr"],
-        ["st3_minmax_stmts", "Min-Max number of statements [4-12]", "range", function (xv) {
+        ["ce_st3_min_max_number_of_statements", "Min-Max number of statements [4-12]", "range", function (xv) {
             return xv != null &&
                 4 <= xv[0] && xv[0] <= 12 &&
                 (xv.length === 1 || 4 <= xv[1] && xv[1] <= 12);
         }],
-        ["st3_minmax_level", "Min-Max level [1-7]", "range", function (xv) {
+        ["ce_st3_min_max_level", "Min-Max level [1-7]", "range", function (xv) {
             return xv != null &&
                 1 <= xv[0] && xv[0] <= 7 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 7);
         }],
-        ["st3_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
+        ["ce_st3_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
             return 1 <= xv && xv <= 10;
         }],
-        ["st3_show_puzzle_time_limit", "Show puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+        ["ce_st3_show_puzzle_time_limit", "Show puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 86400;
         }],
-        ["st3_answer_puzzle_time_limit", "Answer puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+        ["ce_st3_answer_puzzle_time_limit", "Answer puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 86400;
         }],
         ["", "", "hr"],
-        ["state3_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
+        ["ce_state3_wrap", "Wrap text", "combobox", Object.values(combo_enable_disable)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
-                    stateN_defaults('st3');
+                    stateN_defaults('ce_st3');
                     state3();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
-                    stateN_clear_score('st3');
+                    stateN_clear_score('ce_st3');
                     state3();
                 }
             },
@@ -4354,10 +4390,10 @@ function state3_back() {
 function state3_start() {
     clearWidgets();
     addWidget(createCaption(statesToNames.st3));
-    let task = createInputElems(settings['state3_wrap'] == combo_st_wrap.Enable);
+    let task = createInputElems(settings['ce_state3_wrap'] == combo_enable_disable.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
-    let fs = parseInt(settings['state3_font_size']);
+    let fs = parseInt(settings['ce_state3_font_size']);
     taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(taskDiv);
     addWidget(createTableOfSelects(state3, {
@@ -4372,14 +4408,14 @@ function state3_start() {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(7, fs + 1));
-            setSetting('state3_font_size', newValue);
+            setSetting('ce_state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(7, fs - 1));
-            setSetting('state3_font_size', newValue);
+            setSetting('ce_state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
     }));
@@ -4391,12 +4427,12 @@ function state3_start() {
 }
 
 function* state3_generator(taskArea) {
-    let st3_auto_mode = parseInt(settings['st3_auto_mode']);
-    let st3_stn = parseInt(settings['st3_stn']);
-    let st3_current_level = parseInt(settings['st3_current_level']);
-    let st3_minmax_stmts = toIntOrIntRange(settings['st3_minmax_stmts']);
-    let st3_minmax_level = toIntOrIntRange(settings['st3_minmax_level']);
-    let st3_max_solutions = parseInt(settings['st3_max_solutions']);
+    let st3_auto_mode = parseInt(settings['ce_st3_auto_mode']);
+    let st3_stn = parseInt(settings['ce_st3_current_number_of_statements']);
+    let st3_current_level = parseInt(settings['ce_st3_current_level']);
+    let st3_minmax_stmts = toIntOrIntRange(settings['ce_st3_min_max_number_of_statements']);
+    let st3_minmax_level = toIntOrIntRange(settings['ce_st3_min_max_level']);
+    let st3_max_solutions = parseInt(settings['ce_st3_max_solutions']);
     let stmts_min = st3_minmax_stmts[0];
     let stmts_max = st3_minmax_stmts.length === 2 ? st3_minmax_stmts[1] : stmts_min;
     let level_min = st3_minmax_level[0];
@@ -4404,15 +4440,15 @@ function* state3_generator(taskArea) {
     let clearBefore = true;
     let n_statements = Math.max(4, Math.min(stmts_max, Math.max(stmts_min, st3_stn)));
     let level = Math.min(7, Math.min(level_max, Math.max(level_min, st3_current_level)));
-    setSetting('st3_stn', n_statements);
-    setSetting('st3_current_level', level);
+    setSetting('ce_st3_current_number_of_statements', n_statements);
+    setSetting('ce_st3_current_level', level);
     save_template('3');
     let showPuzzleTimerP = document.getElementById('showPuzzleTimerP');
     let answerPuzzleTimerP = document.getElementById('answerPuzzleTimerP');
     var show_puzzle_timer_var = 0;
     var answer_puzzle_timer_var = 0;
-    let st3_show_puzzle_time_limit = parseInt(settings['st3_show_puzzle_time_limit']);
-    let st3_answer_puzzle_time_limit = parseInt(settings['st3_answer_puzzle_time_limit']);
+    let st3_show_puzzle_time_limit = parseInt(settings['ce_st3_show_puzzle_time_limit']);
+    let st3_answer_puzzle_time_limit = parseInt(settings['ce_st3_answer_puzzle_time_limit']);
     let auto_increase_counter = 0;
     while (true) {
         let [solutions, statements] = generateRecursiveRiddle(n_statements, level, st3_max_solutions);
@@ -4525,7 +4561,7 @@ function* state3_generator(taskArea) {
                     }
                     else {
                         expected_array[i][0] = true;
-                        addScore('st3', n_statements - 1 + Math.floor(level / 3));
+                        addScore('ce_st3', n_statements - 1 + Math.floor(level / 3));
                         auto_increase_counter += cnt;
                         cnt = 0;
                         appendText(taskArea, 'Solution accept.\n');
@@ -4558,8 +4594,8 @@ function* state3_generator(taskArea) {
                 level += 1;
             }
             auto_increase_counter = 0;
-            setSetting('st3_stn', n_statements);
-            setSetting('st3_current_level', level);
+            setSetting('ce_st3_current_number_of_statements', n_statements);
+            setSetting('ce_st3_current_level', level);
             save_template('3');
         }
         else if (st3_auto_mode === 0) {
@@ -4592,7 +4628,7 @@ function state4() {
             },
         ],
         [
-            "st4_template_choose", "st4_template_new", "template_choose_new",
+            "ce_st4_template_choose", "ce_st4_template_new", "template_choose_new",
             function (event) {
                 choose_template('4', event.target.value);
                 state4();
@@ -4603,7 +4639,7 @@ function state4() {
             },
         ],
         [
-            "st4_template_save", "st4_template_delete", "template_save_delete",
+            "ce_st4_template_save", "ce_st4_template_delete", "template_save_delete",
             function (event) {
                 save_template('4');
             },
@@ -4618,12 +4654,12 @@ function state4() {
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
-                let st4_current_attributes = parseInt(settings['st4_current_attributes']);
-                let st4_current_objects = parseInt(settings['st4_current_objects']);
-                let st4_current_level = parseInt(settings['st4_current_level']);
-                let st4_minmax_attributes = toIntOrIntRange(settings['st4_minmax_attributes']);
-                let st4_minmax_objects = toIntOrIntRange(settings['st4_minmax_objects']);
-                let st4_minmax_level = toIntOrIntRange(settings['st4_minmax_level']);
+                let st4_current_attributes = parseInt(settings['ce_st4_current_attributes']);
+                let st4_current_objects = parseInt(settings['ce_st4_current_objects']);
+                let st4_current_level = parseInt(settings['ce_st4_current_level']);
+                let st4_minmax_attributes = toIntOrIntRange(settings['ce_st4_min_max_attributes']);
+                let st4_minmax_objects = toIntOrIntRange(settings['ce_st4_min_max_objects']);
+                let st4_minmax_level = toIntOrIntRange(settings['ce_st4_min_max_level']);
                 let st4_min_attributes = st4_minmax_attributes[0];
                 let st4_max_attributes = st4_minmax_attributes.length === 2 ? st4_minmax_attributes[1] : st4_min_attributes;
                 let st4_min_objects = st4_minmax_objects[0];
@@ -4667,20 +4703,20 @@ function state4() {
                         break;
                     }
                 }
-                setSetting('st4_current_attributes', n_attributes);
-                document.getElementById('st4_current_attributes').innerHTML = n_attributes;
-                setSetting('st4_current_objects', m_objects);
-                document.getElementById('st4_current_objects').innerHTML = m_objects;
-                setSetting('st4_current_level', level);
-                document.getElementById('st4_current_level').innerHTML = level;
+                setSetting('ce_st4_current_attributes', n_attributes);
+                document.getElementById('ce_st4_current_attributes').innerHTML = n_attributes;
+                setSetting('ce_st4_current_objects', m_objects);
+                document.getElementById('ce_st4_current_objects').innerHTML = m_objects;
+                setSetting('ce_st4_current_level', level);
+                document.getElementById('ce_st4_current_level').innerHTML = level;
             },
             function (event) {
-                let st4_current_attributes = parseInt(settings['st4_current_attributes']);
-                let st4_current_objects = parseInt(settings['st4_current_objects']);
-                let st4_current_level = parseInt(settings['st4_current_level']);
-                let st4_minmax_attributes = toIntOrIntRange(settings['st4_minmax_attributes']);
-                let st4_minmax_objects = toIntOrIntRange(settings['st4_minmax_objects']);
-                let st4_minmax_level = toIntOrIntRange(settings['st4_minmax_level']);
+                let st4_current_attributes = parseInt(settings['ce_st4_current_attributes']);
+                let st4_current_objects = parseInt(settings['ce_st4_current_objects']);
+                let st4_current_level = parseInt(settings['ce_st4_current_level']);
+                let st4_minmax_attributes = toIntOrIntRange(settings['ce_st4_min_max_attributes']);
+                let st4_minmax_objects = toIntOrIntRange(settings['ce_st4_min_max_objects']);
+                let st4_minmax_level = toIntOrIntRange(settings['ce_st4_min_max_level']);
                 let st4_min_attributes = st4_minmax_attributes[0];
                 let st4_max_attributes = st4_minmax_attributes.length === 2 ? st4_minmax_attributes[1] : st4_min_attributes;
                 let st4_min_objects = st4_minmax_objects[0];
@@ -4724,68 +4760,68 @@ function state4() {
                         break;
                     }
                 }
-                setSetting('st4_current_attributes', n_attributes);
-                document.getElementById('st4_current_attributes').innerHTML = n_attributes;
-                setSetting('st4_current_objects', m_objects);
-                document.getElementById('st4_current_objects').innerHTML = m_objects;
-                setSetting('st4_current_level', level);
-                document.getElementById('st4_current_level').innerHTML = level;
+                setSetting('ce_st4_current_attributes', n_attributes);
+                document.getElementById('ce_st4_current_attributes').innerHTML = n_attributes;
+                setSetting('ce_st4_current_objects', m_objects);
+                document.getElementById('ce_st4_current_objects').innerHTML = m_objects;
+                setSetting('ce_st4_current_level', level);
+                document.getElementById('ce_st4_current_level').innerHTML = level;
             },
         ],
-        ["st4_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved puzzles<br>[0:disable|1-100]", "integer", function (xv) {
+        ["ce_st4_auto_mode", "<b>Auto mode</b><br>Move to the next level every N successfully solved puzzles<br>[0:disable|1-100]", "integer", function (xv) {
             return xv === 0 || 1 <= xv && xv <= 100;
         }],
-        ["st4_current_attributes", "<b>Auto mode</b><br>Current attributes [2-5]", "integer", function (xv) {
+        ["ce_st4_current_attributes", "<b>Auto mode</b><br>Current attributes [2-5]", "integer", function (xv) {
             return 2 <= xv && xv <= 5;
         }],
-        ["st4_current_objects", "<b>Auto mode</b><br>Current objects [2-5]", "integer", function (xv) {
+        ["ce_st4_current_objects", "<b>Auto mode</b><br>Current objects [2-5]", "integer", function (xv) {
             return 2 <= xv && xv <= 5;
         }],
-        ["st4_current_level", "<b>Auto mode</b><br>Current level [1-20]", "integer", function (xv) {
+        ["ce_st4_current_level", "<b>Auto mode</b><br>Current level [1-20]", "integer", function (xv) {
             return 1 <= xv && xv <= 20;
         }],
         ["", "", "hr"],
-        ["st4_minmax_attributes", "Min-Max attributes [2-5]", "range", function (xv) {
+        ["ce_st4_min_max_attributes", "Min-Max attributes [2-5]", "range", function (xv) {
             return xv != null &&
                 2 <= xv[0] && xv[0] <= 5 &&
                 (xv.length === 1 || 2 <= xv[1] && xv[1] <= 5);
         }],
-        ["st4_minmax_objects", "Min-Max objects [2-5]", "range", function (xv) {
+        ["ce_st4_min_max_objects", "Min-Max objects [2-5]", "range", function (xv) {
             return xv != null &&
                 2 <= xv[0] && xv[0] <= 5 &&
                 (xv.length === 1 || 2 <= xv[1] && xv[1] <= 5);
         }],
-        ["st4_minmax_level", "Min-Max level [1-20]", "range", function (xv) {
+        ["ce_st4_min_max_level", "Min-Max level [1-20]", "range", function (xv) {
             return xv != null &&
                 1 <= xv[0] && xv[0] <= 20 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 20);
         }],
-        ["st4_hard_mode", "Hard mode", "combobox", Object.values(combo_st4_hard_mode)],
-        ["st4_max_seconds", "Max seconds to wait for generation [0-600]", "integer", function (xv) {
+        ["ce_st4_hard_mode", "Hard mode", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st4_max_seconds_to_wait", "Max seconds to wait for generation [0-600]", "integer", function (xv) {
             return 0 <= xv && xv <= 600;
         }],
-        ["st4_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
+        ["ce_st4_max_solutions", "Max solutions [1-10]", "integer", function (xv) {
             return 1 <= xv && xv <= 10;
         }],
-        ["st4_show_puzzle_time_limit", "Show puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+        ["ce_st4_show_puzzle_time_limit", "Show puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 86400;
         }],
-        ["st4_answer_puzzle_time_limit", "Answer puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
+        ["ce_st4_answer_puzzle_time_limit", "Answer puzzle time limit<br>(in seconds)<br>[0:disable|1-86400]", "float", function (xv) {
             return xv === 0 || 0.1 <= xv && xv <= 86400;
         }],
         ["", "", "hr"],
-        ["state4_wrap", "Wrap text", "combobox", Object.values(combo_st_wrap)],
+        ["ce_state4_wrap", "Wrap text", "combobox", Object.values(combo_enable_disable)],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
-                    stateN_defaults('st4');
+                    stateN_defaults('ce_st4');
                     state4();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
-                    stateN_clear_score('st4');
+                    stateN_clear_score('ce_st4');
                     state4();
                 }
             },
@@ -4810,10 +4846,10 @@ function state4_back() {
 function state4_start() {
     clearWidgets();
     addWidget(createCaption(statesToNames.st4));
-    let task = createInputElems(settings['state4_wrap'] == combo_st_wrap.Enable);
+    let task = createInputElems(settings['ce_state4_wrap'] == combo_enable_disable.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
-    let fs = parseInt(settings['state4_font_size']);
+    let fs = parseInt(settings['ce_state4_font_size']);
     taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(taskDiv);
     addWidget(createTableOfSelects(state4, {
@@ -4828,14 +4864,14 @@ function state4_start() {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(7, fs + 1));
-            setSetting('state4_font_size', newValue);
+            setSetting('ce_state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
             fs = isFinite(fs) ? fs : 16;
             let newValue = Math.min(20, Math.max(7, fs - 1));
-            setSetting('state4_font_size', newValue);
+            setSetting('ce_state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
         },
     }));
@@ -5495,17 +5531,17 @@ function formatTable(header, table) {
 }
 
 function* state4_generator(taskArea) {
-    let st4_auto_mode = parseInt(settings['st4_auto_mode']);
-    let st4_current_attributes = parseInt(settings['st4_current_attributes']);
-    let st4_current_objects = parseInt(settings['st4_current_objects']);
-    let st4_current_level = parseInt(settings['st4_current_level']);
-    let st4_minmax_attributes = toIntOrIntRange(settings['st4_minmax_attributes']);
-    let st4_minmax_objects = toIntOrIntRange(settings['st4_minmax_objects']);
-    let st4_minmax_level = toIntOrIntRange(settings['st4_minmax_level']);
-    let st4_hard_mode = settings['st4_hard_mode'];
-    let st4_max_seconds = parseInt(settings['st4_max_seconds']);
-    let st4_max_solutions = parseInt(settings['st4_max_solutions']);
-    let hard_mode = st4_hard_mode === combo_st4_hard_mode.Enable;
+    let st4_auto_mode = parseInt(settings['ce_st4_auto_mode']);
+    let st4_current_attributes = parseInt(settings['ce_st4_current_attributes']);
+    let st4_current_objects = parseInt(settings['ce_st4_current_objects']);
+    let st4_current_level = parseInt(settings['ce_st4_current_level']);
+    let st4_minmax_attributes = toIntOrIntRange(settings['ce_st4_min_max_attributes']);
+    let st4_minmax_objects = toIntOrIntRange(settings['ce_st4_min_max_objects']);
+    let st4_minmax_level = toIntOrIntRange(settings['ce_st4_min_max_level']);
+    let st4_hard_mode = settings['ce_st4_hard_mode'];
+    let st4_max_seconds = parseInt(settings['ce_st4_max_seconds_to_wait']);
+    let st4_max_solutions = parseInt(settings['ce_st4_max_solutions']);
+    let hard_mode = st4_hard_mode === combo_enable_disable.Enable;
     let st4_min_attributes = st4_minmax_attributes[0];
     let st4_max_attributes = st4_minmax_attributes.length === 2 ? st4_minmax_attributes[1] : st4_min_attributes;
     let st4_min_objects = st4_minmax_objects[0];
@@ -5595,9 +5631,9 @@ function* state4_generator(taskArea) {
         appendText(taskArea, 'Max number of objects must be > 2 or Min Level must be < 19!\n', clearBefore);
         return;
     }
-    setSetting('st4_current_attributes', n_attributes);
-    setSetting('st4_current_objects', m_objects);
-    setSetting('st4_current_level', level);
+    setSetting('ce_st4_current_attributes', n_attributes);
+    setSetting('ce_st4_current_objects', m_objects);
+    setSetting('ce_st4_current_level', level);
     save_template('4');
     let auto_increase_counter = 0;
     let h = n_attributes * m_objects;
@@ -5625,8 +5661,8 @@ function* state4_generator(taskArea) {
     let answerPuzzleTimerP = document.getElementById('answerPuzzleTimerP');
     var show_puzzle_timer_var = 0;
     var answer_puzzle_timer_var = 0;
-    let st4_show_puzzle_time_limit = parseInt(settings['st4_show_puzzle_time_limit']);
-    let st4_answer_puzzle_time_limit = parseInt(settings['st4_answer_puzzle_time_limit']);
+    let st4_show_puzzle_time_limit = parseInt(settings['ce_st4_show_puzzle_time_limit']);
+    let st4_answer_puzzle_time_limit = parseInt(settings['ce_st4_answer_puzzle_time_limit']);
     while (true) {
         clearInterval(st4_show_puzzle_interval);
         clearInterval(st4_answer_puzzle_interval);
@@ -5777,7 +5813,7 @@ function* state4_generator(taskArea) {
                     }
                     else {
                         expected_array[i][0] = true;
-                        addScore('st4', n_attributes * m_objects + Math.floor(level / 4));
+                        addScore('ce_st4', n_attributes * m_objects + Math.floor(level / 4));
                         auto_increase_counter += cnt;
                         cnt = 0;
                         appendText(taskArea, 'Solution accept.\n');
@@ -5813,9 +5849,9 @@ function* state4_generator(taskArea) {
                         break;
                     }
                 }
-                setSetting('st4_current_attributes', n_attributes);
-                setSetting('st4_current_objects', m_objects);
-                setSetting('st4_current_level', level);
+                setSetting('ce_st4_current_attributes', n_attributes);
+                setSetting('ce_st4_current_objects', m_objects);
+                setSetting('ce_st4_current_level', level);
                 save_template('4');
             }
         }
@@ -5866,9 +5902,9 @@ function checkVersion() {
             }
         }
     }
-    let last_version = parseFloat(localStorage.getItem('VERSION'));
-    localStorage.setItem('VERSION', version);
-    if (last_version <= 5.93) {
+    let last_version = parseFloat(localStorage.getItem('CE_VERSION'));
+    localStorage.setItem('CE_VERSION', version);
+    if (last_version < 6.00) {
         resetAllSettings();
     }
 }
@@ -5876,56 +5912,12 @@ function checkVersion() {
 let state = -1;
 let currentGenerator = null;
 
-let asciiDigits = '123456789-0_';
+let numbersPanelSymbols = '123456789-0_';
 let statesToNames = {
     st1: 'Multi N-Back',
     st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
-};
-let combo_st1_word_to_image = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_image_to_word = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_voice_to_word = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_voice_to_image = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_image_voice_modes_random = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode_just_word = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode_meaning = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode_synonyms = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode_antonyms = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode_similar_words = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_mode_random = {
-    Enable: "Enable",
-    Disable: "Disable"
 };
 let combo_st1_options = {
     "2": "2",
@@ -5934,59 +5926,25 @@ let combo_st1_options = {
     "8": "8",
     "12": "12"
 };
-let combo_st1_word_to_category = {
+let combo_enable_disable = {
+    Enable: "Enable",
+    Disable: "Disable"
+};
+let combo_enable_only_disable = {
     Enable: "Enable",
     Only: "Only",
     Disable: "Disable"
 };
-let combo_st1_image_voice_hard_mode = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_word_hard_mode = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_baby_category = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_family_members_category = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_holidays_category = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_body_category = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_halloween_category = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st1_insects_category = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
-let combo_st4_hard_mode = {
-    Enable: "Enable",
-    Disable: "Disable"
-};
 let combo_state1_words_dictionary = {
     Wordsmyth: "Wordsmyth",
-    WordsmythPro: "Wordsmyth Pro"
-};
-let combo_st_wrap = {
-    Enable: "Enable",
-    Disable: "Disable"
+    WordsmythPro: "Wordsmyth Pro",
+    MerriamWebster: "Merriam-Webster",
+    MerriamWebsterPro: "Merriam-Webster Pro",
 };
 let settings = loadSettings();
 let scores = loadScores();
-let exHistory = loadHistory();
-let version = localStorage.getItem('VERSION');
+let ce_history = loadHistory();
+let version = localStorage.getItem('CE_VERSION');
 
 let st1_show_trial_interval = null;
 let st1_answer_trial_interval = null;
@@ -6016,13 +5974,22 @@ let state1_statistics_similar_words = '';
 getVoices();
 loadScript('images.js');
 
-if (localStorage.getItem('state1_words_dictionary') == null ||
-    localStorage.getItem('state1_words_dictionary') == combo_state1_words_dictionary.Wordsmyth) {
-    localStorage.setItem('state1_words_dictionary', combo_state1_words_dictionary.Wordsmyth);
-    loadScript('wordsmyth.js');
+state1_dictionary_source = settings['ce_state1_words_dictionary'];
+if (state1_dictionary_source == null) {
+    state1_dictionary_source = combo_state1_words_dictionary.Wordsmyth;
+    setSetting('ce_state1_words_dictionary', state1_dictionary_source);
 }
-else if (localStorage.getItem('state1_words_dictionary') == combo_state1_words_dictionary.WordsmythPro) {
-    loadScript('wordsmyth_pro.js');
+if (state1_dictionary_source == combo_state1_words_dictionary.Wordsmyth) {
+    loadScript('dictionaries/wordsmyth.js');
+}
+else if (state1_dictionary_source == combo_state1_words_dictionary.WordsmythPro) {
+    loadScript('dictionaries/wordsmyth_pro.js');
+}
+else if (state1_dictionary_source == combo_state1_words_dictionary.MerriamWebster) {
+    loadScript('dictionaries/merriam_webster.js');
+}
+else if (state1_dictionary_source == combo_state1_words_dictionary.MerriamWebsterPro) {
+    loadScript('dictionaries/merriam_webster_pro.js');
 }
 else {
     var getWords = () => {
@@ -6033,13 +6000,6 @@ else {
 window.addEventListener('load', () => {
     state1_images = getImages();
     state1_words = getWords();
-
-    try {
-        state1_dictionary_source = localStorage.getItem('state1_words_dictionary');
-    }
-    catch (err) {
-        console.log(err);
-    }
 
     state1_statistics_images = 0;
     state1_statistics_images_categories = 0;
@@ -6060,6 +6020,7 @@ window.addEventListener('load', () => {
                 state1_voice_title_to_filename[image_name] = file_name;
                 state1_voice_title_to_filename[image_name.toLowerCase()] = file_name;
                 state1_voice_title_to_filename[file_name] = file_name;
+                state1_voice_title_to_filename[file_name.toLowerCase()] = file_name;
             }
         }
     }
