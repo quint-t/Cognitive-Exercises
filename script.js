@@ -143,7 +143,7 @@ function loadSettings() {
         "ce_st1_voice_to_word": combo_enable_disable.Enable,
         "ce_st1_voice_to_image": combo_enable_disable.Enable,
         "ce_st1_voice_index": -2,
-        "ce_st1_image_voice_word_to_category": combo_enable_only_disable.Enable,
+        "ce_st1_image_voice_word_to_category": combo_enable_only_disable.Disable,
         "ce_st1_image_voice_random_task_each_time": combo_enable_disable.Enable,
         "ce_st1_image_voice_show_trial_time_limit": '0.0',
         "ce_st1_image_voice_answer_trial_time_limit": '0.0',
@@ -702,7 +702,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                     if (part_of_speech.length > 0) {
                         task1 += ' (' + part_of_speech + ')';
                     }
-                    task1 += '\nMeaning of the word:\n ' + meaning;
+                    task1 += meaning ? ('\nMeaning of the word:\n ' + meaning) : "";
                     task2 = 'Choose word:';
                     expected = word;
                     let sd_list = [];
@@ -724,13 +724,13 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                     }
                 }
-                else if (task_type == 'meaning-to-word') {
-                    task1 = 'Next meaning of the word';
+                else if (task_type == 'meaning-to-word' && meaning.length > 0) {
+                    task1 = 'Next meaning of the word:\n ' + meaning;
+                    task2 = 'Word';
                     if (part_of_speech.length > 0) {
-                        task1 += ' (' + part_of_speech + ')';
+                        task2 += ' (' + part_of_speech + ')';
                     }
-                    task1 += ':\n ' + meaning;
-                    task2 = 'Word:';
+                    task2 += ':';
                     expected = word;
                     explanation = example;
                     let ad_list = [];
@@ -938,8 +938,8 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                     }
                 }
-                else if (task_type == 'find-word-in-sentence' && example.length > word.length) {
-                    task1 = 'Next sentence: ' + example;
+                else if (task_type == 'find-word-in-sentence' && example.length > 0) {
+                    task1 = 'Next sentence:\n ' + example;
                     task2 = 'Choose word (' + part_of_speech + '):';
                     expected = word;
                     explanation = another_word_flag ? '' : example;
@@ -947,8 +947,12 @@ function* wordGetter(dictionary, options, hard_mode) {
                         if (options_list.length >= options) {
                             break;
                         }
-                        if (x[0] != word && all_synonyms.has(x[0]) == false &&
-                            all_antonyms.has(x[0]) == false && all_similar_words.has(x[0]) == false
+                        if (x[0].slice(0, 3) == word.slice(0, 3)) {
+                            continue;
+                        }
+                        if (all_synonyms.has(x[0]) == false &&
+                            all_antonyms.has(x[0]) == false &&
+                            all_similar_words.has(x[0]) == false
                         ) {
                             options_list.push(x[0]);
                         }
@@ -1002,12 +1006,24 @@ function range(start, stop, step = 1) {
     return a;
 }
 
-function appendText(taskArea, text, clearBefore = false) {
+function appendText(taskArea, text, clearBefore = false, scrollTop = -1) {
     if (clearBefore) {
         taskArea.innerHTML = '';
     }
     taskArea.innerHTML += text;
-    taskArea.scrollTop = taskArea.scrollHeight;
+    taskArea.style.height = 'auto';
+    if (taskArea.style.whiteSpace == 'pre') {
+        taskArea.style.height = (taskArea.scrollHeight + 20) + 'px';
+    }
+    else {
+        taskArea.style.height = taskArea.scrollHeight + 'px';
+    }
+    if (scrollTop === -1) {
+        taskArea.scrollTop = taskArea.scrollHeight;
+    }
+    else {
+        taskArea.scrollTop = scrollTop;
+    }
 }
 
 function addScore(st, n = 1) {
@@ -1016,9 +1032,9 @@ function addScore(st, n = 1) {
 
 function createInputElems(wrap = false) {
     let taskDiv = document.createElement("div");
-    taskDiv.id = "taskDiv";
+    taskDiv.classList.add("taskDiv");
     let taskArea = document.createElement("textarea");
-    taskArea.id = "taskArea";
+    taskArea.classList.add("taskArea");
     taskArea.readOnly = true;
     if (wrap == false) {
         taskArea.style.whiteSpace = 'pre';
@@ -1026,6 +1042,8 @@ function createInputElems(wrap = false) {
     else {
         taskArea.style.whiteSpace = 'pre-wrap';
     }
+    taskDiv.style.display = 'inline-block';
+    taskDiv.style.width = '350px';
     taskDiv.appendChild(taskArea);
     return [taskDiv, taskArea];
 }
@@ -1382,6 +1400,9 @@ function updateTableOfSelects(cellValues) {
                         select.appendChild(optionElem);
                     });
                     select.value = select.childNodes[0].value;
+                    if (select.value == 'True') {
+                        select.value = select.childNodes[1] ? select.childNodes[1].value : select.value;
+                    }
                     dataCell.appendChild(select);
                 }
                 else {
@@ -1951,7 +1972,7 @@ function state1WordInfo(text) {
         addWidget(button_element);
 
         let infoArea = document.createElement("textarea");
-        infoArea.id = "infoArea";
+        infoArea.classList.add("infoArea");
         infoArea.readOnly = true;
         infoArea.style.whiteSpace = 'pre-wrap';
         infoArea.innerHTML = s.trim();
@@ -2259,7 +2280,7 @@ function state1() {
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
-                if (confirm('Are you sure you want to set the default settings?')) {
+                if (confirm('Are you sure you want to set the default settings for the current template?')) {
                     stateN_defaults('ce_st1');
                     save_template('1');
                     state1();
@@ -2286,8 +2307,6 @@ function state1_start() {
     let task = createInputElems(settings['ce_state1_wrap'] == combo_enable_disable.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
-    taskDiv.style.height = '150px';
-    taskArea.style.height = '155px';
     let st1_image_voice_options = parseInt(settings['ce_st1_image_voice_options']);
     let st1_word_options = parseInt(settings['ce_st1_word_options']);
     let st1_options = Math.max(st1_image_voice_options, st1_word_options);
@@ -2315,6 +2334,7 @@ function state1_start() {
             let newValue = Math.min(20, Math.max(7, fs + 1));
             setSetting('ce_state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
+            appendText(taskArea, '', false, 0);
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
@@ -2322,6 +2342,7 @@ function state1_start() {
             let newValue = Math.min(20, Math.max(7, fs - 1));
             setSetting('ce_state1_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
+            appendText(taskArea, '', false, 0);
         },
     }));
     currentGenerator = state1_generator(taskArea);
@@ -2371,7 +2392,7 @@ function* state1_generator(taskArea) {
     let st1_image_voice_options = parseInt(settings['ce_st1_image_voice_options']);
     let st1_word_options = parseInt(settings['ce_st1_word_options']);
     let st1_options = Math.max(st1_image_voice_options, st1_word_options);
-    let st1_word_to_category = settings['ce_st1_image_voice_word_to_category'];
+    let st1_image_voice_word_to_category = settings['ce_st1_image_voice_word_to_category'];
     let st1_word_to_image = settings['ce_st1_word_to_image'];
     let st1_image_to_word = settings['ce_st1_image_to_word'];
     let st1_voice_to_word = settings['ce_st1_voice_to_word'];
@@ -2584,7 +2605,7 @@ function* state1_generator(taskArea) {
         )) {
             return true;
         }
-        if (st1_word_to_category == combo_enable_only_disable.Only && (
+        if (st1_image_voice_word_to_category == combo_enable_only_disable.Only && (
             category1 == 'Adjectives' ||
             category1 == 'Baby' ||
             category1 == 'Bedroom' ||
@@ -2797,10 +2818,10 @@ function* state1_generator(taskArea) {
             }
             let category_element_mode_active = 0;
             if (full_variant == 'image-to-word' || full_variant == 'voice-to-word') {
-                if (st1_word_to_category == combo_enable_only_disable.Only) {
+                if (st1_image_voice_word_to_category == combo_enable_only_disable.Only) {
                     category_element_mode_active = randomChoice([1, 2]);
                 }
-                else if (st1_word_to_category == combo_enable_only_disable.Enable) {
+                else if (st1_image_voice_word_to_category == combo_enable_only_disable.Enable) {
                     category_element_mode_active = randomChoice([0, 1, 2]);
                 }
             }
@@ -2811,7 +2832,7 @@ function* state1_generator(taskArea) {
                 variant_data[0] == 'Holidays' ||
                 variant_data[0] == 'Verbs' ||
                 variant_data[1] == 'Stages'
-            ) && st1_word_to_category != combo_enable_only_disable.Only) {
+            ) && st1_image_voice_word_to_category != combo_enable_only_disable.Only) {
                 category_element_mode_active = 0;
             }
             let n_back_str = (skip_mode === false) ? prev_n + '-Back' : 'Next';
@@ -2944,9 +2965,14 @@ function* state1_generator(taskArea) {
                 line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]);
             }
             else if (full_variant == 'meaning-to-word') {
-                let meaning = variant_data[1][1][1];/// todo
+                let meaning = variant_data[1][1][1];
                 meaning = meaning ? (' - ' + meaning) : '';
                 line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + meaning;
+            }
+            else if (full_variant == 'find-word-in-sentence') {
+                let sentence = variant_data[1][1][2];
+                sentence = sentence ? (': ' + sentence) : '';
+                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + sentence;
             }
             else {
                 line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + ' -> ' + variant_data[0][3];
@@ -2960,6 +2986,14 @@ function* state1_generator(taskArea) {
         }
         else if (n_prev_task[0] == 'word') {
             show_trial_timer_var = st1_word_mode_show_trial_time_limit;
+        }
+        if (n_prev_task != current_task) {
+            if (current_task[0] == 'image' || current_task[0] == 'voice') {
+                show_trial_timer_var += st1_image_voice_show_trial_time_limit;
+            }
+            else if (current_task[0] == 'word') {
+                show_trial_timer_var += st1_word_mode_show_trial_time_limit;
+            }
         }
         if (show_trial_timer_var > 0) {
             showTrialTimerP.innerHTML = '' + show_trial_timer_var;
@@ -2989,6 +3023,14 @@ function* state1_generator(taskArea) {
         }
         else if (n_prev_task[0] == 'word') {
             answer_trial_timer_var = st1_word_mode_answer_trial_time_limit;
+        }
+        if (n_prev_task != current_task) {
+            if (current_task[0] == 'image' || current_task[0] == 'voice') {
+                answer_trial_timer_var += st1_image_voice_answer_trial_time_limit;
+            }
+            else if (current_task[0] == 'word') {
+                answer_trial_timer_var += st1_word_mode_answer_trial_time_limit;
+            }
         }
         if (answer_trial_timer_var > 0) {
             answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
@@ -4358,7 +4400,7 @@ function state3() {
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
-                if (confirm('Are you sure you want to set the default settings?')) {
+                if (confirm('Are you sure you want to set the default settings for the current template?')) {
                     stateN_defaults('ce_st3');
                     state3();
                 }
@@ -4410,6 +4452,7 @@ function state3_start() {
             let newValue = Math.min(20, Math.max(7, fs + 1));
             setSetting('ce_state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
+            appendText(taskArea, '', false, 0);
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
@@ -4417,6 +4460,7 @@ function state3_start() {
             let newValue = Math.min(20, Math.max(7, fs - 1));
             setSetting('ce_state3_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
+            appendText(taskArea, '', false, 0);
         },
     }));
     taskArea.innerHTML = 'Generating...\n';
@@ -4814,7 +4858,7 @@ function state4() {
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
-                if (confirm('Are you sure you want to set the default settings?')) {
+                if (confirm('Are you sure you want to set the default settings for the current template?')) {
                     stateN_defaults('ce_st4');
                     state4();
                 }
@@ -4866,6 +4910,7 @@ function state4_start() {
             let newValue = Math.min(20, Math.max(7, fs + 1));
             setSetting('ce_state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
+            appendText(taskArea, '', false, 0);
         },
         '-': () => {
             let fs = parseInt(taskArea.style.fontSize);
@@ -4873,6 +4918,7 @@ function state4_start() {
             let newValue = Math.min(20, Math.max(7, fs - 1));
             setSetting('ce_state4_font_size', newValue);
             taskArea.style.fontSize = newValue + 'px';
+            appendText(taskArea, '', false, 0);
         },
     }));
     taskArea.innerHTML = 'Generating...\n';

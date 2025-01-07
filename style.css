@@ -40,7 +40,7 @@ body {
     background-color: hsl(45, 100%, 90%);
 }
 
-#taskArea, #infoArea {
+.taskArea, .infoArea {
     font-size: 17px;
     width: 100%;
     height: 200px;
