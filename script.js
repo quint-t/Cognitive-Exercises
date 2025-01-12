@@ -153,9 +153,9 @@ function loadSettings() {
         "ce_st1_image_voice_hard_mode": combo_enable_disable.Disable,
         "ce_st1_image_voice_options": 4,
         "ce_st1_image_voice_insects_category": combo_enable_somewhat_disable.Somewhat,
-        "ce_st1_image_voice_halloween_category": combo_enable_somewhat_disable.Somewhat,
+        "ce_st1_image_voice_halloween_category": combo_enable_somewhat_disable.Enable,
         "ce_st1_image_voice_baby_category": combo_enable_somewhat_disable.Somewhat,
-        "ce_st1_image_voice_family_members_category": combo_enable_somewhat_disable.Somewhat,
+        "ce_st1_image_voice_family_members_category": combo_enable_somewhat_disable.Enable,
         "ce_st1_image_voice_holidays_category": combo_enable_disable.Enable,
         "ce_st1_image_voice_body_category": combo_enable_disable.Enable,
         "ce_st1_word_to_word": combo_enable_disable.Enable,
@@ -583,7 +583,7 @@ function* wordGetter(dictionary, options, hard_mode) {
     for (const [word, params] of Object.entries(dictionary)) {
         list.push([word, params]);
     }
-    let task_type = '', skip = false, max_depth = 1;
+    let task_type = '', task_types = [], skip = false, all_max_depth = 8, hard_mode_max_depth = 3;
     while (true) {
         list = randomShuffle(list);
         for (let list_item of list) {
@@ -598,39 +598,33 @@ function* wordGetter(dictionary, options, hard_mode) {
                 let synonyms = definition[3];
                 let antonyms = definition[4];
                 let similar_words = definition[5];
-                let parasynonyms = [];
-                let paraantonyms = [];
-                let parasimilar_words = [];
-                if (skip == false) {
-                    task_type = (yield 'task');
-                    if (Array.isArray(task_type)) {
-                        let obj = task_type;
-                        task_type = obj[0];
-                        word = obj[1];
-                        part_of_speech = obj[2][0];
-                        meaning = obj[2][1];
-                        example = obj[2][2];
-                        synonyms = obj[2][3];
-                        antonyms = obj[2][4];
-                        similar_words = obj[2][5];
-                        another_word_flag = true;
-                    }
-                    else {
-                        another_word_flag = false;
-                    }
+                task_type = skip ? task_type : (yield 'task');
+                skip = false;
+                if (Array.isArray(task_type)) {
+                    let obj = task_type;
+                    task_types = randomShuffle([...obj[0]]);
+                    task_type = task_types[0];
+                    task_types = task_types.slice(1);
+                    word = obj[1];
+                    definition = obj[2];
+                    part_of_speech = definition[0];
+                    meaning = definition[1];
+                    example = definition[2];
+                    synonyms = definition[3];
+                    antonyms = definition[4];
+                    similar_words = definition[5];
+                    another_word_flag = true;
                 }
                 else {
-                    skip = false;
+                    another_word_flag = false;
                 }
                 let all_synonyms = new Map();
                 let all_antonyms = new Map();
                 let all_similar_words = new Map();
-                let q = [[word, 'syn', 0]];
+                let all_x_to_explanation = new Map();
+                let q = [[word, definition, '', 0]];
                 while (q.length > 0) {
-                    let [w, w_type, depth] = q.pop();
-                    if (depth >= 4) {
-                        continue;
-                    }
+                    let [w, w_definition, w_type, depth] = q.pop(0);
                     if (w_type == 'ant') {
                         if (all_antonyms.has(w)) {
                             continue;
@@ -653,68 +647,160 @@ function* wordGetter(dictionary, options, hard_mode) {
                     let antonyms_for_x = [];
                     let similar_words_for_x = [];
                     if (dictionary[w]) {
-                        if (w == word && hard_mode == false) {
-                            synonyms_for_x.push(...synonyms);
-                            antonyms_for_x.push(...antonyms);
-                            similar_words_for_x.push(...similar_words);
-                        }
-                        else {
-                            for (let desa of dictionary[w]) {
-                                if (w == word && desa != definition) {
-                                    desa[3].forEach((item) => {
-                                        if (synonyms.includes(item) == false) {
-                                            parasynonyms.push(item);
+                        for (let desa of dictionary[w]) {
+                            desa[3].forEach((item) => {
+                                let t_explanation = '', t_desa = desa;
+                                if (w_type == 'syn' && dictionary[item]) {
+                                    for (let t of dictionary[item]) {
+                                        if (t[3].includes(w)) {
+                                            t_explanation = t[1];
+                                            t_desa = t;
                                         }
-                                    });
-                                    desa[4].forEach((item) => {
-                                        if (antonyms.includes(item) == false) {
-                                            paraantonyms.push(item);
-                                        }
-                                    });
-                                    desa[5].forEach((item) => {
-                                        if (similar_words.includes(item) == false) {
-                                            parasimilar_words.push(item);
-                                        }
-                                    });
+                                    }
                                 }
-                                synonyms_for_x.push(...desa[3]);
-                                antonyms_for_x.push(...desa[4]);
-                                similar_words_for_x.push(...desa[5]);
+                                if ((w == word) || t_explanation.length > 0) {
+                                    synonyms_for_x.push([item, t_desa, depth + (desa != w_definition)]);
+                                    if (depth <= hard_mode_max_depth && t_explanation.length > 0) {
+                                        all_x_to_explanation.set(item, t_explanation);
+                                    }
+                                }
+                            });
+                            desa[4].forEach((item) => {
+                                let t_explanation = '', t_desa = desa;
+                                if (w_type == 'ant' && dictionary[item]) {
+                                    for (let t of dictionary[item]) {
+                                        if (t[4].includes(w)) {
+                                            t_explanation = t[1];
+                                            t_desa = t;
+                                        }
+                                    }
+                                }
+                                if ((w == word) || t_explanation.length > 0) {
+                                    antonyms_for_x.push([item, t_desa, depth + (desa != w_definition)]);
+                                    if (depth <= hard_mode_max_depth && t_explanation.length > 0) {
+                                        all_x_to_explanation.set(item, t_explanation);
+                                    }
+                                }
+                            });
+                            desa[5].forEach((item) => {
+                                let t_explanation = '', t_desa = desa;
+                                if (w_type == 'sim' && dictionary[item]) {
+                                    for (let t of dictionary[item]) {
+                                        if (t[5].includes(w)) {
+                                            t_explanation = t[1];
+                                            t_desa = t;
+                                        }
+                                    }
+                                }
+                                if ((w == word) || t_explanation.length > 0) {
+                                    similar_words_for_x.push([item, t_desa, depth + (desa != w_definition)]);
+                                    if (depth <= hard_mode_max_depth && t_explanation.length > 0) {
+                                        all_x_to_explanation.set(item, t_explanation);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    for (let [syn, desa, new_depth] of synonyms_for_x) {
+                        new_depth += 1;
+                        if (new_depth >= all_max_depth) {
+                            continue;
+                        }
+                        q.push([syn, desa, 'syn', new_depth]);
+                    }
+                    for (let [ant, desa, new_depth] of antonyms_for_x) {
+                        new_depth += 1;
+                        if (new_depth >= all_max_depth) {
+                            continue;
+                        }
+                        q.push([ant, desa, w_type == 'ant' ? 'syn' : 'ant', new_depth]);
+                    }
+                    for (let [sim, desa, new_depth] of similar_words_for_x) {
+                        new_depth += 1;
+                        if (new_depth >= all_max_depth) {
+                            continue;
+                        }
+                        q.push([sim, desa, 'sim', new_depth]);
+                    }
+                    q.sort(function (a, b) { return a[2] - b[2]; });
+                }
+                for (const [w, params] of Object.entries(dictionary)) {
+                    for (const desa of params) {
+                        if (desa[3].includes(word) && all_synonyms.has(w) == false) {
+                            all_synonyms.set(w, hard_mode_max_depth + 1);
+                            for (let t of desa[3]) {
+                                if (all_synonyms.has(t) == false) {
+                                    all_synonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                            for (let t of desa[4]) {
+                                if (all_antonyms.has(t) == false) {
+                                    all_antonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                            for (let t of desa[5]) {
+                                if (all_similar_words.has(t) == false) {
+                                    all_similar_words.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                        }
+                        if (desa[4].includes(word) && all_antonyms.has(w) == false) {
+                            all_antonyms.set(w, hard_mode_max_depth + 1);
+                            for (let t of desa[3]) {
+                                if (all_antonyms.has(t) == false) {
+                                    all_antonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                            for (let t of desa[4]) {
+                                if (all_synonyms.has(t) == false) {
+                                    all_synonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                            for (let t of desa[5]) {
+                                if (all_antonyms.has(t) == false) {
+                                    all_antonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                        }
+                        if (desa[5].includes(word) && all_similar_words.has(w) == false) {
+                            all_similar_words.set(w, hard_mode_max_depth + 1);
+                            for (let t of desa[3]) {
+                                if (all_synonyms.has(t) == false) {
+                                    all_synonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                            for (let t of desa[4]) {
+                                if (all_antonyms.has(t) == false) {
+                                    all_antonyms.set(t, hard_mode_max_depth + 1);
+                                }
+                            }
+                            for (let t of desa[5]) {
+                                if (all_similar_words.has(t) == false) {
+                                    all_similar_words.set(t, hard_mode_max_depth + 1);
+                                }
                             }
                         }
                     }
-                    for (let syn of synonyms_for_x) {
-                        q.push([syn, 'syn', depth + 1]);
+                }
+                for (let [synonym, depth] of all_synonyms.entries()) {
+                    if (depth <= hard_mode_max_depth && all_antonyms.has(synonym)) {
+                        all_synonyms.set(synonym, hard_mode_max_depth + 1);
+                        all_antonyms.set(synonym, hard_mode_max_depth + 1);
                     }
-                    for (let ant of antonyms_for_x) {
-                        q.push([ant, w_type == 'ant' ? 'syn' : 'ant', depth + 1]);
+                }
+                for (let [antonym, depth] of all_antonyms.entries()) {
+                    if (depth <= hard_mode_max_depth && all_synonyms.has(antonym)) {
+                        all_synonyms.set(antonym, hard_mode_max_depth + 1);
+                        all_antonyms.set(antonym, hard_mode_max_depth + 1);
                     }
-                    for (let sim of similar_words_for_x) {
-                        q.push([sim, 'sim', depth + 1]);
+                    if (depth <= hard_mode_max_depth && all_similar_words.has(antonym)) {
+                        all_antonyms.set(antonym, hard_mode_max_depth + 1);
+                        all_similar_words.set(antonym, hard_mode_max_depth + 1);
                     }
                 }
                 all_synonyms.delete(word);
                 all_antonyms.delete(word);
                 all_similar_words.delete(word);
-                let common = new Set();
-                for (let [synonym, depth] of all_synonyms.entries()) {
-                    if (all_antonyms.has(synonym)) {
-                        common.add(synonym);
-                    }
-                }
-                for (let [antonym, depth] of all_antonyms.entries()) {
-                    if (all_synonyms.has(antonym)) {
-                        common.add(antonym);
-                    }
-                    if (all_similar_words.has(antonym)) {
-                        common.add(antonym);
-                    }
-                }
-                for (let w of common) {
-                    all_synonyms.delete(w);
-                    all_antonyms.delete(w);
-                    all_similar_words.delete(w);
-                }
                 if (task_type == 'word-to-word') {
                     task1 = 'Next word: ' + capitalize(word);
                     if (part_of_speech.length > 0) {
@@ -725,7 +811,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                     expected = word;
                     let sd_list = [];
                     for (let [synonym, depth] of all_synonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth == 1 || hard_mode && depth <= hard_mode_max_depth) {
                             sd_list.push([synonym, depth]);
                         }
                     }
@@ -750,10 +836,10 @@ function* wordGetter(dictionary, options, hard_mode) {
                     }
                     task2 += ':';
                     expected = word;
-                    explanation = example;
+                    explanation = meaning;
                     let ad_list = [];
                     for (let [antonym, depth] of all_antonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth <= hard_mode_max_depth) {
                             ad_list.push([antonym, depth]);
                         }
                     }
@@ -779,7 +865,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                     task1 += '\nMeaning of the word:\n ' + meaning;
                     let sd_list = [];
                     for (let [synonym, depth] of all_synonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth == 1 || hard_mode && depth <= hard_mode_max_depth) {
                             sd_list.push([synonym, depth]);
                         }
                     }
@@ -788,7 +874,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         expected = synonym;
                         break;
                     }
-                    if (parasynonyms.includes(expected)) {
+                    if (synonyms.includes(expected) == false) {
                         task2 = 'Choose a parasynonym for the word:';
                     }
                     else{
@@ -796,24 +882,33 @@ function* wordGetter(dictionary, options, hard_mode) {
                     }
                     let ad_list = [];
                     for (let [antonym, depth] of all_antonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth <= hard_mode_max_depth) {
                             ad_list.push([antonym, depth]);
                         }
                     }
                     ad_list = randomShuffle(ad_list);
                     for (let [antonym, depth] of ad_list) {
+                        if (antonym[0].slice(0, 3) == expected.slice(0, 3)) {
+                            continue;
+                        }
                         options_list.push(antonym);
                     }
                     for (let x of randomShuffle(list)) {
                         if (options_list.length >= options) {
                             break;
                         }
+                        if (x[0].slice(0, 3) == expected.slice(0, 3)) {
+                            continue;
+                        }
                         if (x[0] != word && all_synonyms.has(x[0]) == false && all_similar_words.has(x[0]) == false) {
                             options_list.push(x[0]);
                         }
                     }
                     explanation = capitalize(word) + ' - ' + meaning;
-                    if (dictionary[expected]) {
+                    if (all_x_to_explanation.get(expected)) {
+                        explanation = (capitalize(expected) + ' - ' + all_x_to_explanation.get(expected) + '\n').concat(explanation);
+                    }
+                    else if (dictionary[expected]) {
                         let expected_meaning = '';
                         for (let d of dictionary[expected]) {
                             if (d[3].includes(word)) {
@@ -841,7 +936,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                     task1 += '\nMeaning of the word:\n ' + meaning;
                     let ad_list = [];
                     for (let [antonym, depth] of all_antonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth == 1 || hard_mode && depth <= hard_mode_max_depth) {
                             ad_list.push([antonym, depth]);
                         }
                     }
@@ -850,7 +945,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         expected = antonym;
                         break;
                     }
-                    if (paraantonyms.includes(expected)) {
+                    if (antonyms.includes(expected) == false) {
                         task2 = 'Choose a paraantonym for the word:';
                     }
                     else{
@@ -858,24 +953,33 @@ function* wordGetter(dictionary, options, hard_mode) {
                     }
                     let sd_list = [];
                     for (let [synonym, depth] of all_synonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth <= hard_mode_max_depth) {
                             sd_list.push([synonym, depth]);
                         }
                     }
                     sd_list = randomShuffle(sd_list);
                     for (let [synonym, depth] of sd_list) {
+                        if (synonym.slice(0, 3) == expected.slice(0, 3)) {
+                            continue;
+                        }
                         options_list.push(synonym);
                     }
                     for (let x of randomShuffle(list)) {
                         if (options_list.length >= options) {
                             break;
                         }
+                        if (x[0].slice(0, 3) == expected.slice(0, 3)) {
+                            continue;
+                        }
                         if (x[0] != word && all_antonyms.has(x[0]) == false && all_similar_words.has(x[0]) == false) {
                             options_list.push(x[0]);
                         }
                     }
                     explanation = capitalize(word) + ' - ' + meaning;
-                    if (dictionary[expected]) {
+                    if (all_x_to_explanation.get(expected)) {
+                        explanation = (capitalize(expected) + ' - ' + all_x_to_explanation.get(expected) + '\n').concat(explanation);
+                    }
+                    else if (dictionary[expected]) {
                         let expected_meaning = '';
                         for (let d of dictionary[expected]) {
                             if (d[4].includes(word)) {
@@ -903,7 +1007,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                     task1 += '\nMeaning of the word:\n ' + meaning;
                     let sd_list = [];
                     for (let [similar_word, depth] of all_similar_words.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth == 1 || hard_mode && depth <= hard_mode_max_depth) {
                             sd_list.push([similar_word, depth]);
                         }
                     }
@@ -912,7 +1016,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         expected = similar_word;
                         break;
                     }
-                    if (parasimilar_words.includes(expected)) {
+                    if (similar_words.includes(expected) == false) {
                         task2 = 'Choose a parasimilar word for the word:';
                     }
                     else{
@@ -920,24 +1024,33 @@ function* wordGetter(dictionary, options, hard_mode) {
                     }
                     let ad_list = [];
                     for (let [antonym, depth] of all_antonyms.entries()) {
-                        if (depth <= max_depth) {
+                        if (depth <= hard_mode_max_depth) {
                             ad_list.push([antonym, depth]);
                         }
                     }
                     ad_list = randomShuffle(ad_list);
                     for (let [antonym, depth] of ad_list) {
+                        if (antonym.slice(0, 3) == expected.slice(0, 3)) {
+                            continue;
+                        }
                         options_list.push(antonym);
                     }
                     for (let x of randomShuffle(list)) {
                         if (options_list.length >= options) {
                             break;
                         }
+                        if (x[0].slice(0, 3) == expected.slice(0, 3)) {
+                            continue;
+                        }
                         if (x[0] != word && all_synonyms.has(x[0]) == false && all_similar_words.has(x[0]) == false) {
                             options_list.push(x[0]);
                         }
                     }
                     explanation = capitalize(word) + ' - ' + meaning;
-                    if (dictionary[expected]) {
+                    if (all_x_to_explanation.get(expected)) {
+                        explanation = (capitalize(expected) + ' - ' + all_x_to_explanation.get(expected) + '\n').concat(explanation);
+                    }
+                    else if (dictionary[expected]) {
                         let expected_meaning = '';
                         for (let d of dictionary[expected]) {
                             if (d[5].includes(word)) {
@@ -978,6 +1091,11 @@ function* wordGetter(dictionary, options, hard_mode) {
                     }
                 }
                 if (expected == null || expected.length == 0) {
+                    if (another_word_flag) {
+                        task_type = [task_types, word, definition];
+                        skip = true;
+                        continue;
+                    }
                     skip = true;
                     console.log(`${word} skipped; task = ${task_type}`);
                     break;
@@ -991,6 +1109,8 @@ function* wordGetter(dictionary, options, hard_mode) {
                 options_list = new_options_list;
                 if (options_list.length <= 1) {
                     if (another_word_flag) {
+                        task_type = [task_types, word, definition];
+                        skip = true;
                         continue;
                     }
                     skip = true;
@@ -998,8 +1118,9 @@ function* wordGetter(dictionary, options, hard_mode) {
                     break;
                 }
                 let r = [[capitalize(word), task1, task2, capitalize(expected), explanation, options_list],
-                         [word, definition]];
-                yield (r); // word, task1, task2, expected, explanation, options
+                         [word, definition], task_type];
+                yield (r); // task_type, word, task1, task2, expected, explanation, options
+                task_types = [];
                 if (another_word_flag == false) {
                     break;
                 }
@@ -1162,7 +1283,9 @@ function createChooser(stateN, options, additionalButtons) {
     let chooserDiv = document.createElement("div");
     chooserDiv.id = "chooserDiv";
     let eachButtonAction = function (event) {
-        checkAnswer(event.target.innerHTML);
+        setTimeout(function () {
+            checkAnswer(event.target.innerHTML);
+        }, 50);
     };
     for (let i = 0; i < options; ++i) {
         let button = document.createElement('button');
@@ -3004,7 +3127,7 @@ function* state1_generator(taskArea) {
                 gen_next = word_generator.next(full_variant);
             }
             variant_data = gen_next.value;
-            // [[word_capitalized, task1, task2, expected_capitalized, explanation, options_list], [word, definition]]
+            // [[word_capitalized, task1, task2, expected_capitalized, explanation, options_list], [word, definition], task_type]
         }
         task_list.push([short_variant, full_variant, variant_data]);
         let prev_n = st1_n, n_prev_task = null, current_task = task_list[task_list.length - 1];
@@ -3137,6 +3260,8 @@ function* state1_generator(taskArea) {
                 }
                 text += '\n';
                 updateChooser(options, images_used);
+                lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                           capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
             }
         }
         else if (short_variant == 'word') {
@@ -3149,16 +3274,20 @@ function* state1_generator(taskArea) {
             }
             if (skip_mode === false) {
                 if (n_prev_task != current_task && st1_word_mode_random_bool) {
-                    let new_full_variant = full_variant;
+                    let new_full_variants = [full_variant];
                     if (full_variant == 'word-to-word' || full_variant == 'word-to-synonym' ||
                         full_variant == 'word-to-antonym' || full_variant == 'word-to-similar-word') {
-                        new_full_variant = randomChoice(short_to_full_variant.get('word'));
+                        new_full_variants = [...short_to_full_variant.get('word')];
+                        let p = new_full_variants.indexOf('find-word-in-sentence');
+                        if (p > -1) {
+                            new_full_variants.pop(p);
+                        }
                     }
                     word_generator.next();
-                    let gen_next = word_generator.next([new_full_variant, ...variant_data[1]]);  // [variant, word]
+                    let gen_next = word_generator.next([new_full_variants, variant_data[1][0], variant_data[1][1]]);  // [variant, word]
                     if (!(gen_next.done ?? true)) {
-                        full_variant = new_full_variant;
                         variant_data = gen_next.value;
+                        full_variant = gen_next.value[2];
                         n_prev_task = [short_variant, full_variant, variant_data];
                     }
                 }
@@ -3171,6 +3300,24 @@ function* state1_generator(taskArea) {
                     text += variant_data[0][1] + '\n';
                 }
                 text += variant_data[0][2] + '\n' + textToLines(convertOptionsToString(options), 100, 1, true) + '\n';
+                let line = "N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
+                if (full_variant == 'word-to-word') {
+                    line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]);
+                }
+                else if (full_variant == 'meaning-to-word') {
+                    let meaning = variant_data[1][1][1];
+                    meaning = meaning ? (' - ' + meaning) : '';
+                    line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + meaning;
+                }
+                else if (full_variant == 'find-word-in-sentence') {
+                    let sentence = variant_data[1][1][2];
+                    sentence = sentence ? (': ' + sentence) : '';
+                    line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + sentence;
+                }
+                else {
+                    line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + ' -> ' + variant_data[0][3];
+                }
+                lines.push(line);
             }
         }
         short_variant = current_task[0];
@@ -3190,48 +3337,24 @@ function* state1_generator(taskArea) {
                 img.alt = image_path;
                 imageDiv.style.display = '';
             }
-            lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
         }
         else if (short_variant == 'audio') {
             audioButton.category1 = variant_data[0];
             audioButton.category2 = variant_data[1];
             audioButton.title = variant_data[3];
             audioButton.onmouseup();
-            lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
             audioDiv.style.display = '';
         }
         else if (short_variant == 'voice') {
             voiceButton.voice_text = variant_data[3];
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
-            lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
-                capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
             voiceDiv.style.display = '';
         }
         else if (short_variant == 'word') {
             if (current_task != n_prev_task || skip_mode) {
                 text += variant_data[0][1] + '\n';
             }
-            let line = "N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": ";
-            if (full_variant == 'word-to-word') {
-                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]);
-            }
-            else if (full_variant == 'meaning-to-word') {
-                let meaning = variant_data[1][1][1];
-                meaning = meaning ? (' - ' + meaning) : '';
-                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + meaning;
-            }
-            else if (full_variant == 'find-word-in-sentence') {
-                let sentence = variant_data[1][1][2];
-                sentence = sentence ? (': ' + sentence) : '';
-                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + sentence;
-            }
-            else {
-                line += capitalize(full_variant) + ': ' + capitalize(variant_data[0][0]) + ' -> ' + variant_data[0][3];
-            }
-            lines.push(line);
         }
         updateLastHistoryItem([lines.join("\n")]);
 
