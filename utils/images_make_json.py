@@ -1,7 +1,9 @@
 from pathlib import Path
 import json
 
-files = Path("../images/").glob('**/*.jpg')
+image_ext = 'jpg'
+
+images = list(Path("../images/").glob(f'**/*.{image_ext}'))
 tree = dict()
 
 replaces = {
@@ -9,13 +11,12 @@ replaces = {
     "Childrens": "Children's"
 }
 
-for filepath in files:
-    if 'time_limit.jpg' in filepath.parts:
+for image_path in images:
+    parts = list(image_path.parts[-3:])
+    parts[-1] = parts[-1].replace(f'.{image_ext}', '')
+    if 'time_limit' in parts[-1]:
         continue
-    parts = list(map(str, filepath.parts[2:]))
     head = tree
-    for i in range(len(parts)):
-        parts[i] = parts[i].replace('.jpg', '')
     for x in parts[:-2]:
         if x not in head:
             head[x] = dict()
@@ -31,7 +32,7 @@ for filepath in files:
     else:
         head.setdefault(parts[-2], list()).append([filename, title])
 
-with open("images.json", "w") as out_file:
+with open("../images.js", "w") as out_file:
     s = json.dumps(tree, sort_keys=True, ensure_ascii=True, indent=4)
     s = s.replace(',\n' + ' ' * 4 * 3, ', ')
     s = s.replace('[\n' + ' ' * 4 * 3, '[')
@@ -39,4 +40,6 @@ with open("images.json", "w") as out_file:
     s = s.replace('\n' + ' ' * 4 * 3 + ']', ']')
     s = s.replace('[' + ' ' * 5 + '"', '["')
     s = s.replace(',' + ' ' * 5 + '"', ', "')
+    s = s.replace('[' + ' ' * 4, '[')
+    s = 'function getImages() {\n    return JSON.parse(`\n' + s + '\n    `);\n}\n';
     out_file.write(s)

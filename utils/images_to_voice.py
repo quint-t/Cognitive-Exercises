@@ -81,7 +81,7 @@ def text_to_speech(text: str, filename: str, voice_name: str, voice_engine: str,
 
 
 def main(voice_name: str, voice_engine: str, lang: str, restart: bool = False):
-    main_dir = r'C:\Users\Admin\Desktop\Cognitive-Exercises'
+    main_dir = r'../'
     images_dir = os.path.join(main_dir, 'images')
     voice_dir = os.path.join(main_dir, 'voice')
     try:
@@ -97,11 +97,13 @@ def main(voice_name: str, voice_engine: str, lang: str, restart: bool = False):
                 os.remove(full_path_to_fsobj)
     files = glob.glob(f'{images_dir}\\**\\*.jpg', recursive=True)
     tasks = [['Hello', voice_dir + '\\' + 'Hello' + '.mp3']]
+    all_images_filenames_wo_ext = set()
     for file in files:
         if 'time_limit' in file:
             continue
         text = os.path.basename(file).replace('.jpg', '')
         tasks.append([text, voice_dir + '\\' + text + '.mp3'])
+        all_images_filenames_wo_ext.add(text)
     tasks.sort(key=lambda x: x[0])
     k = str(len(str(len(tasks))))
     for n, (text, dest_file) in enumerate(tasks, 1):
@@ -111,6 +113,15 @@ def main(voice_name: str, voice_engine: str, lang: str, restart: bool = False):
             time.sleep(1)
         time.sleep(1)
         print(('{0:0' + k + '}/{1:0' + k + '}. {2}').format(n, len(tasks), text))
+    files = glob.glob(f'{voice_dir}\\**\\*.mp3', recursive=True)
+    all_voice_filenames_wo_ext = set()
+    for file in files:
+        text = os.path.basename(file).replace('.mp3', '')
+        if text == 'Hello':
+            continue
+        all_voice_filenames_wo_ext.add(text)
+    print(f'Remaining images: {all_images_filenames_wo_ext - all_voice_filenames_wo_ext}')
+    print(f'Remaining voice files: {all_voice_filenames_wo_ext - all_images_filenames_wo_ext}')
 
 
 if __name__ == "__main__":
