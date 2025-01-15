@@ -2012,6 +2012,15 @@ function state0() {
     link.target = '_blank';
     link.innerHTML = 'Version ' + version;
     addWidget(link);
+    let p = document.createElement('span');
+    p.innerHTML = ' / ';
+    p.style.color = '#333333';
+    addWidget(p);
+    let download_link = document.createElement('a');
+    download_link.href = 'https://github.com/quint-t/Cognitive-Exercises/archive/refs/heads/main.zip';
+    download_link.target = '_blank';
+    download_link.innerHTML = 'Download it';
+    addWidget(download_link);
     addWidget(document.createElement('br'));
     let tg_link = document.createElement('a');
     tg_link.href = 'https://t.me/+25UKv4tsGmc1YmEy';
