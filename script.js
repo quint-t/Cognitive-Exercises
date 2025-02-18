@@ -1749,6 +1749,10 @@ function createParameterIntegerButton(param_id, name, condition) {
     return button;
 }
 
+function toFloatString(number, min_digits = undefined, max_digits = undefined) {
+    return Number(number).toLocaleString('en-US', { minimumFractionDigits: min_digits, maximumFractionDigits: max_digits }).replace(/[^\w\.]/g, '');
+}
+
 function createParameterFloatButton(param_id, name, condition) {
     let button = document.createElement("button");
     button.classList.add("amberButton");
@@ -1759,7 +1763,7 @@ function createParameterFloatButton(param_id, name, condition) {
         let value = prompt(replaceTags(name, ' '), event.innerHTML);
         let parsed = parseFloat(value);
         if ((('' + parsed) == value) && condition(parsed)) {
-            event.innerHTML = Number(parsed).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+            event.innerHTML = toFloatString(parsed, 1, 1);
             setSetting(param_id, event.innerHTML);
         }
         else {
@@ -2865,7 +2869,9 @@ function* state1_generator(taskArea) {
             return true;
         }
         if (st1_baby_category == combo_enable_somewhat_disable.Somewhat && (
-            category1 == 'Baby'
+            category1 == 'Baby' ||
+            title == 'dressed' ||
+            title == 'unclothed'
         )) {
             return true;
         }
@@ -3367,12 +3373,8 @@ function* state1_generator(taskArea) {
         }
         updateLastHistoryItem([lines.join("\n")]);
 
-        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'audio' || n_prev_task[0] == 'voice') {
-            show_trial_timer_var = st1_image_voice_show_trial_time_limit;
-        }
-        else if (n_prev_task[0] == 'word') {
-            show_trial_timer_var = st1_word_mode_show_trial_time_limit;
-        }
+        show_trial_timer_var = 0;
+        answer_trial_timer_var = 0;
         if (n_prev_task != current_task) {
             if (current_task[0] == 'image' || current_task[0] == 'audio' || current_task[0] == 'voice') {
                 show_trial_timer_var += st1_image_voice_show_trial_time_limit;
@@ -3380,9 +3382,35 @@ function* state1_generator(taskArea) {
             else if (current_task[0] == 'word') {
                 show_trial_timer_var += st1_word_mode_show_trial_time_limit;
             }
+            if (n_prev_task[0] == 'image' || n_prev_task[0] == 'audio' || n_prev_task[0] == 'voice') {
+                if (st1_image_voice_answer_trial_time_limit > 0) {
+                    answer_trial_timer_var += show_trial_timer_var + st1_image_voice_answer_trial_time_limit;
+                }
+            }
+            else if (n_prev_task[0] == 'word') {
+                if (st1_word_mode_answer_trial_time_limit > 0) {
+                    answer_trial_timer_var += show_trial_timer_var + st1_word_mode_answer_trial_time_limit;
+                }
+            }
         }
+        else {
+            if (current_task[0] == 'image' || current_task[0] == 'audio' || current_task[0] == 'voice') {
+                show_trial_timer_var += st1_image_voice_show_trial_time_limit;
+                if (st1_image_voice_answer_trial_time_limit > 0) {
+                    answer_trial_timer_var += show_trial_timer_var + st1_image_voice_answer_trial_time_limit;
+                }
+            }
+            else if (current_task[0] == 'word') {
+                show_trial_timer_var += st1_word_mode_show_trial_time_limit;
+                if (st1_word_mode_answer_trial_time_limit > 0) {
+                    answer_trial_timer_var += show_trial_timer_var + st1_word_mode_answer_trial_time_limit;
+                }
+            }
+        }
+
         if (show_trial_timer_var > 0) {
             showTrialTimerP.innerHTML = '' + show_trial_timer_var;
+            showTrialTimerP.style.display = '';
             st1_show_trial_interval = setInterval(function () {
                 show_trial_timer_var -= 0.1;
                 if (show_trial_timer_var <= 0) {
@@ -3396,7 +3424,7 @@ function* state1_generator(taskArea) {
                     return;
                 }
                 else {
-                    showTrialTimerP.innerHTML = '' + Number(show_trial_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                    showTrialTimerP.innerHTML = toFloatString(show_trial_timer_var, 1, 1);
                 }
             }, 100);
         }
@@ -3405,22 +3433,9 @@ function* state1_generator(taskArea) {
             showTrialTimerP.style.display = 'none';
         }
 
-        if (n_prev_task[0] == 'image' || n_prev_task[0] == 'audio' || n_prev_task[0] == 'voice') {
-            answer_trial_timer_var = st1_image_voice_answer_trial_time_limit;
-        }
-        else if (n_prev_task[0] == 'word') {
-            answer_trial_timer_var = st1_word_mode_answer_trial_time_limit;
-        }
-        if (n_prev_task != current_task) {
-            if (current_task[0] == 'image' || current_task[0] == 'audio' || current_task[0] == 'voice') {
-                answer_trial_timer_var += st1_image_voice_answer_trial_time_limit;
-            }
-            else if (current_task[0] == 'word') {
-                answer_trial_timer_var += st1_word_mode_answer_trial_time_limit;
-            }
-        }
         if (answer_trial_timer_var > 0) {
             answerTrialTimerP.innerHTML = '' + answer_trial_timer_var;
+            answerTrialTimerP.style.display = '';
             st1_answer_trial_interval = setInterval(function () {
                 answer_trial_timer_var -= 0.1;
                 if (answer_trial_timer_var <= 0) {
@@ -3433,7 +3448,7 @@ function* state1_generator(taskArea) {
                     return;
                 }
                 else {
-                    answerTrialTimerP.innerHTML = '' + Number(answer_trial_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                    answerTrialTimerP.innerHTML = toFloatString(answer_trial_timer_var, 1, 1);
                 }
             }, 100);
         }
@@ -4931,7 +4946,7 @@ function* state3_generator(taskArea) {
                     return;
                 }
                 else {
-                    showPuzzleTimerP.innerHTML = '' + Number(show_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                    showPuzzleTimerP.innerHTML = toFloatString(show_puzzle_timer_var, 1, 1);
                 }
             }, 100);
         }
@@ -4942,6 +4957,7 @@ function* state3_generator(taskArea) {
 
         answer_puzzle_timer_var = st3_answer_puzzle_time_limit;
         if (answer_puzzle_timer_var > 0) {
+            answer_puzzle_timer_var += st3_show_puzzle_time_limit;
             answerPuzzleTimerP.innerHTML = '' + answer_puzzle_timer_var;
             st3_answer_puzzle_interval = setInterval(function () {
                 answer_puzzle_timer_var -= 0.1;
@@ -4955,7 +4971,7 @@ function* state3_generator(taskArea) {
                     return;
                 }
                 else {
-                    answerPuzzleTimerP.innerHTML = '' + Number(answer_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                    answerPuzzleTimerP.innerHTML = toFloatString(answer_puzzle_timer_var, 1, 1);
                 }
             }, 100);
         }
@@ -6183,7 +6199,7 @@ function* state4_generator(taskArea) {
                     return;
                 }
                 else {
-                    showPuzzleTimerP.innerHTML = '' + Number(show_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                    showPuzzleTimerP.innerHTML = toFloatString(show_puzzle_timer_var, 1, 1);
                 }
             }, 100);
         }
@@ -6194,6 +6210,7 @@ function* state4_generator(taskArea) {
 
         answer_puzzle_timer_var = st4_answer_puzzle_time_limit;
         if (answer_puzzle_timer_var > 0) {
+            answer_puzzle_timer_var += st4_show_puzzle_time_limit;
             answerPuzzleTimerP.innerHTML = '' + answer_puzzle_timer_var;
             st4_answer_puzzle_interval = setInterval(function () {
                 answer_puzzle_timer_var -= 0.1;
@@ -6207,7 +6224,7 @@ function* state4_generator(taskArea) {
                     return;
                 }
                 else {
-                    answerPuzzleTimerP.innerHTML = '' + Number(answer_puzzle_timer_var).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                    answerPuzzleTimerP.innerHTML = toFloatString(answer_puzzle_timer_var, 1, 1);
                 }
             }, 100);
         }
