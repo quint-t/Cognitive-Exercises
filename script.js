@@ -2719,7 +2719,6 @@ function* state1_generator(taskArea) {
         title = title.toLowerCase();
         if (st1_insects_category == combo_enable_disable.Disable && (
             category2 == 'Insects' ||
-            title == 'artificial' ||
             title == 'bat' ||
             title == 'bee' ||
             category2 == 'Sea animals' && title.includes('coral') ||
@@ -2738,7 +2737,6 @@ function* state1_generator(taskArea) {
             title == 'sea anemone' ||
             title == 'sea urchin' ||
             title == 'shrimp' ||
-            title == 'slim' ||
             title == 'snail' ||
             title == 'snake' ||
             title == 'spider' ||
@@ -2898,7 +2896,6 @@ function* state1_generator(taskArea) {
             title == 'wake up' ||
             title == 'walk' ||
             title == 'whisper' ||
-            title == 'young' ||
             title.includes('child') ||
             title.includes('daughter') ||
             title.includes('father') ||

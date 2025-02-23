@@ -2,7 +2,7 @@ function getImages() {
     return JSON.parse(`
 {
     "Adjectives": {
-        "Opposites": ["Artificial", "Beautiful", "Big", "Black and white", "Bottom", "Clean", "Closed", "Cold", "Color", "Curly", "Curve", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Dull", "Edible", "Empty", "Fast", "Fat", "Few", "Flat", "Fragile", "Full", "Happy", "Heavy", "Hot", "Kind", "Left", "Light coloured", "Light", "Long", "Many", "New", "Old", "Open", "Poisonous", "Poor", "Prickly", "Real", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Simple", "Slim", "Slow", "Small", "Smooth", "Soft", "Sour", "Straight", "Strong", "Sweet", "Thick", "Thin", "Tough", "Ugly", "Unclothed", "Volume", "Wet", "Wicked", "Young"]
+        "Opposites": ["Big", "Black and white", "Bottom", "Clean", "Closed", "Color", "Curly", "Curve", "Dark", "Difficult", "Dirty", "Dressed", "Dry", "Edible", "Empty", "Fat", "Fragile", "Full", "Happy", "Heavy", "Hot", "Kind", "Left", "Light coloured", "Long", "Open", "Poisonous", "Poor", "Prickly", "Rich", "Right", "Ripe", "Rotten", "Sad", "Sharp", "Short", "Soft", "Straight", "Strong", "Sweet", "Tough", "Unclothed", "Wet", "Wicked"]
     },
     "Animals": {
         "Arctic animals": ["Arctic fox", "Arctic wolf", "Beluga", "Fur seal", "Giant squid", "Muskox", "Narwhal", "Orca, killer whale", "Owl", "Penguin", "Polar bear", "Seal", "Walrus", "Whale"],
@@ -23,7 +23,7 @@ function getImages() {
         "Bedroom accessories": ["Blinds", "Clock", "Curtain rod", "Curtains", "Dressing table", "Flower", "Hanger", "Mat", "Mirror", "Night light", "Nightstand", "Roller blind", "Room divider", "Rug", "Vase"]
     },
     "Birds": {
-        "Farm birds": ["Chick", "Duck", "Duckling", "Goose", "Hen", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
+        "Farm birds": ["Chick", "Chicken", "Duck", "Duckling", "Goose", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
         "Wild birds": ["Bullfinch", "Crow", "Eagle", "Falcon", "Flamingo", "Hummingbird", "Owl", "Parrot", "Pelican", "Penguin", "Pigeon", "Sparrow", "Stork", "Swallow", "Swan", "Titmouse", "Vulture", "Woodpecker"]
     },
     "Colors": {
@@ -41,7 +41,7 @@ function getImages() {
     },
     "Holidays": {
         "Christmas": ["Angel", "Bells", "Bow", "Candle", "Candy cane", "Christmas cracker", "Christmas lights", "Christmas mailbox", "Christmas ornament", "Christmas tree", "Father christmas", "Fireworks", "Gingerbread house", "Gingerbread man", "Holly", "Presents", "Santa claus", ["Santas cap", "Santa's cap"], ["Santas sack", "Santa's sack"], "Sleigh", "Snow globe", "Snow Maiden", "Snowballs", "Snowflake", "Snowman", "Star", "Stocking", "Wreath"],
-        "Easter": ["Bible", "Candies", "Candle", "Chalice", "Chick", "Christ", "Church", "Communion", "Crosses", "Crown of thorns", "Crucifixion", "Easter basket", "Easter bread", "Easter bunny", "Easter cookies", "Easter egg", "Easter eggs", "Easter lamb", "Eggshell", "Eucharist wafer", "Hen", "Icon", "Jelly bean", "Lily", "Prayer", "Prosfora", "Rosary", "Stained glass", "Tulips", "Willow", "Wine"],
+        "Easter": ["Bible", "Candies", "Candle", "Chalice", "Chick", "Chicken", "Christ", "Church", "Communion", "Crosses", "Crown of thorns", "Crucifixion", "Easter basket", "Easter bread", "Easter bunny", "Easter cookies", "Easter egg", "Easter eggs", "Easter lamb", "Eggshell", "Eucharist wafer", "Icon", "Jelly bean", "Lily", "Prayer", "Prosfora", "Rosary", "Stained glass", "Tulips", "Willow", "Wine"],
         "Halloween": ["Bat", "Broomstick", "Cauldron", "Elf", "Ghost", "Haunted house", "Magic wand", "Monster", "Mummy", "Pumpkin", "Skeleton", "Spider", "Vampire", "Werewolf", "Witch"],
         "Mothers day": ["Bouquet", "Cake", "Chocolates", "Congratulate", "Educate", "Entertain", "Feed", "Foster", "Gift", "Grandmother", "Hug", "Jewellery", "Kiss", "Letter", "Love", "Message", "Mother", "Offer flowers", "Perfume", "Prepare a breakfast", "Read a story", "Rose", "Sympathize", "Take care", "Tulip"],
         "Valentines day": ["Balloons", "Bouquet", "Card", "Chocolates", "Cupid", "Date", "Friendship", "Heart", "Lock", "Lollipop", "Love", "Lovers", "Message", "Petals", "Presents", "Proposal", "Wedding ring"]
@@ -54,7 +54,7 @@ function getImages() {
     },
     "Household Appliances": {
         "Electronics": ["Air conditioner", "Blender", "Calculator", "Coffee machine", "Dish washer", "Dryer", "Electric kettle", "Extractor hood", "Fan", "Freezer", "Fridge", "Hair dryer", "Hand dryer", "Heater", "Iron", "Juicer", "Lamp", "Meat grinder", "Microwave", "Mixer", "Multicooker", "Oven", "Sandwich maker", "Scales", "Sewing machine", "Shaver", "Stove", "Telephone", "Toaster", "Vacuum cleaner", "Washing machine"],
-        "Gadgets": ["3D glasses", "Binoculars", "Camera", "Charger", "Computer", "Drone", "E-reader", "Fitness bracelet", "Game console", "Gamepad", "Headphones", "Keyboard", "Laptop", "Lens", "Memory card", "Microphone", "Phone", "Player", "Projector", "Router", "Satellite antenna", "Security camera", "Sim-card", "Speaker", "Tablet", "TV remote", "TV", "Videocamera", "VR glasses"]
+        "Gadgets": ["3D glasses", "Binoculars", "Camera", "Charger", "Computer", "Drone", "E-reader", "Fitness bracelet", "Game console", "Gamepad", "Headphones", "Keyboard", "Laptop", "Lens", "Memory card", "Microphone", "Phone", "Player", "Projector", "Router", "Satellite antenna", "Security camera", "Sim-card", "Speaker", "Tablet", "Television", "TV remote", "Videocamera", "VR glasses"]
     },
     "Kitchen": {
         "Crockery and cutlery": ["Bowl", "Butter dish", "Cake server", "Carafe", "Chopsticks", "Coffee cup", "Cup", "Egg cup", "Fork", "French press", "Glass", "Jug", "Knife", "Mixing bowl", "Mug", "Napkin", "Pepper shaker", "Plate", "Salt shaker", "Samovar", "Saucer", "Serving plate", "Spoon", "Sugar bowl", "Teacup", "Teapot", "Thermos", "Tray", "Wine glass"],
@@ -67,7 +67,7 @@ function getImages() {
     },
     "Numbers": {
         "Counting": ["Eight", "Five", "Four", "Nine", "One", "Seven", "Six", "Ten", "Three", "Two"],
-        "Numbers": ["Eight", "Eighteen", "Eleven", "Fifteen", "Five", "Four", "Fourteen", "Nine", "Nineteen", "One", "Seven", "Seventeen", "Six", "Sixteen", "Ten", "Thirteen", "Three", "Twelve", "Twenty", "Two"]
+        "Numbers": ["Eight", "Eighteen", "Eleven", "Fifteen", "Five", "Four", "Fourteen", "Nine", "Nineteen", "One", "Seven", "Seventeen", "Six", "Sixteen", "Ten", "Thirteen", "Three", "Twelve", "Twenty", "Two", "Zero"]
     },
     "People": {
         "Body parts": ["Abdomen", "Arm", "Back", "Bone", "Bum", "Chest", "Elbow", "Finger", "Fist", "Foot", "Hand", "Head", "Heel", "Hip", "Knee", "Leg", "Nail", "Nape", "Neck", "Palm", "Shoulder", "Skeleton", "Skull", "Sole", "Toe", "Wrist"],
