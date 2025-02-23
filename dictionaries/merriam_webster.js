@@ -81,7 +81,7 @@ function getWords() {
         ["noun", "an amount or supply more than sufficient to meet one's needs", "We have an abundance of food, so eat as much as you want", ["plenty", "wealth"], ["deficiency", "poverty"], ["competence", "excess", "surplus"]]
     ],
     "academic": [
-        ["adjective", "of or relating to schooling or learning especially at an advanced level", "If you spent more time in <em class=mw_t_it>academic</em> pursuits and less time in social ones, you could easily make good grades, the dean told Valerie", ["educational", "intellectual"], [], ["graduate"]],
+        ["adjective", "of or relating to schooling or learning especially at an advanced level", "If you spent more time in academic pursuits and less time in social ones, you could easily make good grades, the dean told Valerie", ["educational", "intellectual"], [], ["graduate"]],
         ["adjective", "very learned or educated but inexperienced in practical matters", "Academic thinkers who have no understanding of realpolitik", ["intellectual"], [], []],
         ["adjective", "existing only as an assumption or speculation", "Your arguments are merely academic - such a worst-case scenario is unlikely to ever occur", ["theoretical"], ["actual", "clinical", "practical", "real"], ["abstract", "intellectual"]]
     ],
@@ -697,7 +697,7 @@ function getWords() {
         ["noun", "a person sent on a mission to represent another", "A beloved entertainer who has often been sent abroad by the president as his country's goodwill ambassador", ["delegate", "minister", "representative"], [], ["agent", "deputy", "diplomat", "spokesperson"]]
     ],
     "ambition": [
-        ["noun", "eager desire for personal advancement", "Talent without <em class=mw_t_it>ambition</em> will not make you a star, the singer's voice coach liked to remind her", ["aspiration", "determination", "energy", "initiative", "motivation"], [], ["aggression", "enterprise", "hunger", "industry", "passion", "push", "spirit"]],
+        ["noun", "eager desire for personal advancement", "Talent without ambition will not make you a star, the singer's voice coach liked to remind her", ["aspiration", "determination", "energy", "initiative", "motivation"], [], ["aggression", "enterprise", "hunger", "industry", "passion", "push", "spirit"]],
         ["noun", "readiness to engage in daring or difficult activity", "The ambition shown by the undersea explorers of the Mariana Trench, the deepest in the world", ["action", "initiative"], [], ["energy", "enterprise", "spirit"]],
         ["noun", "something that one hopes or intends to accomplish", "His ambition is to study international business, then get a job overseas", ["aim", "dream", "goal", "idea", "intent", "intention", "object", "objective", "purpose", "thing"], ["means", "method", "way"], ["aspiration", "desire", "destination", "end", "ideal", "meaning", "plot", "project", "scheme", "target", "wish"]]
     ],
@@ -1567,7 +1567,7 @@ function getWords() {
         ["noun", "a member of the human race", "No one has the right to enslave another being", ["guy", "life", "man", "person"], ["animal", "beast"], ["baby", "bird", "brother", "celebrity", "character", "customer", "egg", "fellow", "fish", "human", "personality", "self", "somebody", "sort", "specimen", "thing"]],
         ["noun", "one that has a real and independent existence", "New parents are typically in awe at having created this separate being", ["entity", "object", "reality", "something", "substance", "thing"], [], ["commodity", "material", "matter", "quantity", "stuff", "subject"]],
         ["noun", "the quality or qualities that make a thing what it is", "Music is such a large part of her being that she could never give up performing", ["essence", "nature", "substance"], [], ["aspect", "attribute", "core", "feature", "heart", "property", "spirit", "stuff"]],
-        ["verb", "to have life", "Stories that begin with the familiar line once upon a time there <em class=mw_t_it>was</em> a beautiful maiden", ["living"], [], ["ruling"]],
+        ["verb", "to have life", "Stories that begin with the familiar line once upon a time there was a beautiful maiden", ["living"], [], ["ruling"]],
         ["verb", "to occupy a place or location", "We'll be there waiting for you", ["standing"], [], []],
         ["verb", "to take or have a certain position within a group arranged in vertical classes", "Our school's football team is first in its division", ["ranking", "standing"], [], ["rating", "setting"]],
         ["verb", "to take place", "The party is next Saturday", [], [], ["cooking", "following", "proceeding"]]
@@ -2557,7 +2557,7 @@ function getWords() {
         ["noun", "a gift of money or its equivalent to a charity, humanitarian cause, or public institution", "Donated his mansion and all of its land as a charity to the people of his beloved home state", ["contribution", "donation"], [], ["aid", "assistance", "grant", "legacy", "offering", "present", "presentation", "relief", "subsidy", "welfare"]],
         ["noun", "kind, gentle, or compassionate treatment especially towards someone who is undeserving of it", "Can't you show a little charity to a guy who's the first to admit he's not perfect?", ["mercy"], ["atrocity", "discipline", "hate", "hatred", "punishment", "revenge", "spite", "violence"], ["affection", "care", "compassion", "goodness", "love", "pity", "quarter", "sympathy", "understanding", "worship"]],
         ["noun", "the capacity for feeling for another's unhappiness or misfortune", "His charity is such that he's a sucker for every panhandler's tale of woe", ["compassion", "heart", "sympathy"], [], ["affection", "humanity", "love", "mercy", "pity", "sensitivity"]],
-        ["noun", "kindly concern, interest, or support", "Lincoln's famous promise that the period of Reconstruction would be marked by <em class=mw_t_it>charity</em> for all", ["friendship"], ["hate", "hatred", "hostility"], ["community", "company", "harmony", "sympathy", "tolerance"]]
+        ["noun", "kindly concern, interest, or support", "Lincoln's famous promise that the period of Reconstruction would be marked by charity for all", ["friendship"], ["hate", "hatred", "hostility"], ["community", "company", "harmony", "sympathy", "tolerance"]]
     ],
     "charming": [
         ["adjective", "having an often mysterious or magical power to attract", "A charming man who had no problem winning women's hearts", ["appealing", "attractive", "fascinating"], ["boring"], ["engaging", "exciting", "interesting", "intriguing", "magnetic", "pleasant"]],
@@ -7831,7 +7831,7 @@ function getWords() {
     "gross": [
         ["adjective", "depicting or referring to sexual matters in a way that is unacceptable in polite society", "He was thrown out of class for making a gross gesture", ["dirty", "nasty"], ["acceptable", "appropriate", "correct", "decent", "polite", "proper"], ["blue", "crude", "infamous", "off", "offensive", "unacceptable", "unpleasant"]],
         ["adjective", "having an excess of body fat", "A very gross cat trying to squeeze through a small opening in the fence", ["fat"], ["lean", "slight", "thin"], ["thick"]],
-        ["adjective", "lacking in refinement or good taste", "She haughtily refused to mix with what she called the <em class=mw_t_it>gross</em> masses who are unappreciative of fine art", ["crude", "rude"], ["smooth"], ["provincial", "rough"]],
+        ["adjective", "lacking in refinement or good taste", "She haughtily refused to mix with what she called the gross masses who are unappreciative of fine art", ["crude", "rude"], ["smooth"], ["provincial", "rough"]],
         ["adjective", "very noticeable especially for being incorrect or bad", "A gross mistake that some proofreader should have caught", ["obvious"], ["slight", "small"], ["absolute", "clear", "dramatic", "evident", "notable", "outstanding", "patent", "prominent", "pronounced", "rank", "remarkable", "sheer", "shocking", "striking", "terrible", "visible"]],
         ["adjective", "causing intense displeasure, disgust, or resentment", "The little boy insisted that worms are gross", ["horrible", "nasty", "offensive", "shocking", "ugly"], ["acceptable", "appealing", "attractive", "delicious", "desirable", "enjoyable", "pleasant", "sweet", "welcome"], ["disturbing", "evil", "miserable", "sick", "terrible", "unpleasant"]]
     ],
@@ -8148,7 +8148,7 @@ function getWords() {
     ],
     "hence": [
         ["adverb", "for this or that reason", "An endangered orchid species, hence illegal to pick", ["consequently", "therefore", "thus"], [], ["accordingly"]],
-        ["adverb", "from this or that place", "The exorcist commanded, Get thee <em class=mw_t_it>hence</em>, Satan!", ["away", "off", "out"], [], ["elsewhere"]]
+        ["adverb", "from this or that place", "The exorcist commanded, Get thee hence, Satan!", ["away", "off", "out"], [], ["elsewhere"]]
     ],
     "herb": [
         ["noun", "a plant or a part of a plant that is used as medicine or to give flavor to food", "A dish seasoned with chopped fresh herbs", ["spice"], [], ["sauce"]]
@@ -8243,7 +8243,7 @@ function getWords() {
     "hold": [
         ["verb", "to have or keep in one's hands", "This casserole dish is too hot to hold, so grab a potholder", ["grab", "grip"], [], ["bag", "capture", "embrace", "finger", "grasp", "handle", "hook", "land", "nail", "seize", "trap"]],
         ["verb", "to continue to have in one's possession or power", "She, and she alone, held the keys to the mysterious chest", ["keep", "possess", "preserve", "retain"], ["abandon", "contribute", "release"], ["boast", "conserve", "control", "detain", "enjoy", "guard", "manage", "own", "protect", "reserve", "rule", "save", "treasure"]],
-        ["verb", "to have as an opinion", "We <em class=mw_t_it>hold</em> these truths to be self-evident, that all men are created equal", ["believe", "deem", "think"], ["doubt", "reject", "suspect"], ["accept", "allow", "assume", "conceive", "conclude", "depend", "infer", "judge", "perceive", "presume", "rely", "trust", "view"]],
+        ["verb", "to have as an opinion", "We hold these truths to be self-evident, that all men are created equal", ["believe", "deem", "think"], ["doubt", "reject", "suspect"], ["accept", "allow", "assume", "conceive", "conclude", "depend", "infer", "judge", "perceive", "presume", "rely", "trust", "view"]],
         ["verb", "to have within", "The mysterious chest held an ancient book on magic spells and potions", ["contain"], [], ["accommodate", "boast", "encompass", "fit", "house", "shelter"]],
         ["verb", "to keep in one's mind or heart", "Still held her close to his heart, though they had long parted", ["retain"], ["deny", "forget", "ignore", "neglect", "refuse", "reject"], ["cultivate", "entertain", "foster", "keep", "maintain", "preserve", "remember", "support", "sustain", "treasure"]],
         ["verb", "to keep, control, or experience as one's own", "The same family has held this piece of land for over 100 years", ["enjoy", "own", "possess", "retain"], ["abandon", "lack", "want"], ["keep", "reserve"]],
@@ -8264,7 +8264,7 @@ function getWords() {
         ["noun", "a place in a surface allowing passage into or through a thing", "Line up the pegs on section A with the holes in section B and press the two together", ["opening"], ["fill", "patch", "plug", "seal"], ["breach", "crack", "entrance", "exit", "intake", "mouth", "outlet", "punch", "rent", "slash", "slot", "space", "split", "tear"]],
         ["noun", "a sunken area forming a separate space", "Dig a hole big enough to plant the tree", ["pit"], ["hill", "projection", "rise"], ["bowl", "cave", "depression", "hollow", "impression", "niche", "opening", "pocket", "vacuum", "valley"]],
         ["noun", "a difficult, puzzling, or embarrassing situation from which there is no easy escape", "Bill dug himself into a hole by promising to be in two places at the same time", ["bind", "corner", "dilemma"], [], ["box", "crisis", "difficulty", "emergency", "fix", "halt", "jam", "soup", "spot", "trouble"]],
-        ["noun", "a dirty or messy place", "When people see my room, they often ask, How can you live in this <em class=mw_t_it>hole</em>?", ["dump"], [], ["chaos", "confusion", "disorder", "hell", "litter"]],
+        ["noun", "a dirty or messy place", "When people see my room, they often ask, How can you live in this hole?", ["dump"], [], ["chaos", "confusion", "disorder", "hell", "litter"]],
         ["noun", "an open space in a barrier (as a wall or hedge)", "Found a hole in the chain-link fence big enough to squeeze through", ["gap"], [], ["breach", "crack", "interval", "opening", "rent", "separation", "slot", "split"]],
         ["noun", "the shelter or resting place of a wild animal", "Watched the snake slither into its hole", ["house", "nest"], [], ["territory"]],
         ["noun", "an incomplete or deficient area", "There's a huge hole in your logic", ["gap"], [], ["deficiency", "deficit", "disability", "fault", "lack", "need", "space", "weakness"]],
@@ -8286,7 +8286,7 @@ function getWords() {
         ["adjective", "not to be violated, criticized, or tampered with", "The hour every Saturday she listens to her radio program is holy and you'd better not make her miss it", ["sacred"], [], ["immune", "pure", "secure"]]
     ],
     "home": [
-        ["noun", "the place where one lives", "As we entered his 34-room mansion, our host playfully exclaimed, Welcome to my humble <em class=mw_t_it>home</em>!", ["house", "housing", "residence", "roof"], [], ["apartment", "cabin", "castle", "cottage", "estate", "flat", "hall", "nest", "pad", "palace", "shelter", "suite", "trailer"]],
+        ["noun", "the place where one lives", "As we entered his 34-room mansion, our host playfully exclaimed, Welcome to my humble home!", ["house", "housing", "residence", "roof"], [], ["apartment", "cabin", "castle", "cottage", "estate", "flat", "hall", "nest", "pad", "palace", "shelter", "suite", "trailer"]],
         ["noun", "the place where a plant or animal is usually or naturally found", "The American south, the home of the armadillo", ["habitat", "range", "territory"], [], ["element", "environment", "haunt", "medium", "niche", "setting"]],
         ["noun", "the land of one's birth, residence, or citizenship", "The U.S. is my home", ["country", "homeland"], [], ["community"]],
         ["noun", "those who live as a family in one house", "Comes from a loving home", ["house", "household"], [], ["community"]],
@@ -9534,7 +9534,7 @@ function getWords() {
         ["noun", "a scheme of rank or order", "Their team placed third on the tournament ladder", ["hierarchy", "ranking", "scale"], [], ["arrangement", "degree", "disposal", "distribution", "level", "position", "sequence", "series", "situation", "spot", "standing", "station", "status"]]
     ],
     "lady": [
-        ["noun", "an adult female human being", "<em class=mw_t_it>ladies</em> and gentlemen, please observe closely, said the magician", ["female", "woman"], [], ["girl"]],
+        ["noun", "an adult female human being", "ladies and gentlemen, please observe closely, said the magician", ["female", "woman"], [], ["girl"]],
         ["noun", "a female partner in a marriage", "In public the husband was frequently seen holding hands with his lady", ["wife"], [], ["bride", "companion", "partner", "spouse", "woman"]],
         ["noun", "a woman of high birth or social position", "The ladies of the royal court were all dressed extravagantly", ["princess", "queen"], [], []],
         ["noun", "a female romantic companion", "When do we get to meet your new lady?", ["girl", "girlfriend", "woman"], [], ["beloved", "dear", "flame", "love", "sweet"]]
@@ -12840,10 +12840,10 @@ function getWords() {
     "print": [
         ["noun", "a perceptible trace left by pressure", "One telltale sign that I had been napping was the print left by the chenille bedspread on my cheek", ["impress", "impression", "stamp"], [], ["hollow", "sign"]],
         ["noun", "a picture created from an image recorded on a light-sensitive surface by a camera", "We now get our prints developed online", ["photo", "photograph"], [], ["shot", "snap", "still"]],
-        ["verb", "to produce and release for distribution in printed form", "The newspaper's motto remains All the News That's Fit to <em class=mw_t_it>Print</em>", ["publish"], ["suppress"], ["contribute", "distribute", "edit", "issue", "manufacture", "market", "produce"]]
+        ["verb", "to produce and release for distribution in printed form", "The newspaper's motto remains All the News That's Fit to Print", ["publish"], ["suppress"], ["contribute", "distribute", "edit", "issue", "manufacture", "market", "produce"]]
     ],
     "printing": [
-        ["verb", "to produce and release for distribution in printed form", "The newspaper's motto remains All the News That's Fit to <em class=mw_t_it>Print</em>", ["publishing"], [], ["manufacturing", "marketing"]]
+        ["verb", "to produce and release for distribution in printed form", "The newspaper's motto remains All the News That's Fit to Print", ["publishing"], [], ["manufacturing", "marketing"]]
     ],
     "prior": [
         ["adjective", "coming before all others in importance", "This assignment will be prior to any other work you may have", ["big", "dominant", "first", "primary"], ["last"], ["capital", "central", "famous", "important", "key", "major", "master", "notable", "outstanding", "premier", "prestigious", "principal", "renowned", "senior", "signal", "significant", "star", "superior"]],
@@ -13437,7 +13437,7 @@ function getWords() {
         ["adjective", "being out of the ordinary", "Even among the prize-winning roses, this one is a rare beauty", ["extraordinary", "odd", "outstanding", "remarkable", "unique", "unusual"], ["normal", "ordinary", "usual"], ["bizarre", "incredible", "notable", "prominent", "strange", "striking", "weird"]],
         ["adjective", "having qualities that appeal to a refined taste", "Rare specialty wools, such as cashmere, prized for their fineness, lightness and exceptional warmth", ["elegant", "select", "special"], ["commercial", "gross", "ordinary", "popular", "rough"], ["better", "choice", "elite", "excellent", "exclusive", "fancy", "outstanding", "premium", "prime", "superb", "superior"]],
         ["adjective", "not often occurring or repeated", "The French pronunciation of the family's name is rare, except in Louisiana", ["occasional"], ["daily", "frequent"], ["isolated", "odd", "scattered", "unique", "unusual"]],
-        ["adjective", "noticeably different from what is generally found or experienced", "Such good manners are <em class=mw_t_it>rare</em> these days, remarked Mrs. Denby, as the young man let her go ahead of him in line", ["funny", "strange", "unusual", "weird"], ["ordinary", "usual"], ["bizarre", "curious", "extraordinary", "notable", "odd", "particular", "remarkable", "special", "unique"]]
+        ["adjective", "noticeably different from what is generally found or experienced", "Such good manners are rare these days, remarked Mrs. Denby, as the young man let her go ahead of him in line", ["funny", "strange", "unusual", "weird"], ["ordinary", "usual"], ["bizarre", "curious", "extraordinary", "notable", "odd", "particular", "remarkable", "special", "unique"]]
     ],
     "rarely": [
         ["adverb", "not often", "Summer thunderstorms occur only rarely along the Oregon coast", ["seldom"], ["frequently", "generally", "often", "usually"], ["little", "never", "occasionally", "sometimes"]]
@@ -13509,7 +13509,7 @@ function getWords() {
         ["verb", "to tell of or describe beforehand", "The psychic claimed to be able to read his future", ["predict"], ["describe", "relate", "report", "tell"], ["announce", "anticipate", "caution", "declare", "divine", "forecast", "proclaim", "promise", "warn"]]
     ],
     "reader": [
-        ["noun", "a collection of writings", "I picked up a book entitled An Emerson <em class=mw_t_it>Reader</em> because it contained one or two of his essays I hadn't read before", [], [], ["album", "library"]]
+        ["noun", "a collection of writings", "I picked up a book entitled An Emerson Reader because it contained one or two of his essays I hadn't read before", [], [], ["album", "library"]]
     ],
     "readily": [
         ["adverb", "by choice or preference", "She would readily give up piano lessons for a season ticket at her local ski area", ["rather"], [], ["either", "first", "instead", "soon"]],
@@ -14049,7 +14049,7 @@ function getWords() {
         ["noun", "something that is made to look exactly like something else", "Walked through a reproduction of the interior of the Parthenon as it must have looked when it was first built", ["copy"], ["original"], ["carbon", "fake", "image", "impression", "print", "simulation", "version"]]
     ],
     "republic": [
-        ["noun", "government in which the supreme power is held by the people and used by them directly or indirectly through representation", "When asked by a passerby what sort of government the constitutional convention had formulated for the new nation, Benjamin Franklin memorably replied, A <em class=mw_t_it>republic</em>, if you can keep it", ["democracy"], [], ["autonomy", "sovereignty"]]
+        ["noun", "government in which the supreme power is held by the people and used by them directly or indirectly through representation", "When asked by a passerby what sort of government the constitutional convention had formulated for the new nation, Benjamin Franklin memorably replied, A republic, if you can keep it", ["democracy"], [], ["autonomy", "sovereignty"]]
     ],
     "reputation": [
         ["noun", "overall quality as seen or judged by people in general", "The college's athletic department has a good reputation, but the school's science facilities are a bit lacking", [], ["shame"], ["celebrity", "character", "credit", "image", "note", "report"]]
@@ -15394,7 +15394,7 @@ function getWords() {
     ],
     "situation": [
         ["noun", "position with regard to conditions and circumstances", "The school's situation is improving with additional financial help", ["picture", "scene", "status", "story"], [], ["rank", "score", "spot", "standing", "state"]],
-        ["noun", "an assignment at which one regularly works for pay", "There were the usual <em class=mw_t_it>situation</em> wanted postings in the local newspaper", ["job", "position"], [], ["appointment", "business", "capacity", "career", "connection", "duty", "employ", "employment", "engagement", "function", "gig", "living", "mission", "occupation", "office", "post", "practice", "profession", "pursuit", "service", "spot", "task", "trade"]],
+        ["noun", "an assignment at which one regularly works for pay", "There were the usual situation wanted postings in the local newspaper", ["job", "position"], [], ["appointment", "business", "capacity", "career", "connection", "duty", "employ", "employment", "engagement", "function", "gig", "living", "mission", "occupation", "office", "post", "practice", "profession", "pursuit", "service", "spot", "task", "trade"]],
         ["noun", "the placement of someone or something in relation to others in a vertical arrangement", "In earlier times people were unable to alter their situation in life, so if you were born a servant, you stayed a servant", ["level", "position", "rank", "ranking"], [], ["capacity", "degree", "estate", "function", "rating", "standing", "station", "status", "walk"]]
     ],
     "size": [
@@ -17146,7 +17146,7 @@ function getWords() {
     ],
     "thread": [
         ["noun", "a thin, flexible structure that resembles a hair", "The unwary bug was snared in the sticky threads of the spider's web", ["hair", "wire"], [], ["rope", "string"]],
-        ["noun", "covering for the human body", "A number of people at the prom complimented me on my nice <em class=mw_t_it>threads</em>", ["clothes", "clothing", "dress", "wear"], [], ["costume", "gear", "habit", "outfit", "underwear"]],
+        ["noun", "covering for the human body", "A number of people at the prom complimented me on my nice threads", ["clothes", "clothing", "dress", "wear"], [], ["costume", "gear", "habit", "outfit", "underwear"]],
         ["verb", "to scatter or set here and there among other things", "This history book threads excerpts from the diaries of pioneer women into its account of the settlement of the West", ["insert", "salt", "weave"], [], ["blend", "combine", "embody", "incorporate", "integrate", "merge", "mix"]],
         ["verb", "to put together into a series by means of or as if by means of a thread", "The reporter threaded his newspaper articles about the basketball team into a book that was essentially a chronicle of their championship season", ["string"], [], ["chain", "connect", "join", "link", "unite", "weave"]]
     ],
@@ -18247,7 +18247,7 @@ function getWords() {
         ["verb", "to have as a requirement", "That stray cat wants food and a clean place to sleep", ["need", "require"], ["hold"], ["beg", "challenge", "demand", "insist", "involve", "lack"]],
         ["verb", "to see fit", "Do what you want", ["choose", "like", "please", "will", "wish"], [], ["decide", "desire", "fancy", "resolve"]],
         ["verb", "to wish to have", "I want some ice cream for dessert, please", ["enjoy", "like"], [], ["desire", "dig", "fancy", "love", "welcome"]],
-        ["noun", "the fact or state of being absent", "The proverb that begins, for <em class=mw_t_it>want</em> of a nail, the shoe was lost", ["absence", "lack"], ["abundance", "plenty", "presence", "wealth"], ["deficiency", "deficit", "failure", "loss", "necessity", "need", "poverty", "shortage", "vacuum"]],
+        ["noun", "the fact or state of being absent", "The proverb that begins, for want of a nail, the shoe was lost", ["absence", "lack"], ["abundance", "plenty", "presence", "wealth"], ["deficiency", "deficit", "failure", "loss", "necessity", "need", "poverty", "shortage", "vacuum"]],
         ["noun", "a falling short of an essential or desirable amount or number", "There's a notable want of teachers in that rural school district", ["lack", "shortage"], ["abundance", "plenty", "wealth"], ["absence", "deficiency", "deficit", "drought", "failure", "necessity", "need", "poverty"]],
         ["noun", "a state of being without something necessary, desirable, or useful", "Those children are in want of some good discipline", ["lack", "need"], ["fund", "plenty", "pool", "supply"], ["absence", "defect", "deficiency", "deficit", "demand", "essential", "necessity", "poverty", "requirement", "shortage"]],
         ["noun", "the state of lacking sufficient money or material possessions", "Grew up in extreme want", ["misery", "necessity", "need", "poverty"], ["wealth"], ["emergency"]],
@@ -18335,7 +18335,7 @@ function getWords() {
         ["noun", "the opening through which one can enter or leave a structure", "We came in the back way", ["door"], [], ["entrance", "gate"]],
         ["noun", "the power, right, or opportunity to choose", "Have it your way", ["alternative", "choice", "option"], ["duty", "force", "obligation"], ["determination", "discretion", "election", "judgement", "liberty", "preference", "say", "tendency", "voice", "vote", "will"]],
         ["noun", "the space or amount of space between two points, lines, surfaces, or objects", "It's just a little way down the road", ["distance", "length", "width"], [], ["area", "extension", "extent", "flight", "height", "range", "reach", "remove", "rise", "scope", "space", "stretch", "sweep", "throw"]],
-        ["adverb", "to a great degree", "Oh, I'm just <em class=mw_t_it>way</em> thrilled to be here! the pageant contestant gushed", ["badly", "desperately", "especially", "extremely", "far", "greatly", "heavily", "highly", "incredibly", "particularly", "real", "really", "seriously", "severely", "such", "super", "terribly", "that", "too", "very"], ["little", "slightly", "somewhat"], ["absolutely", "bone", "completely", "considerably", "entirely", "ever", "extensively", "extra", "fully", "notably", "obviously", "purely", "significantly", "substantially", "thoroughly", "totally", "utterly", "wholly"]]
+        ["adverb", "to a great degree", "Oh, I'm just way thrilled to be here! the pageant contestant gushed", ["badly", "desperately", "especially", "extremely", "far", "greatly", "heavily", "highly", "incredibly", "particularly", "real", "really", "seriously", "severely", "such", "super", "terribly", "that", "too", "very"], ["little", "slightly", "somewhat"], ["absolutely", "bone", "completely", "considerably", "entirely", "ever", "extensively", "extra", "fully", "notably", "obviously", "purely", "significantly", "substantially", "thoroughly", "totally", "utterly", "wholly"]]
     ],
     "weak": [
         ["adjective", "lacking bodily strength", "The little boy was simply too weak to lift the box", ["disabled"], ["powerful"], ["hurt", "injured", "slight", "tender", "tired", "vulnerable"]],
@@ -18651,7 +18651,7 @@ function getWords() {
         ["noun", "a person's solemn declaration that he or she will do or not do something", "I give you my word that I won't try to escape", ["promise", "vow"], [], ["agreement", "appointment", "arrangement", "assurance", "commitment", "contract", "engagement", "guarantee", "obligation", "pledge"]],
         ["noun", "a statement of what to do that must be obeyed by those concerned", "The troops waited for their commanding officer to give the word", ["direction", "instruction"], ["appeal", "petition", "plea"], ["demand", "law", "mandate", "prescription", "regulation", "requirement", "rule"]],
         ["noun", "information or opinion that is widely disseminated without any authority or confirmation of accuracy", "Don't tell anyone I told you about the shake-up, but that's the word right now", [], [], ["dish", "propaganda", "report", "scandal", "tale", "talk", "whisper"]],
-        ["noun", "a word or phrase that must be spoken by a person in order to pass a guard", "What's the <em class=mw_t_it>word</em>? demanded the sentry", ["password", "sign"], [], ["indication", "signal"]],
+        ["noun", "a word or phrase that must be spoken by a person in order to pass a guard", "What's the word? demanded the sentry", ["password", "sign"], [], ["indication", "signal"]],
         ["noun", "an often stated observation regarding something from common experience", "Are there truer words than never look a gift horse in the mouth?", [], [], ["comment", "expression", "formula", "note", "reflection", "remark", "truth"]],
         ["verb", "to convey in appropriate or telling terms", "Tried to word the declaration exactly right", ["express", "phrase", "say"], [], ["communicate", "craft", "describe", "disclose", "formulate", "frame", "imply", "intimate", "put", "speak", "state", "suggest", "summarize", "tell", "translate"]]
     ],
@@ -18768,7 +18768,7 @@ function getWords() {
     ],
     "yes": [
         ["adverb", "used to express agreement", "Yes, I'll be ready for the test tomorrow", ["yeah"], [], ["absolutely", "certainly", "indeed", "undoubtedly"]],
-        ["noun", "a vote or decision for something", "The bill passed with 50 <em class=mw_t_it>yeses</em> and 12 noes", [], [], ["acceptance", "agreement", "approval", "consent", "permission", "sanction"]]
+        ["noun", "a vote or decision for something", "The bill passed with 50 yeses and 12 noes", [], [], ["acceptance", "agreement", "approval", "consent", "permission", "sanction"]]
     ],
     "yesterday": [
         ["noun", "the events or experience of former times", "My grandparents are always reminiscing about yesterday", ["past"], ["future", "now", "today", "tomorrow"], ["history", "memoir", "record"]]

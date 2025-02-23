@@ -490,7 +490,13 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
 
 function download_settings(event) {
     let storageCopy = Object.assign({}, localStorage);
-    let data = Object.entries(storageCopy);
+    let storageData = {};
+    Object.keys(storageCopy).forEach((x) => {
+        if (x.startsWith('CE_') || x.startsWith('ce_')) {
+            storageData[x] = storageCopy[x];
+        }
+    });
+    let data = Object.entries(storageData);
     let blob = new Blob([JSON.stringify(data)],{
         type: "text"
     });
@@ -2036,7 +2042,9 @@ function state0() {
 function resetAllSettings() {
     let storageCopy = Object.assign({}, localStorage);
     Object.keys(storageCopy).forEach((x) => {
-        localStorage.removeItem(x);
+        if (x.startsWith('CE_') || x.startsWith('ce_')) {
+            localStorage.removeItem(x);
+        }
     });
     location.reload();
 }
@@ -2719,7 +2727,6 @@ function* state1_generator(taskArea) {
         title = title.toLowerCase();
         if (st1_insects_category == combo_enable_disable.Disable && (
             category2 == 'Insects' ||
-            title == 'artificial' ||
             title == 'bat' ||
             title == 'bee' ||
             category2 == 'Sea animals' && title.includes('coral') ||
@@ -2738,7 +2745,6 @@ function* state1_generator(taskArea) {
             title == 'sea anemone' ||
             title == 'sea urchin' ||
             title == 'shrimp' ||
-            title == 'slim' ||
             title == 'snail' ||
             title == 'snake' ||
             title == 'spider' ||
@@ -2898,7 +2904,6 @@ function* state1_generator(taskArea) {
             title == 'wake up' ||
             title == 'walk' ||
             title == 'whisper' ||
-            title == 'young' ||
             title.includes('child') ||
             title.includes('daughter') ||
             title.includes('father') ||
