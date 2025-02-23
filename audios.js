@@ -14,7 +14,7 @@ function getAudios() {
         "Bedroom accessories": ["Clock"]
     },
     "Birds": {
-        "Farm birds": ["Chick", "Duck", "Duckling", "Goose", "Hen", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
+        "Farm birds": ["Chick", "Chicken", "Duck", "Duckling", "Goose", "Ostrich", "Peacock", "Pheasant", "Quail", "Rooster", "Turkey"],
         "Wild birds": ["Bullfinch", "Crow", "Eagle", "Falcon", "Flamingo", "Hummingbird", "Owl", "Parrot", "Pelican", "Penguin", "Pigeon", "Sparrow", "Stork", "Swallow", "Swan", "Titmouse", "Vulture", "Woodpecker"]
     },
     "Hobby": {
@@ -23,7 +23,7 @@ function getAudios() {
     },
     "Holidays": {
         "Christmas": ["Bells", "Fireworks", "Santa claus"],
-        "Easter": ["Chick", "Hen"],
+        "Easter": ["Chick", "Chicken"],
         "Halloween": ["Ghost"]
     },
     "Home": {
@@ -31,7 +31,7 @@ function getAudios() {
     },
     "Household Appliances": {
         "Electronics": ["Blender", "Hair dryer", "Microwave", "Mixer", "Sewing machine", "Shaver", "Stove", "Telephone", "Vacuum cleaner", "Washing machine"],
-        "Gadgets": ["Camera", "Drone", "Keyboard", "TV"]
+        "Gadgets": ["Camera", "Drone", "Keyboard", "Television"]
     },
     "Nature": {
         "Bodies of water": ["Ocean", "Waterfall"],
