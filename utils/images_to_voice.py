@@ -82,7 +82,7 @@ def text_to_speech(text: str, filename: str, voice_name: str, voice_engine: str,
 
 def main(voice_name: str, voice_engine: str, lang: str, restart: bool = False):
     main_dir = r'../'
-    images_dir = os.path.join(main_dir, 'images')
+    images_dir = os.path.join(main_dir, 'images1')
     voice_dir = os.path.join(main_dir, 'voice')
     try:
         os.mkdir(voice_dir)
