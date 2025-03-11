@@ -1,4 +1,4 @@
-function getImages() {
+function getImages1() {
     return JSON.parse(`
 {
     "Adjectives": {

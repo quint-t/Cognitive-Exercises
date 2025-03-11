@@ -1,4 +1,4 @@
-function getAudios() {
+function getAudios1() {
     return JSON.parse(`
 {
     "Animals": {

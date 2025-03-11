@@ -3,7 +3,7 @@ import json
 
 image_ext = 'jpg'
 
-images = list(Path("../images/").glob(f'**/*.{image_ext}'))
+images = list(Path("../images1/").glob(f'**/*.{image_ext}'))
 tree = dict()
 
 replaces = {
@@ -32,7 +32,7 @@ for image_path in images:
     else:
         head.setdefault(parts[-2], list()).append([filename, title])
 
-with open("../images.js", "w") as out_file:
+with open("../trials_lists/images1.js", "w") as out_file:
     s = json.dumps(tree, sort_keys=True, ensure_ascii=True, indent=4)
     s = s.replace(',\n' + ' ' * 4 * 3, ', ')
     s = s.replace('[\n' + ' ' * 4 * 3, '[')
