@@ -630,7 +630,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                 let all_x_to_explanation = new Map();
                 let q = [[word, definition, '', 0]];
                 while (q.length > 0) {
-                    let [w, w_definition, w_type, depth] = q.pop(0);
+                    let [w, w_definition, w_type, depth] = q.pop();
                     if (w_type == 'ant') {
                         if (all_antonyms.has(w)) {
                             continue;
@@ -728,7 +728,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         }
                         q.push([sim, desa, 'sim', new_depth]);
                     }
-                    q.sort(function (a, b) { return a[2] - b[2]; });
+                    q.sort((a, b) => b[3] - a[3]);
                 }
                 for (const [w, params] of Object.entries(dictionary)) {
                     for (const desa of params) {
@@ -3605,12 +3605,14 @@ function state2() {
             function (event) {
                 if (confirm('Are you sure you want to set the default settings?')) {
                     stateN_defaults('ce_st2');
+                    save_template('2');
                     state2();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('ce_st2');
+                    save_template('2');
                     state2();
                 }
             },
@@ -4815,12 +4817,14 @@ function state3() {
             function (event) {
                 if (confirm('Are you sure you want to set the default settings for the current template?')) {
                     stateN_defaults('ce_st3');
+                    save_template('3');
                     state3();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('ce_st3');
+                    save_template('3');
                     state3();
                 }
             },
@@ -5274,12 +5278,14 @@ function state4() {
             function (event) {
                 if (confirm('Are you sure you want to set the default settings for the current template?')) {
                     stateN_defaults('ce_st4');
+                    save_template('4');
                     state4();
                 }
             },
             function (event) {
                 if (confirm('Are you sure you want to clear the scores?')) {
                     stateN_clear_score('ce_st4');
+                    save_template('4');
                     state4();
                 }
             },
