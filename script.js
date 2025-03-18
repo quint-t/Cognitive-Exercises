@@ -1385,6 +1385,7 @@ function createChooser(stateN, options, additionalButtons) {
             button.onmouseup = value;
             if (additionalDiv == null) {
                 additionalDiv = document.createElement('div');
+                additionalDiv.id = 'additionalDiv';
             }
             additionalDiv.appendChild(button);
         }
@@ -2644,6 +2645,52 @@ function state1_start() {
             taskArea.style.fontSize = newValue + 'px';
             appendText(taskArea, '', false, 0);
         },
+        '+Level': () => {
+            if (!confirm("Are you sure you want to increase the level?")) {
+                return;
+            }
+            let st1_n = toIntOrIntRange(settings['ce_st1_min_max_n']);
+            let st1_n_min = st1_n[0];
+            let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
+            let was_diff = (st1_n.length == 2);
+            if (was_diff === false) {
+                st1_n_min = Math.min(Math.max(st1_n_min + 1, 0), 1000);
+            }
+            st1_n_max = Math.min(Math.max(st1_n_max + 1, 0), 1000);
+            st1_n_min = Math.min(st1_n_min, st1_n_max);
+            if (was_diff == false) {
+                st1_n_string = st1_n_min;
+            }
+            else {
+                st1_n_string = st1_n_min + '-' + st1_n_max;
+            }
+            st1_n = st1_n_min;
+            setSetting('ce_st1_min_max_n', st1_n_string);
+            currentGenerator.next('-LEVEL-UPDATED-');
+        },
+        '-Level': () => {
+            if (!confirm("Are you sure you want to decrease the level?")) {
+                return;
+            }
+            let st1_n = toIntOrIntRange(settings['ce_st1_min_max_n']);
+            let st1_n_min = st1_n[0];
+            let st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
+            let was_diff = (st1_n.length == 2);
+            if (was_diff === false) {
+                st1_n_min = Math.min(Math.max(st1_n_min - 1, 0), 1000);
+            }
+            st1_n_max = Math.min(Math.max(st1_n_max - 1, 0), 1000);
+            st1_n_min = Math.min(st1_n_min, st1_n_max);
+            if (was_diff == false) {
+                st1_n_string = st1_n_min;
+            }
+            else {
+                st1_n_string = st1_n_min + '-' + st1_n_max;
+            }
+            st1_n = st1_n_min;
+            setSetting('ce_st1_min_max_n', st1_n_string);
+            currentGenerator.next('-LEVEL-UPDATED-');
+        },
     }));
     currentGenerator = state1_generator(taskArea);
     currentGenerator.next();
@@ -3027,6 +3074,7 @@ function* state1_generator(taskArea) {
     let task_list = [];
     let mistakeFlag = false, skip_mode = true, lines = [];
     st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
+    let additionalDiv = document.getElementById('additionalDiv');
     let imageDiv = document.getElementById('imageDiv');
     let audioDiv = document.getElementById('audioDiv');
     let voiceDiv = document.getElementById('voiceDiv');
@@ -3054,6 +3102,7 @@ function* state1_generator(taskArea) {
     }
     appendText(taskArea, "N = " + st1_n_string + "!\n", clearBefore);
     addHistoryItem([statesToNames.st1]);
+    let currentTaskIndex = -1, noPush = false;
     while (true) {
         clearInterval(st1_show_trial_interval);
         clearInterval(st1_answer_trial_interval);
@@ -3065,6 +3114,7 @@ function* state1_generator(taskArea) {
         let img = imageDiv.firstChild;
         img.src = '';
         img.alt = '';
+        currentTaskIndex += 1;
         if (mistakeFlag === false && st1_auto_mode !== 0 && auto_increase_counter >= st1_auto_mode) {
             if (was_diff === false) {
                 st1_n_min = Math.min(Math.max(st1_n_min + 1, 0), 1000);
@@ -3094,7 +3144,7 @@ function* state1_generator(taskArea) {
         let short_variant = randomChoice(Array.from(short_to_full_variant.keys()));
         let full_variant = randomChoice(short_to_full_variant.get(short_variant));
         let variant_data = null;
-        if (short_variant == 'image' || short_variant == 'voice') {
+        if (!noPush && (short_variant == 'image' || short_variant == 'voice')) {
             let gen_next = images_generator.next();
             if (gen_next.done ?? true) {
                 images_generator = imageGetter(state1_images, st1_image_voice_options,
@@ -3105,7 +3155,7 @@ function* state1_generator(taskArea) {
             variant_data = gen_next.value;
             // [category 1, category 2, filename, title, variants]
         }
-        else if (short_variant == 'audio') {
+        else if (!noPush && (short_variant == 'audio')) {
             let gen_next = null;
             if (full_variant == 'audio-to-word') {
                 gen_next = audios_all_generator.next();
@@ -3137,7 +3187,7 @@ function* state1_generator(taskArea) {
             variant_data = gen_next.value;
             // [category 1, category 2, filename, title, variants]
         }
-        else if (short_variant == 'word') {
+        else if (!noPush && (short_variant == 'word')) {
             word_generator.next();
             let gen_next = word_generator.next(full_variant);
             if (gen_next.done ?? true) {
@@ -3149,19 +3199,19 @@ function* state1_generator(taskArea) {
             variant_data = gen_next.value;
             // [[word_capitalized, task1, task2, expected_capitalized, explanation, options_list], [word, definition], task_type]
         }
-        task_list.push([short_variant, full_variant, variant_data]);
-        let prev_n = st1_n, n_prev_task = null, current_task = task_list[task_list.length - 1];
-        if (task_list.length - 1 < st1_n) {
+        if (!noPush) {
+            task_list.push([short_variant, full_variant, variant_data]);
+        }
+        noPush = false;
+        let prev_n = st1_n, n_prev_task = null, current_task = task_list[currentTaskIndex];
+        if (currentTaskIndex < st1_n) {
             skip_mode = true;
         }
-        else {  // task_list.length - 1 == st1_n
+        else {  // currentTaskIndex == st1_n
             if (st1_n_min != st1_n_max) {
                 prev_n = randomInt(Math.min(st1_n, st1_n_min), Math.min(task_list.length - 1, st1_n_max));
             }
-            n_prev_task = task_list[task_list.length - prev_n - 1];
-            if (task_list.length - 1 >= st1_n_max) {
-                task_list = task_list.slice(1);
-            }
+            n_prev_task = task_list[Math.max(0, task_list.length - prev_n - 1)];
             skip_mode = false;
         }
         if (current_task == null) {
@@ -3462,6 +3512,34 @@ function* state1_generator(taskArea) {
             answerTrialTimerP.style.display = 'none';
         }
 
+        let additionalDivChildren = [];
+        if (additionalDiv && !skip_mode && n_prev_task[1].indexOf('image-to') >= 0 && n_prev_task !== current_task) {
+            let image_path = n_prev_task[2][2];
+            let imageShowButton = document.createElement('button');
+            imageShowButton.classList.add('blackButton');
+            imageShowButton.innerText = 'Show image for current task';
+            additionalDivChildren.push(document.createElement('br'));
+            additionalDivChildren.push(imageShowButton);
+            imageShowButton.addEventListener('click', function () {
+                let newBr = document.createElement('br');
+                let img = document.createElement('img');
+                img.src = image_path;
+                img.alt = image_path;
+                img.style.objectFit = 'contain';
+                img.style.objectPosition = 'center';
+                img.style.maxWidth = '350px';
+                img.style.maxHeight = '350px';
+                additionalDivChildren.push(newBr);
+                additionalDivChildren.push(img);
+                additionalDiv.appendChild(newBr);
+                additionalDiv.appendChild(img);
+                imageShowButton.remove();
+            });
+            for (let child of additionalDivChildren) {
+                additionalDiv.appendChild(child);
+            }
+        }
+
         appendText(taskArea, text + "\n");
         taskArea.scrollTop = 0;
         taskArea.scrollLeft = 0;
@@ -3478,6 +3556,17 @@ function* state1_generator(taskArea) {
                 break;
             }
             if (actual === '-SKIP-') {
+                appendText(taskArea, '', clearBefore);
+                break;
+            }
+            if (actual === '-LEVEL-UPDATED-') {
+                st1_n = toIntOrIntRange(settings['ce_st1_min_max_n']);
+                st1_n_min = st1_n[0];
+                st1_n_max = st1_n.length == 2 ? st1_n[1] : st1_n_min;
+                was_diff = (st1_n.length == 2);
+                st1_n = st1_n_max;
+                currentTaskIndex -= 1;
+                noPush = true;
                 appendText(taskArea, '', clearBefore);
                 break;
             }
@@ -3524,6 +3613,11 @@ function* state1_generator(taskArea) {
                 mistakeFlag = true;
             }
         }
+
+        for (let child of additionalDivChildren) {
+            child.remove();
+        }
+
     }
 }
 
