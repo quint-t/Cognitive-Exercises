@@ -3132,6 +3132,8 @@ function* state1_generator(taskArea) {
             st1_n = st1_n_min;
             auto_increase_counter = 0;
             task_list = [];
+            currentTaskIndex = 0;
+            noPush = false;
             mistakeFlag = false;
             skip_mode = true;
             st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
