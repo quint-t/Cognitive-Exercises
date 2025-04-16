@@ -3314,7 +3314,7 @@ function* state1_generator(taskArea) {
         let full_variant = randomChoice(short_to_full_variant.get(short_variant));
         let variant_data = null;
         if (!noPush && (short_variant == 'image' || short_variant == 'voice')) {
-            let gen_next = images_generator.next();
+            let gen_next = images1_generator.next();
             if (gen_next.done ?? true) {
                 images1_generator = trialGetter(state1_images1, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
