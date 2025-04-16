@@ -580,25 +580,42 @@ function* trialTagsGetter(dictionary, options, hard_mode, not_item_checker, not_
 }
 
 function download_settings(event) {
-    let storageCopy = Object.assign({}, localStorage);
-    let storageData = {};
-    Object.keys(storageCopy).forEach((x) => {
-        if (x.startsWith('CE_') || x.startsWith('ce_')) {
-            storageData[x] = storageCopy[x];
-        }
-    });
-    let data = Object.entries(storageData);
-    let blob = new Blob([JSON.stringify(data)],{
-        type: "text"
-    });
-    let element = document.createElement('a');
-    element.style.display = "none";
-    element.setAttribute("href", URL.createObjectURL(blob));
-    let datetime_string = getStrDateTime().replaceAll(':', '.').replaceAll(' ', '_');
-    element.setAttribute("download", `${datetime_string}_Cognitive-Exercises.json`);
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    try {
+        const storageCopy = Object.assign({}, localStorage);
+        const storageData = {};
+        Object.keys(storageCopy).forEach((x) => {
+            if (x.startsWith('CE_') || x.startsWith('ce_')) {
+                storageData[x] = storageCopy[x];
+            }
+        });
+        const data = Object.entries(storageData);
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result.split(',')[1];
+          const datetimeString = getStrDateTime().replaceAll(':', '.').replaceAll(' ', '_');
+          const fileName = `ce_${datetimeString}.json`;
+
+          if (window.Android) {
+            window.Android.startDownload(fileName, base64data, 'application/json');
+          } else {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+            }, 0);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        console.error("Download error: ", e);
+      }
 }
 
 function upload_settings(event) {
@@ -3314,7 +3331,7 @@ function* state1_generator(taskArea) {
         let full_variant = randomChoice(short_to_full_variant.get(short_variant));
         let variant_data = null;
         if (!noPush && (short_variant == 'image' || short_variant == 'voice')) {
-            let gen_next = images_generator.next();
+            let gen_next = images1_generator.next();
             if (gen_next.done ?? true) {
                 images1_generator = trialGetter(state1_images1, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
