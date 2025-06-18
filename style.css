@@ -1,5 +1,8 @@
-body {
+* {
     font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
     margin: 0;
     padding: 0;
     background-color: #000000;
@@ -27,7 +30,7 @@ body {
     font-weight: bold;
     border-radius: 5px;
     cursor: pointer;
-    height: 50px;
+    min-height: 50px;
 }
 
 .amberButton:hover {
@@ -81,7 +84,7 @@ body {
     border-radius: 5px;
     cursor: pointer;
     max-width: 300px;
-    height: 50px;
+    min-height: 50px;
 }
 
 .blackButton:not(.no-hover):hover {

@@ -59,7 +59,7 @@ function capitalize(string) {
 }
 
 function getVoices() {
-    let i = 0;
+    let i = 0, index0 = false, newDefault = null;
     let voices = [];
     for (let voice of window.speechSynthesis.getVoices()) {
         if (voice.lang.toLowerCase().startsWith('en')) {
@@ -72,8 +72,17 @@ function getVoices() {
             }
             name = name.slice(0, 50);
             voices.push([i, voice.lang, name]);
+            if (i === 0) {
+                index0 = true;
+            }
+            if (newDefault === null || name.includes('Mark')) {
+                newDefault = i;
+            }
         }
         ++i;
+    }
+    if (index0 === false && newDefault !== null && settings['ce_state1_voice_index_default'] === 0) {
+        setSetting('ce_state1_voice_index_default', newDefault);
     }
     return voices;
 }
@@ -141,10 +150,22 @@ function loadSettings() {
         "ce_st1_min_max_n": 0,
         "ce_st1_image_to_word": combo_enable_disable.Enable,
         "ce_st1_word_to_image": combo_enable_disable.Enable,
-        "ce_st1_audio_to_word": combo_enable_disable.Enable,
-        "ce_st1_audio_to_image": combo_enable_disable.Enable,
         "ce_st1_voice_to_word": combo_enable_disable.Enable,
         "ce_st1_voice_to_image": combo_enable_disable.Enable,
+        "ce_st1_audio_to_word": combo_enable_disable.Enable,
+        "ce_st1_audio_to_image": combo_enable_disable.Enable,
+
+        "ce_st1_pro_image_image_to_title": combo_enable_disable.Disable,
+        "ce_st1_pro_image_title_to_image": combo_enable_disable.Disable,
+        "ce_st1_pro_image_image_to_tags": combo_enable_disable.Disable,
+        "ce_st1_pro_image_tags_to_image": combo_enable_disable.Disable,
+        "ce_st1_pro_image_image_to_closest_image": combo_enable_disable.Disable,
+        "ce_st1_pro_image_image_to_furthest_image": combo_enable_disable.Disable,
+        "ce_st1_pro_image_voice_audio_title_to_image": combo_enable_disable.Disable,
+        "ce_st1_pro_image_voice_audio_tags_to_image": combo_enable_disable.Disable,
+        "ce_st1_pro_audio_audio_to_title": combo_enable_disable.Disable,
+        "ce_st1_pro_audio_audio_to_tags": combo_enable_disable.Disable,
+
         "ce_st1_voice_index": -2,
         "ce_st1_image_voice_word_to_category": combo_enable_only_disable.Disable,
         "ce_st1_image_voice_random_task_each_time": combo_enable_disable.Enable,
@@ -170,6 +191,12 @@ function loadSettings() {
         "ce_st1_word_hard_mode": combo_enable_disable.Disable,
         "ce_st1_word_options": 4,
 
+        "ce_state2_active_template": "Default",
+        "ce_state2_templates": "",
+        "ce_state2_wrap": combo_enable_disable.Enable,
+        "ce_state2_font_size": 16,
+        "ce_state2_view": 'false',
+
         "ce_st2_auto_mode": 5,
         "ce_st2_boxes": 2,
         "ce_st2_operations": 1,
@@ -180,6 +207,7 @@ function loadSettings() {
         "ce_state3_templates": "",
         "ce_state3_wrap": combo_enable_disable.Enable,
         "ce_state3_font_size": 16,
+    
         "ce_st3_auto_mode": 3,
         "ce_st3_current_number_of_statements": 4,
         "ce_st3_current_level": 1,
@@ -193,6 +221,7 @@ function loadSettings() {
         "ce_state4_templates": "",
         "ce_state4_wrap": combo_enable_disable.Enable,
         "ce_state4_font_size": 16,
+    
         "ce_st4_auto_mode": 2,
         "ce_st4_current_attributes": 2,
         "ce_st4_current_objects": 3,
@@ -419,11 +448,7 @@ function* wordsGetter(words) {
     return null;
 }
 
-function imageToFileUrl(category1, category2, filename) {
-    return "images/" + category1 + '/' + category2 + '/' + filename + ".jpg";
-}
-
-function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_variants_checker) {
+function* trialGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode, not_item_checker, not_variants_checker) {
     let list = [];
     for (const [category1, val1] of Object.entries(dictionary)) {
         for (const [category2, val2] of Object.entries(val1)) {
@@ -440,7 +465,7 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
                 if (not_item_checker(category1, category2, title)) {
                     continue;
                 }
-                let real_filename = imageToFileUrl(category1, category2, filename);
+                let real_filename = fn_prefix + '/' + category1 + '/' + category2 + '/' + filename.concat(fn_postfix);
                 list.push([category1, category2, real_filename, title, [[category1, category2, real_filename, title]]]);
             }
         }
@@ -481,33 +506,112 @@ function* imageGetter(dictionary, options, hard_mode, not_item_checker, not_vari
                 w1[w1.length - 1].push([w2[0], w2[1], w2[2], w2[3]]);
             }
         }
+        yield (w1);
     }
-    for (let w of randomShuffle(list)) {
-        yield (w);
+    return null;
+}
+
+function* trialTagsGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode, not_item_checker, not_variants_checker) {
+
+    function calculateTagSimilarity(tags1, tags2) {
+        const set2 = new Set(tags2);
+        const r = new Set([...tags1].filter(x => set2.has(x)));
+        return r.size;
+    }
+
+    let list = [];
+    for (const [filename, info] of Object.entries(dictionary)) {
+        // info: 'title', ['list', 'of', 'tags']
+        if (not_item_checker(filename, info)) {
+            continue;
+        }
+        info[1] = [...(new Set(info[1].join(' ').toLowerCase().split(/[\s_,()\[\]\-\+]+/)))];
+        let real_filename = fn_prefix + '/' + filename.concat(fn_postfix);
+        list.push([real_filename, info, [[real_filename, info]]]);
+    }
+    for (let w1 of randomShuffle(list)) {
+        w1 = JSON.parse(JSON.stringify(w1));
+        for (let w2 of randomShuffle(list)) {
+            if (w1[w1.length - 1].length >= options) {
+                break;
+            }
+            if (w1[0] != w2[0] && (hard_mode || not_variants_checker(w1[0], w1[1], w2[0], w2[1]) === false)) {
+                w1[w1.length - 1].push([w2[0], w2[1]]);
+            }
+        }
+        w1.push([]);
+        let max_similarity = null;
+        let max_similarity_item = [];
+        let min_similarity = null;
+        let min_similarity_item = [];
+        let difference = hard_mode ? 3 : 4;
+        for (let w2 of randomShuffle(list)) {
+            if (w1[w1.length - 1].length >= options) {
+                break;
+            }
+            if (w1[0] != w2[0]) {
+                let similarity = calculateTagSimilarity(w1[1][1], w2[1][1]);
+                if ((similarity > 0 || min_similarity > 0)
+                    && (max_similarity == null || Math.abs(max_similarity - similarity) >= difference)
+                    && (min_similarity == null || Math.abs(min_similarity - similarity) >= difference)) {
+                    w1[w1.length - 1].push([w2[0], w2[1]]);
+                    if (max_similarity == null || max_similarity < similarity) {
+                        max_similarity = similarity;
+                        max_similarity_item = [w2[0], w2[1]];
+                    }
+                    if (min_similarity == null || min_similarity > similarity) {
+                        min_similarity = similarity;
+                        min_similarity_item = [w2[0], w2[1]];
+                    }
+                }
+            }
+        }
+        if (w1[w1.length - 1].length < options || max_similarity <= 2) {
+            continue;
+        }
+        w1.push([max_similarity_item, min_similarity_item]);
+        yield (w1);
     }
     return null;
 }
 
 function download_settings(event) {
-    let storageCopy = Object.assign({}, localStorage);
-    let storageData = {};
-    Object.keys(storageCopy).forEach((x) => {
-        if (x.startsWith('CE_') || x.startsWith('ce_')) {
-            storageData[x] = storageCopy[x];
-        }
-    });
-    let data = Object.entries(storageData);
-    let blob = new Blob([JSON.stringify(data)],{
-        type: "text"
-    });
-    let element = document.createElement('a');
-    element.style.display = "none";
-    element.setAttribute("href", URL.createObjectURL(blob));
-    let datetime_string = getStrDateTime().replaceAll(':', '.').replaceAll(' ', '_');
-    element.setAttribute("download", `${datetime_string}_Cognitive-Exercises.json`);
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    try {
+        const storageCopy = Object.assign({}, localStorage);
+        const storageData = {};
+        Object.keys(storageCopy).forEach((x) => {
+            if (x.startsWith('CE_') || x.startsWith('ce_')) {
+                storageData[x] = storageCopy[x];
+            }
+        });
+        const data = Object.entries(storageData);
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result.split(',')[1];
+          const datetimeString = getStrDateTime().replaceAll(':', '.').replaceAll(' ', '_');
+          const fileName = `ce_${datetimeString}.json`;
+
+          if (window.Android) {
+            window.Android.startDownload(fileName, base64data, 'application/json');
+          } else {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+              document.body.removeChild(link);
+              window.URL.revokeObjectURL(url);
+            }, 0);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (e) {
+        console.error("Download error: ", e);
+      }
 }
 
 function upload_settings(event) {
@@ -593,6 +697,9 @@ function* wordGetter(dictionary, options, hard_mode) {
     while (true) {
         list = randomShuffle(list);
         for (let list_item of list) {
+            if (list_item[1].length === 0) {
+                continue;
+            }
             let another_word_flag = false;
             while (true) {
                 let task1 = '', task2 = '', expected = '', explanation = '', options_list = [];
@@ -1103,7 +1210,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         continue;
                     }
                     skip = true;
-                    console.log(`${word} skipped; task = ${task_type}`);
+                    console.warn(`${word} skipped; task = ${task_type}`);
                     break;
                 }
                 options_list = options_list.slice(0, options - 1);
@@ -1120,7 +1227,7 @@ function* wordGetter(dictionary, options, hard_mode) {
                         continue;
                     }
                     skip = true;
-                    console.log(`${word} skipped; task = ${task_type}`);
+                    console.warn(`${word} skipped; task = ${task_type}`);
                     break;
                 }
                 let r = [[capitalize(word), task1, task2, capitalize(expected), explanation, options_list],
@@ -1323,10 +1430,7 @@ function createChooser(stateN, options, additionalButtons) {
     audioButton.classList.add("no-hover");
     audioButton.innerHTML = 'Play';
     audioButton.onmouseup = function () {
-        let category1 = audioButton.category1;
-        let category2 = audioButton.category2;
-        let title = audioButton.title;
-        st1_play(`${category1}/${category2}/${title}.mp3`);
+        st1_play(audioButton.path);
     }
     audioButton.ondblclick = function () {
         alert(audioButton.title);
@@ -1357,7 +1461,7 @@ function createChooser(stateN, options, additionalButtons) {
     showTrialTimerDiv.id = 'showTrialTimerDiv';
     let showTrialTimerImg = document.createElement('img');
     showTrialTimerImg.id = 'showTrialTimerImg';
-    showTrialTimerImg.src = "./images/time_limit.jpg";
+    showTrialTimerImg.src = "./images1/time_limit.jpg";
     showTrialTimerImg.alt = "time limit";
     showTrialTimerImg.style.width = '350px';
     showTrialTimerDiv.appendChild(showTrialTimerImg);
@@ -1418,7 +1522,7 @@ function updateChooser(options, images = false) {
         if (children[i].nodeName == 'BUTTON') {
             if (images) {
                 if (k < options.length &&
-                    state1_check_for_dict(state1_images, options[k][0], options[k][1], options[k][3])) {
+                    state1_check_for_dict(state1_images1, options[k][0], options[k][1], options[k][3])) {
                     children[i].style.display = '';
                     children[i].style.color = '#ffffff00';
                     children[i].style.background = 'url("' + options[k][2] + '")';
@@ -1428,6 +1532,19 @@ function updateChooser(options, images = false) {
                     children[i].innerHTML = options[k][3];
                     children[i].style.width = '170px';
                     children[i].style.height = '170px';
+                    children[i].style.fontSize = '0px';
+                }
+                else if (k < options.length && options[k].length >= 2) {
+                    children[i].style.display = '';
+                    children[i].style.color = '#ffffff00';
+                    children[i].style.background = 'url("' + options[k][0] + '")';
+                    children[i].style.backgroundSize = 'contain';
+                    children[i].style.backgroundRepeat = 'no-repeat';
+                    children[i].style.backgroundPosition = 'center center';
+                    children[i].innerHTML = options[k][1];
+                    children[i].style.width = '340px';
+                    children[i].style.height = '340px';
+                    children[i].style.fontSize = '0px';
                 }
                 else {
                     children[i].style.display = 'none';
@@ -1439,6 +1556,7 @@ function updateChooser(options, images = false) {
                     children[i].innerHTML = '-';
                     children[i].style.width = '';
                     children[i].style.height = '';
+                    children[i].style.fontSize = '';
                 }
             }
             else {
@@ -1456,6 +1574,7 @@ function updateChooser(options, images = false) {
                 else {
                     children[i].style.display = 'none';
                 }
+                children[i].style.fontSize = '';
             }
             ++k;
         }
@@ -1882,7 +2001,7 @@ function stopAnyAudio() {
         window.speechSynthesis.cancel();
     }
     catch (err) {
-        console.log(err);
+        console.warn(err);
     }
     for (const [audio_filename, audio_value] of Object.entries(state1_audio_mp3)) {
         try {
@@ -1890,7 +2009,7 @@ function stopAnyAudio() {
             audio_value.currentTime = 0;
         }
         catch (err) {
-            console.log(`${audio_filename} - ${err}`);
+            console.warn(`${audio_filename} - ${err}`);
         }
     }
     for (const [audio_filename, audio_value] of Object.entries(state1_voice_mp3)) {
@@ -1899,7 +2018,7 @@ function stopAnyAudio() {
             audio_value.currentTime = 0;
         }
         catch (err) {
-            console.log(`${audio_filename} - ${err}`);
+            console.warn(`${audio_filename} - ${err}`);
         }
     }
 }
@@ -1908,11 +2027,11 @@ function st1_play(audio_file_url) {
     stopAnyAudio();
     if (audio_file_url.length > 0) {
         if (!Object.hasOwn(state1_audio_mp3, audio_file_url)) {
-            state1_audio_mp3[audio_file_url] = new Audio('audios/' + audio_file_url);
+            state1_audio_mp3[audio_file_url] = new Audio(audio_file_url);
         }
         state1_audio_mp3[audio_file_url].play().then(null, function () {
             filename_wo_ext = audio_file_url.replace(/.*?([^/]+?)(\.\w+|$)/gm, '$1');
-            speak(filename_wo_ext, getVoices()[0][0]);
+            speak(filename_wo_ext, settings['ce_state1_voice_index_default'] ?? getVoices()[0][0]);
             delete state1_audio_mp3[audio_file_url];
         });
     }
@@ -1985,12 +2104,21 @@ function state0() {
     currentGenerator = null;
     state = 0;
     clearWidgets();
-    addWidget(createCaption('Cognitive Exercises'));
-
+    let mainCaption = createCaption('Cognitive Exercises');
+    addWidget(mainCaption);
+    mainCaption.ondblclick = function () {
+        if (settings['ce_state2_view'] === 'true') {
+            setSetting('ce_state2_view', 'false');
+        }
+        else {
+            setSetting('ce_state2_view', 'true');
+        }
+        state0();
+    };
     addWidget(createMenuButton(getScoredText(statesToNames.st1, 1), state1));
-    /*
-    addWidget(createMenuButton(getScoredText(statesToNames.st2, 2), state2));
-    */
+    if (settings['ce_state2_view'] === 'true') {
+        addWidget(createMenuButton(getScoredText(statesToNames.st2, 2), state2));
+    }
     addWidget(createMenuButton(getScoredText(statesToNames.st3, 3), state3));
     addWidget(createMenuButton(getScoredText(statesToNames.st4, 4), state4));
 
@@ -2116,7 +2244,7 @@ function stateSettings() {
     addWidget(resetButton);
 }
 
-function state1ImageShow(text) {
+function state1ImageShow(text, state1_imagen_examples) {
     currentGenerator = null;
     state = -1;
     clearWidgets();
@@ -2128,9 +2256,9 @@ function state1ImageShow(text) {
     addWidget(backButton);
 
     let random_button_element = createParameterActionButton(null, function () {
-        let random_image = randomChoice(state1_image_examples);
+        let random_image = randomChoice(state1_imagen_examples);
         let image_file_name = random_image[0];
-        state1ImageShow(image_file_name);
+        state1ImageShow(image_file_name, state1_imagen_examples);
     });
     random_button_element.innerHTML = 'Random image';
     addWidget(random_button_element);
@@ -2138,7 +2266,7 @@ function state1ImageShow(text) {
 
     let select_element = document.createElement("select");
     select_element.classList.add('modern_select');
-    for (let [k, v] of state1_image_examples) {
+    for (let [k, v] of state1_imagen_examples) {
         let option = document.createElement("option");
         option.value = k;
         option.innerHTML = v;
@@ -2148,7 +2276,7 @@ function state1ImageShow(text) {
     select_element.style.maxWidth = '300px';
     show_button = createParameterActionButton(null, function (input_element) {
         let text = input_element.value;
-        state1ImageShow(text);
+        state1ImageShow(text, state1_imagen_examples);
     }, select_element);
     show_button.innerHTML = 'Show';
     addWidget(select_element);
@@ -2157,7 +2285,7 @@ function state1ImageShow(text) {
     addWidget(document.createElement('br'));
 
     let imageDiv = document.createElement('img');
-    imageDiv.src = `images/${text}`;
+    imageDiv.src = text.startsWith('images') ? `${text}` : `images1/${text}`;
     imageDiv.alt = text;
     imageDiv.style.maxWidth = '350px';
     imageDiv.style.maxHeight = '350px';
@@ -2245,8 +2373,8 @@ function state1WordInfo(text) {
         addWidget(backButton);
 
         let random_button_element = createParameterActionButton(null, function () {
-            let random_word = randomChoice(Object.keys(state1_words));
-            state1WordInfo(random_word);
+            let randomWord = randomChoice(Object.keys(state1_words));
+            state1WordInfo(randomWord);
         });
         random_button_element.innerHTML = 'Random word';
         addWidget(random_button_element);
@@ -2404,7 +2532,8 @@ function state1() {
     choose_template('1', null);
     clearInterval(st1_show_trial_interval);
     clearInterval(st1_answer_trial_interval);
-    let random_word = capitalize(randomChoice(Object.keys(state1_words)));
+    let randomWord = capitalize(randomChoice(Object.keys(state1_words)));
+    let dictSource = state1_dictionary_source.replace(/merriam-webster/i, 'MW');
     currentGenerator = null;
     state = 1;
     clearWidgets();
@@ -2496,23 +2625,36 @@ function state1() {
                    (xv.length === 1 || 0 <= xv[1] && xv[1] <= 1000);
         }],
         ["", "", "hr"],
-        ["ce_st1_image_to_word", "<u>Image to Word</u>", "combobox", Object.values(combo_enable_disable)],
-        ["ce_st1_word_to_image", "<u>Word to Image</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_image_to_word", "<u>Image to Word</u> <sub>1</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_word_to_image", "<u>Word to Image</u> <sub>1</sub>", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr1"],
-        ["ce_st1_audio_to_word", "<u>Audio to Word</u>", "combobox", Object.values(combo_enable_disable)],
-        ["ce_st1_audio_to_image", "<u>Audio to Image</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_voice_to_word", "<u>Voice audio</u><br><u>Word to Word</u> <sub>1</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_voice_to_image", "<u>Voice audio</u><br><u>Word to Image</u> <sub>1</sub>", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr1"],
-        ["ce_st1_voice_to_word", "<u>Voice to Word</u>", "combobox", Object.values(combo_enable_disable)],
-        ["ce_st1_voice_to_image", "<u>Voice to Image</u>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_audio_to_word", "<u>Audio to Word</u> <sub>1</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_audio_to_image", "<u>Audio to Image</u> <sub>1</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["", "", "hr1"],
+        ["ce_st1_pro_image_image_to_title", "<u>Image to Title</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_title_to_image", "<u>Title to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_image_to_tags", "<u>Image to Tags</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_tags_to_image", "<u>Tags to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_image_to_closest_image", "<u>Image to Close Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_image_to_furthest_image", "<u>Image to Further Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["", "", "hr1"],
+        ["ce_st1_pro_image_voice_audio_title_to_image", "<u>Voice audio<br>Title to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_voice_audio_tags_to_image", "<u>Voice audio<br>Tags to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["", "", "hr1"],
+        ["ce_st1_pro_audio_audio_to_title", "<u>Audio to Title</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_audio_audio_to_tags", "<u>Audio to Tags</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["", "", "hr1"],
+        ["ce_st1_image_voice_word_to_category", "Mode 'Choose category' <sub>1</sub>", "combobox", Object.values(combo_enable_only_disable)],
         ["ce_st1_voice_index", "Voice", "ce_st1_voice_combobox"],
-        ["", "", "hr1"],
-        ["ce_st1_image_voice_word_to_category", "Mode 'Choose category'", "combobox", Object.values(combo_enable_only_disable)],
         ["ce_st1_image_voice_random_task_each_time", "Random task each time<br>for one trial", "combobox", Object.values(combo_enable_disable)],
-        ["ce_st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
-            return xv === 0 || 0.1 <= xv && xv <= 120;
+        ["ce_st1_image_voice_show_trial_time_limit", "Show trial time limit<br>(in seconds)<br>[0:disable|1-600]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 600;
         }],
-        ["ce_st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-120]", "float", function (xv) {
-            return xv === 0 || 0.1 <= xv && xv <= 120;
+        ["ce_st1_image_voice_answer_trial_time_limit", "Answer trial time limit<br>(in seconds)<br>[0:disable|1-600]", "float", function (xv) {
+            return xv === 0 || 0.1 <= xv && xv <= 600;
         }],
         ["ce_st1_image_voice_hard_mode", "Hard mode", "combobox", Object.values(combo_enable_disable)],
         ["ce_st1_image_voice_options", "Options", "combobox", Object.values(combo_st1_options)],
@@ -2542,7 +2684,7 @@ function state1() {
         ["ce_st1_word_options", "Options", "combobox", Object.values(combo_st1_options)],
         ["", "", "hr"],
         ["ce_state1_words_dictionary", "Dictionary of words", "combobox", Object.values(combo_state1_words_dictionary), function (xv) {
-            if (confirm('Are you sure you want to choose ' + xv + '?')) {
+            if (confirm('Are you sure you want to choose ' + xv + '? It\'s a global option.')) {
                 setSetting('ce_state1_words_dictionary', xv);
                 save_template('1');
                 location.reload();
@@ -2554,16 +2696,16 @@ function state1() {
         }],
         ["ce_state1_wrap", "Wrap text", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr"],
-        ["", "Show", "combobox_button", function (input_element) {
+        ["", "Show <sub>1</sub>", "combobox_button", function (input_element) {
             let text = input_element.value;
-            state1ImageShow(text);
-        }, state1_image_examples],
-        ["", "Play", "combobox_button", function (input_element) {
+            state1ImageShow(text, state1_image1_examples);
+        }, state1_image1_examples],
+        ["", "Play <sub>1</sub>", "combobox_button", function (input_element) {
             let text = input_element.value;
             if (text != null && text.length > 0) {
-                st1_play(text);
+                st1_play('audios1/' + text);
             }
-        }, state1_audio_examples],
+        }, state1_audio1_examples],
         ["Hello", "Speak", "text_button", function (input_element) {
             let text = input_element.value;
             let select = document.getElementById('ce_st1_voice_index');
@@ -2571,13 +2713,14 @@ function state1() {
                 st1_speak(text.toLowerCase(), select.value);
             }
         }],
-        [random_word, "Info", "text_button", function (input_element) {
+        [randomWord, "Info", "text_button", function (input_element) {
             let text = input_element.value.toLowerCase();
             state1WordInfo(text);
         }],
         ["", "", "hr"],
-        ["", "", "text", "Categories<br>Images<br>Audio files<br>Nate's voice files", `${state1_statistics_images_categories}<br>${state1_statistics_images}<br>${state1_statistics_audio_files}<br>${state1_statistics_voice_files}`],
-        ["", "", "text", "Dictionary<br>Words<br>Words with definitions<br>Definitions of the words<br>Synonyms<br>Antonyms<br>Similar words", `${state1_dictionary_source}<br>${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_words_definitions}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}<br>${state1_statistics_similar_words}`],
+        ["", "", "text", "Categories <sub>1</sub><br>Images <sub>1</sub><br>Audio files <sub>1</sub><br>Nate's voice files <sub>1</sub>", `${state1_statistics_images1_categories}<br>${state1_statistics_images1}<br>${state1_statistics_audio_files1}<br>${state1_statistics_voice_files}`],
+        ["", "", "text", "Images Tags <sub>2</sub><br>Images <sub>2</sub><br>Audio files tags <sub>2</sub><br>Audio files <sub>2</sub>", `${state1_statistics_images2_tags}<br>${state1_statistics_images2}<br>${state1_statistics_audio_files2_tags}<br>${state1_statistics_audio_files2}`],
+        ["", "", "text", "Dictionary<br>Words<br>Words with definitions<br>Definitions of the words<br>Synonyms<br>Antonyms<br>Similar words", `${dictSource}<br>${state1_statistics_unique_words}<br>${state1_statistics_words_with_meaning}<br>${state1_statistics_words_definitions}<br>${state1_statistics_synonyms}<br>${state1_statistics_antonyms}<br>${state1_statistics_similar_words}`],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -2742,10 +2885,10 @@ function* state1_generator(taskArea) {
     let st1_image_voice_word_to_category = settings['ce_st1_image_voice_word_to_category'];
     let st1_word_to_image = settings['ce_st1_word_to_image'];
     let st1_image_to_word = settings['ce_st1_image_to_word'];
-    let st1_audio_to_word = settings['ce_st1_audio_to_word'];
-    let st1_audio_to_image = settings['ce_st1_audio_to_image'];
     let st1_voice_to_word = settings['ce_st1_voice_to_word'];
     let st1_voice_to_image = settings['ce_st1_voice_to_image'];
+    let st1_audio_to_word = settings['ce_st1_audio_to_word'];
+    let st1_audio_to_image = settings['ce_st1_audio_to_image'];
     let st1_voice_index = parseInt(settings['ce_st1_voice_index']);
     let st1_image_voice_hard_mode = settings['ce_st1_image_voice_hard_mode'];
     let st1_word_hard_mode = settings['ce_st1_word_hard_mode'];
@@ -2761,6 +2904,17 @@ function* state1_generator(taskArea) {
     let st1_find_word_in_sentence = settings['ce_st1_find_word_in_sentence'];
     let st1_image_voice_modes_random_bool = settings['ce_st1_image_voice_random_task_each_time'] == combo_enable_disable.Enable;
     let st1_word_mode_random_bool = settings['ce_st1_word_random_task_each_time'] == combo_enable_disable.Enable;
+
+    let st1_pro_image_image_to_title = settings['ce_st1_pro_image_image_to_title'];
+    let st1_pro_image_title_to_image = settings['ce_st1_pro_image_title_to_image'];
+    let st1_pro_image_image_to_tags = settings['ce_st1_pro_image_image_to_tags'];
+    let st1_pro_image_tags_to_image = settings['ce_st1_pro_image_tags_to_image'];
+    let st1_pro_image_image_to_closest_image = settings['ce_st1_pro_image_image_to_closest_image'];
+    let st1_pro_image_image_to_furthest_image = settings['ce_st1_pro_image_image_to_furthest_image'];
+    let st1_pro_image_voice_audio_title_to_image = settings['ce_st1_pro_image_voice_audio_title_to_image'];
+    let st1_pro_image_voice_audio_tags_to_image = settings['ce_st1_pro_image_voice_audio_tags_to_image'];
+    let st1_pro_audio_audio_to_title = settings['ce_st1_pro_audio_audio_to_title'];
+    let st1_pro_audio_audio_to_tags = settings['ce_st1_pro_audio_audio_to_tags'];
 
     let st1_insects_category = settings['ce_st1_image_voice_insects_category'];
     let st1_halloween_category = settings['ce_st1_image_voice_halloween_category'];
@@ -3020,21 +3174,77 @@ function* state1_generator(taskArea) {
         }
         return false;
     };
+    let not_item_checker2 = function (filename, info) {
+        return false;
+    };
+    let not_variants_checker2 = function (filename1, info1, filename2, info2) {
+        let to_compare = [
+            [info1[0].split(/[\s_,()\[\]\-\+]+/), info2[0].split(/[\s_,()\[\]\-\+]+/)],
+            [info1[1], info2[1]]
+        ];
+        let s1 = 0, s2 = 0;
+        for (let [item1_t, item2_t] of to_compare) {
+            let item1_splitted = item1_t;
+            let item2_splitted = item2_t;
+            for (let x of item1_splitted) {
+                if (x.length <= 2) {
+                    continue;
+                }
+                for (let y of item2_splitted) {
+                    if (y.length <= 2) {
+                        continue;
+                    }
+                    x = x.toLowerCase().replaceAll(/\W/g, '');
+                    y = y.toLowerCase().replaceAll(/\W/g, '');
+                    if (x.includes(y) || y.includes(x) || x.slice(0, 3) == y.slice(0, 3)) {
+                        s1 += 1;
+                    }
+                    else {
+                        s2 += 1;
+                    }
+                }
+            }
+        }
+        if (s1 > 0 && s1 >= s2) { // 50%
+            return true;
+        }
+        return false;
+    };
     let short_to_full_variant = new Map();
     let full_to_short_variants = new Map();
     let variants = [
-        [st1_image_to_word == combo_enable_disable.Enable && Object.keys(state1_images).length > 0,
-            'image', 'image-to-word'],
-        [st1_word_to_image == combo_enable_disable.Enable && Object.keys(state1_images).length > 0,
-            'image', 'word-to-image'],
-        [st1_audio_to_word == combo_enable_disable.Enable && Object.keys(state1_audios_all).length > 0,
-            'audio', 'audio-to-word'],
-        [st1_audio_to_image == combo_enable_disable.Enable && Object.keys(state1_audios_for_images).length > 0,
-            'audio', 'audio-to-image'],
-        [st1_voice_to_word == combo_enable_disable.Enable && Object.keys(state1_images).length > 0 && (st1_voice_index >= 0 || st1_voice_index === -2),
-            'voice', 'voice-to-word'],
-        [st1_voice_to_image == combo_enable_disable.Enable && Object.keys(state1_images).length > 0 && (st1_voice_index >= 0 || st1_voice_index === -2),
-            'voice', 'voice-to-image'],
+        [st1_image_to_word == combo_enable_disable.Enable && Object.keys(state1_images1).length > 0,
+            'image', 'image-to-word-1'],
+        [st1_word_to_image == combo_enable_disable.Enable && Object.keys(state1_images1).length > 0,
+            'image', 'word-to-image-1'],
+        [st1_voice_to_word == combo_enable_disable.Enable && Object.keys(state1_images1).length > 0 && (st1_voice_index >= 0 || st1_voice_index === -2),
+            'voice', 'voice-to-word-1'],
+        [st1_voice_to_image == combo_enable_disable.Enable && Object.keys(state1_images1).length > 0 && (st1_voice_index >= 0 || st1_voice_index === -2),
+            'voice', 'voice-to-image-1'],
+        [st1_audio_to_word == combo_enable_disable.Enable && Object.keys(state1_audios1_all).length > 0,
+            'audio', 'audio-to-word-1'],
+        [st1_audio_to_image == combo_enable_disable.Enable && Object.keys(state1_audios1_for_images).length > 0,
+            'audio', 'audio-to-image-1'],
+        [st1_pro_image_image_to_title == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0,
+            'image', 'image-to-title-2'],
+        [st1_pro_image_title_to_image == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0,
+            'image', 'title-to-image-2'],
+        [st1_pro_image_image_to_tags == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0,
+            'image', 'image-to-tags-2'],
+        [st1_pro_image_tags_to_image == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0,
+            'image', 'tags-to-image-2'],
+        [st1_pro_image_image_to_closest_image == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0,
+            'image', 'image-to-closest-image-2'],
+        [st1_pro_image_image_to_furthest_image == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0,
+            'image', 'image-to-furthest-image-2'],
+        [st1_pro_image_voice_audio_title_to_image == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0 && (st1_voice_index >= 0 || st1_voice_index === -2),
+            'voice', 'voice-title-to-image-2'],
+        [st1_pro_image_voice_audio_tags_to_image == combo_enable_disable.Enable && Object.keys(state1_images2).length > 0 && (st1_voice_index >= 0 || st1_voice_index === -2),
+            'voice', 'voice-tags-to-image-2'],
+        [st1_pro_audio_audio_to_title == combo_enable_disable.Enable && Object.keys(state1_audios2).length > 0,
+            'audio', 'audio-to-title-2'],
+        [st1_pro_audio_audio_to_tags == combo_enable_disable.Enable && Object.keys(state1_audios2).length > 0,
+            'audio', 'audio-to-tags-2'],
         [st1_word_to_word == combo_enable_disable.Enable,
             'word', 'word-to-word'],
         [st1_meaning_to_word == combo_enable_disable.Enable,
@@ -3060,15 +3270,21 @@ function* state1_generator(taskArea) {
     if (short_to_full_variant.size == 0 || full_to_short_variants.size == 0) {
         return;
     }
-    let images_generator = imageGetter(state1_images, st1_image_voice_options,
+    let images1_generator = trialGetter('images1', '.jpg', state1_images1, st1_image_voice_options,
         st1_image_voice_hard_mode == combo_enable_disable.Enable,
         not_item_checker, not_variants_checker);
-    let audios_for_images_generator = imageGetter(state1_audios_for_images, st1_image_voice_options,
+    let audios1_for_images_generator = trialGetter('images1', '.jpg', state1_audios1_for_images, st1_image_voice_options,
         st1_image_voice_hard_mode == combo_enable_disable.Enable,
         not_item_checker, not_variants_checker);
-    let audios_all_generator = imageGetter(state1_audios_all, st1_image_voice_options,
+    let audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
         st1_image_voice_hard_mode == combo_enable_disable.Enable,
         not_item_checker, not_variants_checker);
+    let images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+        not_item_checker2, not_variants_checker2);
+    let audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
+        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+        not_item_checker2, not_variants_checker2);
     let word_generator = wordGetter(state1_words, st1_word_options,
         st1_word_hard_mode == combo_enable_disable.Enable);
     let task_list = [];
@@ -3147,34 +3363,58 @@ function* state1_generator(taskArea) {
         let full_variant = randomChoice(short_to_full_variant.get(short_variant));
         let variant_data = null;
         if (!noPush && (short_variant == 'image' || short_variant == 'voice')) {
-            let gen_next = images_generator.next();
-            if (gen_next.done ?? true) {
-                images_generator = imageGetter(state1_images, st1_image_voice_options,
-                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
-                    not_item_checker, not_variants_checker);
-                gen_next = images_generator.next();
+            let gen_next = null;
+            if (full_variant.slice(-1) === '1') {
+                gen_next = images1_generator.next();
+                if (gen_next.done ?? true) {
+                    images1_generator = trialGetter('images1', '.jpg', state1_images1, st1_image_voice_options,
+                        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                        not_item_checker, not_variants_checker);
+                    gen_next = images1_generator.next();
+                }
+            }
+            else if (full_variant.slice(-1) === '2') {
+                gen_next = images2_generator.next();
+                if (gen_next.done ?? true) {
+                    images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+                        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                        not_item_checker2, not_variants_checker2);
+                    gen_next = images2_generator.next();
+                }
+            }
+            else {
+                continue;
             }
             variant_data = gen_next.value;
             // [category 1, category 2, filename, title, variants]
         }
         else if (!noPush && (short_variant == 'audio')) {
             let gen_next = null;
-            if (full_variant == 'audio-to-word') {
-                gen_next = audios_all_generator.next();
+            if (full_variant == 'audio-to-word-1') {
+                gen_next = audios1_all_generator.next();
                 if (gen_next.done ?? true) {
-                    audios_all_generator = imageGetter(state1_audios_all, st1_image_voice_options,
+                    audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
                         st1_image_voice_hard_mode == combo_enable_disable.Enable,
                         not_item_checker, not_variants_checker);
-                    gen_next = audios_all_generator.next();
+                    gen_next = audios1_all_generator.next();
                 }
             }
-            else if (full_variant == 'audio-to-image') {
-                gen_next = audios_for_images_generator.next();
+            else if (full_variant == 'audio-to-image-1') {
+                gen_next = audios1_for_images_generator.next();
                 if (gen_next.done ?? true) {
-                    audios_for_images_generator = imageGetter(state1_audios_for_images, st1_image_voice_options,
+                    audios1_for_images_generator = trialGetter('images1', '.jpg', state1_audios1_for_images, st1_image_voice_options,
                         st1_image_voice_hard_mode == combo_enable_disable.Enable,
                         not_item_checker, not_variants_checker);
-                    gen_next = audios_for_images_generator.next();
+                    gen_next = audios1_for_images_generator.next();
+                }
+            }
+            else if (full_variant.slice(-1) === '2') {
+                gen_next = audios2_generator.next();
+                if (gen_next.done ?? true) {
+                    audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
+                        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                        not_item_checker2, not_variants_checker2);
+                    gen_next = audios2_generator.next();
                 }
             }
             else {
@@ -3230,31 +3470,31 @@ function* state1_generator(taskArea) {
         short_variant = n_prev_task[0];
         full_variant = n_prev_task[1];
         variant_data = n_prev_task[2];
-        if (short_variant == 'image' || short_variant == 'audio' || short_variant == 'voice') {
+        if ((short_variant == 'image' || short_variant == 'audio' || short_variant == 'voice') && full_variant.slice(-1) === '1') {
             if (n_prev_task != current_task && st1_image_voice_modes_random_bool) {
-                if (full_variant == 'image-to-word' && full_to_short_variants.has('word-to-image')) {
-                    full_variant = randomChoice(['image-to-word', 'word-to-image']);
+                if (full_variant == 'image-to-word-1' && full_to_short_variants.has('word-to-image-1')) {
+                    full_variant = randomChoice(['image-to-word-1', 'word-to-image-1']);
                 }
-                else if (full_variant == 'word-to-image' && full_to_short_variants.has('image-to-word')) {
-                    full_variant = randomChoice(['word-to-image', 'image-to-word']);
+                else if (full_variant == 'word-to-image-1' && full_to_short_variants.has('image-to-word-1')) {
+                    full_variant = randomChoice(['word-to-image-1', 'image-to-word-1']);
                 }
-                else if (full_variant == 'voice-to-word' && full_to_short_variants.has('word-to-image')) {
-                    full_variant = randomChoice(['voice-to-word', 'word-to-image']);
+                else if (full_variant == 'voice-to-word-1' && full_to_short_variants.has('word-to-image-1')) {
+                    full_variant = randomChoice(['voice-to-word-1', 'word-to-image-1']);
                 }
-                else if (full_variant == 'voice-to-image' && full_to_short_variants.has('image-to-word')) {
-                    full_variant = randomChoice(['voice-to-image', 'image-to-word']);
+                else if (full_variant == 'voice-to-image-1' && full_to_short_variants.has('image-to-word-1')) {
+                    full_variant = randomChoice(['voice-to-image-1', 'image-to-word-1']);
                 }
-                else if (full_variant == 'audio-to-word' && full_to_short_variants.has('word-to-image') &&
-                         state1_check_for_dict(state1_audios_for_images, variant_data[0], variant_data[1], variant_data[3])) {
-                    full_variant = randomChoice(['audio-to-word', 'word-to-image']);
+                else if (full_variant == 'audio-to-word-1' && full_to_short_variants.has('word-to-image-1') &&
+                         state1_check_for_dict(state1_audios1_for_images, variant_data[0], variant_data[1], variant_data[3])) {
+                    full_variant = randomChoice(['audio-to-word-1', 'word-to-image-1']);
                 }
-                else if (full_variant == 'audio-to-image' && full_to_short_variants.has('image-to-word')) {
-                    full_variant = randomChoice(['audio-to-image', 'image-to-word']);
+                else if (full_variant == 'audio-to-image-1' && full_to_short_variants.has('image-to-word-1')) {
+                    full_variant = randomChoice(['audio-to-image-1', 'image-to-word-1']);
                 }
                 short_variant = full_to_short_variants.get(full_variant);
             }
             let category_element_mode_active = 0;
-            if (full_variant == 'image-to-word' || full_variant == 'audio-to-word' || full_variant == 'voice-to-word') {
+            if (full_variant == 'image-to-word-1' || full_variant == 'audio-to-word-1' || full_variant == 'voice-to-word-1') {
                 if (st1_image_voice_word_to_category == combo_enable_only_disable.Only) {
                     category_element_mode_active = randomChoice([1, 2]);
                 }
@@ -3321,12 +3561,12 @@ function* state1_generator(taskArea) {
                     i += 1;
                 }
                 let images_used = false;
-                if (full_variant == 'image-to-word' || full_variant == 'audio-to-word' || full_variant == 'voice-to-word') {
+                if (full_variant == 'image-to-word-1' || full_variant == 'audio-to-word-1' || full_variant == 'voice-to-word-1') {
                     options = options_by_first;
                     text += choose_text;
                     text += textToLines(convertOptionsToString(options_by_first), 100, 1, true);
                 }
-                else if (full_variant == 'word-to-image' || full_variant == 'audio-to-image' || full_variant == 'voice-to-image') {
+                else if (full_variant == 'word-to-image-1' || full_variant == 'audio-to-image-1' || full_variant == 'voice-to-image-1') {
                     text += choose_text.slice(0, -2);
                     images_used = true;
                 }
@@ -3334,6 +3574,148 @@ function* state1_generator(taskArea) {
                 updateChooser(options, images_used);
                 lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
                            capitalize(full_variant) + ': ' + variant_data[0] + " > " + variant_data[1] + " > " + variant_data[3]);
+            }
+        }
+        else if ((short_variant == 'image' || short_variant == 'audio' || short_variant == 'voice') && full_variant.slice(-1) === '2') {
+            if (st1_image_voice_hard_mode == combo_enable_disable.Enable) {
+                text += prev_n + "-Back [" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + "]\n\n";
+            }
+            else {
+                text += prev_n + "-Back (" + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ")\n\n";
+            }
+            if (n_prev_task != current_task && st1_image_voice_modes_random_bool) {
+                let v_variants = [full_variant];
+                if (full_variant == 'image-to-title-2') {
+                    v_variants.push('title-to-image-2');
+                    v_variants.push('image-to-tags-2');
+                }
+                else if (full_variant == 'title-to-image-2') {
+                    v_variants.push('image-to-title-2');
+                    v_variants.push('image-to-tags-2');
+                }
+                else if (full_variant == 'image-to-tags-2') {
+                    v_variants.push('image-to-title-2');
+                    v_variants.push('title-to-image-2');
+                }
+                else if (full_variant == 'tags-to-image-2') {
+                    v_variants.push('image-to-tags-2');
+                    v_variants.push('image-to-title-2');
+                }
+                else if (full_variant == 'voice-title-to-image-2') {
+                    v_variants.push('image-to-tags-2');
+                    v_variants.push('image-to-title-2');
+                }
+                else if (full_variant == 'voice-tags-to-image-2') {
+                    v_variants.push('image-to-tags-2');
+                    v_variants.push('image-to-title-2');
+                }
+                else if (full_variant == 'audio-to-title-2') {
+                    v_variants.push('audio-to-tags-2');
+                }
+                else if (full_variant == 'audio-to-tags-2') {
+                    v_variants.push('audio-to-title-2');
+                }
+                else if (full_variant == 'image-to-closest-image-2') {
+                    v_variants.push('image-to-furthest-image-2');
+                    v_variants.push('image-to-tags-2');
+                    v_variants.push('image-to-title-2');
+                }
+                else if (full_variant == 'image-to-furthest-image-2') {
+                    v_variants.push('image-to-closest-image-2');
+                    v_variants.push('image-to-tags-2');
+                    v_variants.push('image-to-title-2');
+                }
+                full_variant = randomChoice(v_variants.filter(x => full_to_short_variants.has(x)));
+                short_variant = full_to_short_variants.get(full_variant);
+            }
+            explanation = `Title: ${variant_data[1][0]}\nTags: ${variant_data[1][1].join(', ')}`;
+            if (skip_mode === false) {
+                let choose_text = 'Choose:\n';
+                let options = randomShuffle(variant_data[2]);
+                let options_by_first = [], i = 0, options_r = [];
+                let images_used = false;
+                if (full_variant.includes('to-title')) {
+                    expected = variant_data[1][0];
+                    for (let x of options) {
+                        let t = x[1][0];
+                        if (t == expected) {
+                            explanation = '[' + (i + 1) + '] ' + explanation;
+                        }
+                        options_by_first.push([t]);
+                        options_r.push(x[1][0]);
+                        i += 1;
+                    }
+                }
+                else if (full_variant.includes('to-tags')) {
+                    expected = variant_data[1][1].join(', ');
+                    for (let x of options) {
+                        let t = x[1][1].join(', ');
+                        if (t == expected) {
+                            explanation = '[' + (i + 1) + '] ' + explanation;
+                        }
+                        options_by_first.push([t]);
+                        options_r.push(x[1][1].join(', '));
+                        i += 1;
+                    }
+                }
+                else if (full_variant.includes('to-image')) {
+                    expected = full_variant.includes('title-to') ? variant_data[1][0] : variant_data[1][1].join(', ');
+                    for (let x of options) {
+                        let t = x[0];
+                        if (t == expected) {
+                            explanation = '[' + (i + 1) + '] ' + explanation;
+                        }
+                        options_by_first.push([t]);
+                        options_r.push([x[0], full_variant.includes('title-to') ? x[1][0] : x[1][1].join(', ')]);
+                        i += 1;
+                    }
+                    images_used = true;
+                }
+                else if (full_variant.includes('to-closest-image')) {
+                    choose_text = 'Choose the close image:\n';
+                    options = randomShuffle(variant_data[3]);
+                    explanation = `[Closest Image] Tags: ${variant_data[4][0][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
+                    expected = variant_data[4][0][0];
+                    for (let x of options) {
+                        let t = x[0];
+                        if (t == expected) {
+                            explanation = '\n[' + (i + 1) + '] ' + explanation;
+                        }
+                        options_by_first.push([t]);
+                        options_r.push([x[0], x[0]]);
+                        i += 1;
+                    }
+                    images_used = true;
+                }
+                else if (full_variant.includes('to-furthest-image')) {
+                    choose_text = 'Choose the further image:\n';
+                    options = randomShuffle(variant_data[3]);
+                    explanation = `[Furthest Image] Tags: ${variant_data[4][1][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
+                    expected = variant_data[4][1][0];
+                    for (let x of options) {
+                        let t = x[0];
+                        if (t == expected) {
+                            explanation = '\n[' + (i + 1) + '] ' + explanation;
+                        }
+                        options_by_first.push([t]);
+                        options_r.push([x[0], x[0]]);
+                        i += 1;
+                    }
+                    images_used = true;
+                }
+                if (full_variant.includes('to-image') || full_variant.includes('to-closest-image') || full_variant.includes('to-furthest-image')) {
+                    text += choose_text.slice(0, -2);
+                    images_used = true;
+                }
+                else {
+                    options = options_by_first;
+                    text += choose_text;
+                    text += textToLines(convertOptionsToString(options_by_first), 10000, 1, true);
+                }
+                text += '\n';
+                updateChooser(options_r, images_used);
+                lines.push("N=" + prev_n + ", " + (auto_increase_counter + 1) + (st1_auto_mode > 0 ? "/" + st1_auto_mode : "") + ": " +
+                            capitalize(full_variant) + `: ${variant_data[0]} - ${variant_data[1][1].join(', ')}`);
             }
         }
         else if (short_variant == 'word') {
@@ -3399,26 +3781,54 @@ function* state1_generator(taskArea) {
             text += '\n';
         }
         if (short_variant == 'image') {
-            if (full_variant == 'word-to-image') {
+            if (full_variant == 'word-to-image-1') {
                 text += 'Next word: ' + variant_data[3] + '\n';
             }
-            else if (full_variant == 'image-to-word') {
+            else if (full_variant == 'image-to-word-1') {
                 let image_path = variant_data[2];
                 let img = imageDiv?.firstChild;
                 img.src = image_path;
                 img.alt = image_path;
                 imageDiv.style.display = '';
             }
+            else {
+                if (full_variant.includes('image-to')) {
+                    let image_path = variant_data[0];
+                    let img = imageDiv?.firstChild;
+                    img.src = image_path;
+                    img.alt = image_path;
+                    imageDiv.style.display = '';
+                }
+                else if (full_variant == 'title-to-image-2') {
+                    text += 'Next title: ' + variant_data[1][0] + '\n';
+                }
+                else if (full_variant == 'tags-to-image-2') {
+                    text += 'Next tags: ' + variant_data[1][1].join(', ') + '\n';
+                }
+            }
         }
         else if (short_variant == 'audio') {
-            audioButton.category1 = variant_data[0];
-            audioButton.category2 = variant_data[1];
-            audioButton.title = variant_data[3];
+            if (full_variant.slice(-1) === '1') {
+                audioButton.path = `audios1/${variant_data[0]}/${variant_data[1]}/${variant_data[3]}.mp3`;
+            }
+            else if (full_variant.slice(-1) === '2') {
+                audioButton.path = variant_data[0];
+            }
             audioButton.onmouseup();
             audioDiv.style.display = '';
         }
         else if (short_variant == 'voice') {
-            voiceButton.voice_text = variant_data[3];
+            if (full_variant.slice(-1) === '1') {
+                voiceButton.voice_text = variant_data[3];
+            }
+            else if (full_variant.slice(-1) === '2') {
+                if (full_variant == 'voice-title-to-image-2') {
+                    voiceButton.voice_text = variant_data[1][0];
+                }
+                else if (full_variant == 'voice-tags-to-image-2') {
+                    voiceButton.voice_text = variant_data[1][1].join(', ');
+                }
+            }
             voiceButton.voice_index = st1_voice_index;
             voiceButton?.onmouseup();
             voiceDiv.style.display = '';
@@ -3586,15 +3996,21 @@ function* state1_generator(taskArea) {
                 mistakeFlag = false;
                 skip_mode = true;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
-                images_generator = imageGetter(state1_images, st1_image_voice_options,
+                images1_generator = trialGetter('images1', '.jpg', state1_images1, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
-                audios_all_generator = imageGetter(state1_audios_all, st1_image_voice_options,
+                audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
-                audios_for_images_generator = imageGetter(state1_audios_for_images, st1_image_voice_options,
+                audios1_for_images_generator = trialGetter('images1', '.jpg', state1_audios1_for_images, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
+                images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                    not_item_checker2, not_variants_checker2);
+                audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                    not_item_checker2, not_variants_checker2);
                 word_generator = wordGetter(state1_words, st1_word_options,
                     st1_word_hard_mode == combo_enable_disable.Enable);
                 appendText(taskArea, '', clearBefore);
@@ -3624,20 +4040,46 @@ function* state1_generator(taskArea) {
 }
 
 function state2() {
+    choose_template('2', null);
     currentGenerator = null;
     state = 2;
     clearWidgets();
     addWidget(createCaption(statesToNames.st2));
     addWidget(createParameters([
         [
-            "Start", "Back", "buttons",
+            "Save & Start", "Back", "buttons",
             function (event) {
+                save_template('2');
                 state2_start();
             },
             function (event) {
                 state2_back();
             },
         ],
+        [
+            "ce_st2_template_choose", "ce_st2_template_new", "template_choose_new",
+            function (event) {
+                choose_template('2', event.target.value);
+                state2();
+            },
+            function (event) {
+                new_template('2');
+                state2();
+            },
+        ],
+        [
+            "ce_st2_template_save", "ce_st2_template_delete", "template_save_delete",
+            function (event) {
+                save_template('2');
+            },
+            function (event) {
+                if (confirm('Are you sure you want to delete the template?')) {
+                    delete_template('2');
+                    state2();
+                }
+            },
+        ],
+        ["", "", "hr"],
         [
             "Increase level", "Decrease", "buttons",
             function (event) {
@@ -3686,6 +4128,7 @@ function state2() {
         ["ce_st2_operations", "<b>Auto mode</b><br>Number of operations [1-5]", "integer", function (xv) {
             return 1 <= xv && xv <= 5;
         }],
+        ["", "", "hr"],
         ["ce_st2_min_max_operations", "Min-Max operations [1-5]", "range", function (xv) {
             return xv != null &&
                 1 <= xv[0] && xv[0] <= 5 &&
@@ -3696,6 +4139,9 @@ function state2() {
                 1 <= xv[0] && xv[0] <= 10 &&
                 (xv.length === 1 || 1 <= xv[1] && xv[1] <= 10);
         }],
+        ["", "", "hr"],
+        ["ce_state2_wrap", "Wrap text", "combobox", Object.values(combo_enable_disable)],
+        ["", "", "hr"],
         [
             "Default settings", "Clear score", "buttons",
             function (event) {
@@ -3714,6 +4160,7 @@ function state2() {
             },
         ],
     ]));
+    refill_templates('2');
 }
 
 function state2_back() {
@@ -3723,14 +4170,32 @@ function state2_back() {
 function state2_start() {
     clearWidgets();
     addWidget(createCaption(statesToNames.st2));
-    let task = createInputElems();
+    let task = createInputElems(settings['ce_state2_wrap'] == combo_enable_disable.Enable);
     let taskDiv = task[0];
     let taskArea = task[1];
+    let fs = parseInt(settings['ce_state2_font_size']);
+    taskArea.style.fontSize = isFinite(fs) ? fs + 'px' : '16px';
     addWidget(taskDiv);
     let exButtons = {};
     exButtons['Retry'] = () => { currentGenerator.next('-RETRY-') };
     exButtons['Answer'] = () => { currentGenerator.next('-ANSWER-') };
     exButtons['Values'] = () => { currentGenerator.next('-VALUES-') };
+    exButtons['+'] = () => {
+        let fs = parseInt(taskArea.style.fontSize);
+        fs = isFinite(fs) ? fs : 16;
+        let newValue = Math.min(20, Math.max(7, fs + 1));
+        setSetting('ce_state2_font_size', newValue);
+        taskArea.style.fontSize = newValue + 'px';
+        appendText(taskArea, '', false, 0);
+    };
+    exButtons['-'] = () => {
+        let fs = parseInt(taskArea.style.fontSize);
+        fs = isFinite(fs) ? fs : 16;
+        let newValue = Math.min(20, Math.max(7, fs - 1));
+        setSetting('ce_state2_font_size', newValue);
+        taskArea.style.fontSize = newValue + 'px';
+        appendText(taskArea, '', false, 0);
+    };
     addWidget(createKeyboard(numbersPanelSymbols, state2, exButtons,
         ['3', '6', '9'], Array.from(numbersPanelSymbols).reduce((a, v) => ({ ...a, [v]: ['w30'] }), {})));
     currentGenerator = state2_generator(taskArea);
@@ -3800,6 +4265,8 @@ function* state2_generator(taskArea) {
         let expected = '' + dict[string_elem][0];
         let sequenceModeMistake = false;
         let tries = 1, mistake = false;
+        taskArea.scrollTop = 0;
+        taskArea.scrollLeft = 0;
         while (true) {
             appendText(taskArea, "Number> ");
             let actual = (yield).toUpperCase();
@@ -5648,8 +6115,8 @@ function generateRiddle(
     let rules_for_relations = [
         [2, (j1, j2) => j1 === j2, ['{0}:{1} == {2}:{3}', '{2}:{3} == {0}:{1}']],
         [2, (j1, j2) => j1 === j2, ['{0}:{1} == {2}:{3}', '{2}:{3} == {0}:{1}']],
-        [2, (j1, j2) => j1 === j2 - 1, ['{0}:{1} is on the left of {2}:{3}']],
-        [2, (j1, j2) => j1 === j2 + 1, ['{0}:{1} is on the right of {2}:{3}']],
+        [2, (j1, j2) => j1 === j2 - 1, ['{0}:{1} is on the immediate left of {2}:{3}']],
+        [2, (j1, j2) => j1 === j2 + 1, ['{0}:{1} is on the immediate right of {2}:{3}']],
         [1, (j1) => j1 === 0, ['{0}:{1} is on the far left']],
         [1, (j1, last_index = m_objects - 1) => j1 === last_index,
             ['{0}:{1} is on the far right']],
@@ -5662,13 +6129,13 @@ function generateRiddle(
     if (level >= 2) {
         rules_for_relations.push(...[
             [3, (j1, j2, j3) => j2 + 1 === j1 && j1 === j3 - 1 || j3 + 1 === j1 && j1 === j2 - 1,
-                ['{0}:{1} is between {2}:{3} and {4}:{5}', '{0}:{1} is between {4}:{5} and {2}:{3}']],
+                ['{0}:{1} is immediately between {2}:{3} and {4}:{5}', '{0}:{1} is immediately between {4}:{5} and {2}:{3}']],
         ]);
     }
     if (level >= 3) {
         rules_for_relations.push(...[
             [2, (j1, j2) => j1 === j2 - 1 || j1 === j2 + 1,
-                ['{0}:{1} is on the left or right of {2}:{3}']],
+                ['{0}:{1} is on the immediately left or immediately right of {2}:{3}']],
             [1, (j1, last_index = m_objects - 1) => j1 === 0 || j1 === last_index,
                 ['{0}:{1} is on the far left or far right']],
         ]);
@@ -5699,8 +6166,8 @@ function generateRiddle(
     }
     if (level >= 8) {
         rules_for_relations.push(...[
-            [2, (j1, j2) => j1 >= j2, ['{0}:{1} is not to the left of {2}:{3}']],
-            [2, (j1, j2) => j1 <= j2, ['{0}:{1} is not to the right of {2}:{3}']],
+            [2, (j1, j2) => j1 >= j2, ['{0}:{1} is not anywhere to the left of {2}:{3}']],
+            [2, (j1, j2) => j1 <= j2, ['{0}:{1} is not anywhere to the right of {2}:{3}']],
         ]);
     }
     if (level >= 9) {
@@ -6477,16 +6944,19 @@ let currentGenerator = null;
 
 let numbersPanelSymbols = '123456789-0_';
 let statesToNames = {
-    st1: 'Multi N-Back',
+    st1: 'N-Back',
     st2: 'Boxes',
     st3: 'Recursive-Solving',
     st4: 'Puzzle-Solving'
 };
 let combo_st1_options = {
     "2": "2",
+    "3": "3",
     "4": "4",
+    "5": "5",
     "6": "6",
     "8": "8",
+    "10": "10",
     "12": "12"
 };
 let combo_enable_disable = {
@@ -6525,9 +6995,11 @@ let st3_answer_puzzle_interval = null;
 let st4_show_puzzle_interval = null;
 let st4_answer_puzzle_interval = null;
 
-let state1_images = {};
-let state1_audios_for_images = {};
-let state1_audios_all = {};
+let state1_images1 = {};
+let state1_audios1_for_images = {};
+let state1_audios1_all = {};
+let state1_images2 = {};
+let state1_audios2 = {};
 let state1_words = {};
 
 let state1_check_for_dict = function (dictionary, category1, category2, title) {
@@ -6547,12 +7019,16 @@ let state1_check_for_dict = function (dictionary, category1, category2, title) {
     return false;
 };
 
-let state1_image_examples = [];
-let state1_audio_examples = [];
+let state1_image1_examples = [];
+let state1_audio1_examples = [];
 
-let state1_statistics_images = '';
-let state1_statistics_images_categories = '';
-let state1_statistics_audio_files = '';
+let state1_statistics_images1 = '';
+let state1_statistics_images1_categories = '';
+let state1_statistics_audio_files1 = '';
+let state1_statistics_images2 = '';
+let state1_statistics_images2_tags = '';
+let state1_statistics_audio_files2 = '';
+let state1_statistics_audio_files2_tags = '';
 let state1_statistics_voice_files = '';
 
 let state1_dictionary_source = '';
@@ -6564,8 +7040,10 @@ let state1_statistics_antonyms = '';
 let state1_statistics_similar_words = '';
 
 getVoices();
-loadScript('images.js');
-loadScript('audios.js');
+loadScript('trials_lists/images1.js');
+loadScript('trials_lists/audios1.js');
+loadScript('trials_lists/images2.js');
+loadScript('trials_lists/audios2.js');
 
 state1_dictionary_source = settings['ce_state1_words_dictionary'];
 if (state1_dictionary_source == null) {
@@ -6591,20 +7069,23 @@ else {
 }
 
 window.addEventListener('load', () => {
-    state1_images = getImages();
-    state1_audios_all = getAudios();
+    state1_images1 = getImages1();
+    state1_audios1_all = getAudios1();
+    state1_images2 = getImages2();
+    state1_audios2 = getAudios2();
+
     state1_words = getWords();
 
-    state1_statistics_images = 0;
-    state1_statistics_images_categories = 0;
+    state1_statistics_images1 = 0;
+    state1_statistics_images1_categories = 0;
     state1_statistics_voice_files = 0;
     let voice_files_set = new Set();
-    for (const [category1, val1] of Object.entries(state1_images)) {
-        state1_statistics_images_categories += 1;
+    for (const [category1, val1] of Object.entries(state1_images1)) {
+        state1_statistics_images1_categories += 1;
         for (const [category2, val2] of Object.entries(val1)) {
-            state1_statistics_images_categories += 1;
+            state1_statistics_images1_categories += 1;
             for (const image of val2) {
-                state1_statistics_images += 1;
+                state1_statistics_images1 += 1;
                 let image_file_name = image, image_name = image;
                 if (Array.isArray(image_file_name)) {
                     image_name = image_file_name[1];
@@ -6617,7 +7098,7 @@ window.addEventListener('load', () => {
                 state1_voice_title_to_filename[image_file_name.toLowerCase()] = image_file_name;
                 let image_full_path = `${category1}/${category2}/${image_file_name}.jpg`;
                 let image_full_name = `${category1}/${category2}/${image_name}`;
-                state1_image_examples.push([
+                state1_image1_examples.push([
                     image_full_path,
                     image_full_name
                 ]);
@@ -6625,34 +7106,34 @@ window.addEventListener('load', () => {
         }
     }
 
-    state1_statistics_audio_files = 0;
-    for (const [category1, val1] of Object.entries(state1_audios_all)) {
+    state1_statistics_audio_files1 = 0;
+    for (const [category1, val1] of Object.entries(state1_audios1_all)) {
         for (const [category2, val2] of Object.entries(val1)) {
             for (const audio of val2) {
-                state1_statistics_audio_files += 1;
+                state1_statistics_audio_files1 += 1;
                 let audio_file_name = audio, audio_name = audio;
                 if (Array.isArray(audio_file_name)) {
                     audio_name = audio_file_name[1];
                     audio_file_name = audio_file_name[0];
                 }
-                let found = state1_check_for_dict(state1_images, category1, category2, audio_name);
+                let found = state1_check_for_dict(state1_images1, category1, category2, audio_name);
                 if (found) {
-                    if (!state1_audios_for_images.hasOwnProperty(category1)) {
-                        state1_audios_for_images[category1] = {};
+                    if (!state1_audios1_for_images.hasOwnProperty(category1)) {
+                        state1_audios1_for_images[category1] = {};
                     }
-                    if (!state1_audios_for_images[category1].hasOwnProperty(category2)) {
-                        state1_audios_for_images[category1][category2] = [];
+                    if (!state1_audios1_for_images[category1].hasOwnProperty(category2)) {
+                        state1_audios1_for_images[category1][category2] = [];
                     }
-                    state1_audios_for_images[category1][category2].push(audio);
+                    state1_audios1_for_images[category1][category2].push(audio);
                 }
                 let audio_full_path = `${category1}/${category2}/${audio_file_name}.mp3`;
                 let audio_full_name = `${category1}/${category2}/${audio_name}`;
-                state1_audio_examples.push([
+                state1_audio1_examples.push([
                     audio_full_path,
                     audio_full_name
                 ]);
                 if (!found) {
-                    console.log(`[NO-ERROR] Image not found for existing audio: ${audio_full_name}`);
+                    console.warn(`[NO-ERROR] Image not found for existing audio: ${audio_full_name}`);
                 }
             }
         }
@@ -6660,6 +7141,28 @@ window.addEventListener('load', () => {
     state1_voice_title_to_filename['Hello'] = 'Hello';
     state1_voice_title_to_filename['hello'] = 'Hello';
     state1_statistics_voice_files = voice_files_set.size;
+
+    let images2_tags_set = new Set();
+    state1_statistics_images2 = 0;
+    for (const [key, value] of Object.entries(state1_images2)) {
+        state1_statistics_images2 += 1;
+        for (let tag of value[1]) {
+            images2_tags_set.add(tag);
+        }
+    }
+    state1_statistics_images2_tags = images2_tags_set.size;
+    images2_tags_set.clear();
+    
+    let audio_files2_tags_set = new Set();
+    state1_statistics_audio_files2 = 0;
+    for (const [key, value] of Object.entries(state1_audios2)) {
+        state1_statistics_audio_files2 += 1;
+        for (let tag of value[1]) {
+            audio_files2_tags_set.add(tag);
+        }
+    }
+    state1_statistics_audio_files2_tags = audio_files2_tags_set.size;
+    audio_files2_tags_set.clear();
 
     state1_statistics_words_with_meaning = 0;
     state1_statistics_words_definitions = 0;
@@ -6694,4 +7197,8 @@ window.addEventListener('load', () => {
     state1_statistics_synonyms = synonyms_set.size;
     state1_statistics_antonyms = antonyms_set.size;
     state1_statistics_similar_words = similar_words_set.size;
+    words_set.clear();
+    synonyms_set.clear();
+    antonyms_set.clear();
+    similar_words_set.clear();
 });
