@@ -511,7 +511,9 @@ function* trialGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode, not
     return null;
 }
 
-function* trialTagsGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode, not_item_checker, not_variants_checker) {
+function* trialTagsGetter(
+    fn_prefix, fn_postfix, dictionary, options, hard_mode, not_item_checker, not_variants_checker,
+    max_difference = 4) {
 
     function calculateTagSimilarity(tags1, tags2) {
         const set2 = new Set(tags2);
@@ -539,12 +541,15 @@ function* trialTagsGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode,
                 w1[w1.length - 1].push([w2[0], w2[1]]);
             }
         }
+        if (w1[w1.length - 1].length < options) {
+            continue;
+        }
         w1.push([]);
         let max_similarity = null;
         let max_similarity_item = [];
         let min_similarity = null;
         let min_similarity_item = [];
-        let difference = hard_mode ? 3 : 4;
+        let difference = Math.min(max_difference, hard_mode ? 3 : 4);
         for (let w2 of randomShuffle(list)) {
             if (w1[w1.length - 1].length >= options) {
                 break;
@@ -566,7 +571,7 @@ function* trialTagsGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode,
                 }
             }
         }
-        if (w1[w1.length - 1].length < options || max_similarity <= 2) {
+        if (w1[w1.length - 1].length < options || difference > 2 && max_similarity <= 2) {
             continue;
         }
         w1.push([max_similarity_item, min_similarity_item]);
@@ -3284,7 +3289,7 @@ function* state1_generator(taskArea) {
         not_item_checker2, not_variants_checker2);
     let audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
         st1_image_voice_hard_mode == combo_enable_disable.Enable,
-        not_item_checker2, not_variants_checker2);
+        not_item_checker2, not_variants_checker2, 1);
     let word_generator = wordGetter(state1_words, st1_word_options,
         st1_word_hard_mode == combo_enable_disable.Enable);
     let task_list = [];
@@ -3375,7 +3380,7 @@ function* state1_generator(taskArea) {
             }
             else if (full_variant.slice(-1) === '2') {
                 gen_next = images2_generator.next();
-                if (gen_next.done ?? true) {
+                while (gen_next.done ?? true) {
                     images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
                         st1_image_voice_hard_mode == combo_enable_disable.Enable,
                         not_item_checker2, not_variants_checker2);
@@ -3410,10 +3415,10 @@ function* state1_generator(taskArea) {
             }
             else if (full_variant.slice(-1) === '2') {
                 gen_next = audios2_generator.next();
-                if (gen_next.done ?? true) {
+                while (gen_next.done ?? true) {
                     audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
                         st1_image_voice_hard_mode == combo_enable_disable.Enable,
-                        not_item_checker2, not_variants_checker2);
+                        not_item_checker2, not_variants_checker2, 1);
                     gen_next = audios2_generator.next();
                 }
             }
@@ -3441,9 +3446,10 @@ function* state1_generator(taskArea) {
             variant_data = gen_next.value;
             // [[word_capitalized, task1, task2, expected_capitalized, explanation, options_list], [word, definition], task_type]
         }
-        if (!noPush) {
+        if (!noPush || task_list.length === 0) {
             task_list.push([short_variant, full_variant, variant_data]);
         }
+        currentTaskIndex = Math.max(0, Math.min(currentTaskIndex, task_list.length - 1));
         noPush = false;
         let prev_n = st1_n, n_prev_task = null, current_task = task_list[currentTaskIndex];
         if (currentTaskIndex < st1_n) {
@@ -3457,6 +3463,9 @@ function* state1_generator(taskArea) {
             skip_mode = false;
         }
         if (current_task == null) {
+            console.log('previous_task', n_prev_task);
+            console.log('current_task', currentTaskIndex, current_task);
+            console.log('task_list', task_list);
             return;
         }
         if (n_prev_task == null) {
@@ -3630,7 +3639,7 @@ function* state1_generator(taskArea) {
             }
             explanation = `Title: ${variant_data[1][0]}\nTags: ${variant_data[1][1].join(', ')}`;
             if (skip_mode === false) {
-                let choose_text = 'Choose:\n';
+                let choose_text = 'Choose:';
                 let options = randomShuffle(variant_data[2]);
                 let options_by_first = [], i = 0, options_r = [];
                 let images_used = false;
@@ -3672,7 +3681,7 @@ function* state1_generator(taskArea) {
                     images_used = true;
                 }
                 else if (full_variant.includes('to-closest-image')) {
-                    choose_text = 'Choose the close image:\n';
+                    choose_text = 'Choose the close image:';
                     options = randomShuffle(variant_data[3]);
                     explanation = `[Closest Image] Tags: ${variant_data[4][0][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
                     expected = variant_data[4][0][0];
@@ -3688,7 +3697,7 @@ function* state1_generator(taskArea) {
                     images_used = true;
                 }
                 else if (full_variant.includes('to-furthest-image')) {
-                    choose_text = 'Choose the further image:\n';
+                    choose_text = 'Choose the further image:';
                     options = randomShuffle(variant_data[3]);
                     explanation = `[Furthest Image] Tags: ${variant_data[4][1][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
                     expected = variant_data[4][1][0];
@@ -3704,13 +3713,15 @@ function* state1_generator(taskArea) {
                     images_used = true;
                 }
                 if (full_variant.includes('to-image') || full_variant.includes('to-closest-image') || full_variant.includes('to-furthest-image')) {
-                    text += choose_text.slice(0, -2);
+                    text += choose_text.slice(0, -1);
                     images_used = true;
                 }
                 else {
                     options = options_by_first;
                     text += choose_text;
-                    text += textToLines(convertOptionsToString(options_by_first), 10000, 1, true);
+                    for (let x of options_by_first) {
+                        text += '\n\n' + x[0];
+                    }
                 }
                 text += '\n';
                 updateChooser(options_r, images_used);
@@ -3926,7 +3937,7 @@ function* state1_generator(taskArea) {
 
         let additionalDivChildren = [];
         if (additionalDiv && !skip_mode && n_prev_task[1].indexOf('image-to') >= 0 && n_prev_task !== current_task) {
-            let image_path = n_prev_task[2][2];
+            let image_path = n_prev_task[1].slice(-1) === '2' ? n_prev_task[2][0] : n_prev_task[2][2];
             let imageShowButton = document.createElement('button');
             imageShowButton.classList.add('blackButton');
             imageShowButton.innerText = 'Show image for current task';
@@ -3993,16 +4004,18 @@ function* state1_generator(taskArea) {
             if (actual === '-RESTART-') {
                 auto_increase_counter = 0;
                 task_list = [];
+                currentTaskIndex = -1;
                 mistakeFlag = false;
                 skip_mode = true;
+                noPush = false;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
                 images1_generator = trialGetter('images1', '.jpg', state1_images1, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
-                audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
+                audios1_for_images_generator = trialGetter('images1', '.jpg', state1_audios1_for_images, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
-                audios1_for_images_generator = trialGetter('images1', '.jpg', state1_audios1_for_images, st1_image_voice_options,
+                audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
                 images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
@@ -4010,7 +4023,7 @@ function* state1_generator(taskArea) {
                     not_item_checker2, not_variants_checker2);
                 audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
-                    not_item_checker2, not_variants_checker2);
+                    not_item_checker2, not_variants_checker2, 1);
                 word_generator = wordGetter(state1_words, st1_word_options,
                     st1_word_hard_mode == combo_enable_disable.Enable);
                 appendText(taskArea, '', clearBefore);
