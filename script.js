@@ -511,7 +511,10 @@ function* trialGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode, not
     return null;
 }
 
-function* trialTagsGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode, not_item_checker, not_variants_checker) {
+function* trialTagsGetter(
+    fn_prefix, fn_postfix, dictionary, options, hard_mode, not_item_checker, not_variants_checker,
+    task_type = 'standard'
+) {
 
     function calculateTagSimilarity(tags1, tags2) {
         const set2 = new Set(tags2);
@@ -519,57 +522,86 @@ function* trialTagsGetter(fn_prefix, fn_postfix, dictionary, options, hard_mode,
         return r.size;
     }
 
+    let std_task = task_type === 'standard';
+    let closest_task = task_type === 'closest';
+    let furthest_task = task_type === 'furthest';
+
     let list = [];
     for (const [filename, info] of Object.entries(dictionary)) {
-        // info: 'title', ['list', 'of', 'tags']
+        // info: 'title', ['list', 'of', 'tags'], ['real', 'list', 'of', 'tags']
         if (not_item_checker(filename, info)) {
             continue;
         }
-        info[1] = [...(new Set(info[1].join(' ').toLowerCase().split(/[\s_,()\[\]\-\+]+/)))];
+        info.push([...(new Set(info[1].join(' ').toLowerCase().split(/[\s_,()\[\]\-\+]+/)))]);
         let real_filename = fn_prefix + '/' + filename.concat(fn_postfix);
         list.push([real_filename, info, [[real_filename, info]]]);
     }
     for (let w1 of randomShuffle(list)) {
         w1 = JSON.parse(JSON.stringify(w1));
+
+        let std_task_images = [];
+
+        let difference_for_others = hard_mode ? 3 : 4;
+        let max_similarity = null, max_similarity_item = null;
+        let min_similarity = null, min_similarity_item = null;
+        let further_images = []; let closer_images = [];
+
         for (let w2 of randomShuffle(list)) {
-            if (w1[w1.length - 1].length >= options) {
-                break;
+            if (w1[0] == w2[0]) {
+                continue;
             }
-            if (w1[0] != w2[0] && (hard_mode || not_variants_checker(w1[0], w1[1], w2[0], w2[1]) === false)) {
-                w1[w1.length - 1].push([w2[0], w2[1]]);
+            let similarity = calculateTagSimilarity(w1[1][2], w2[1][2]);
+            if (std_task) {
+                if (std_task_images.length < options && similarity < w1[1][2].length /* not_variants_checker(...) */) {
+                    std_task_images.push([w2[0], w2[1]]);
+                }
             }
-        }
-        w1.push([]);
-        let max_similarity = null;
-        let max_similarity_item = [];
-        let min_similarity = null;
-        let min_similarity_item = [];
-        let difference = hard_mode ? 3 : 4;
-        for (let w2 of randomShuffle(list)) {
-            if (w1[w1.length - 1].length >= options) {
-                break;
-            }
-            if (w1[0] != w2[0]) {
-                let similarity = calculateTagSimilarity(w1[1][1], w2[1][1]);
-                if ((similarity > 0 || min_similarity > 0)
-                    && (max_similarity == null || Math.abs(max_similarity - similarity) >= difference)
-                    && (min_similarity == null || Math.abs(min_similarity - similarity) >= difference)) {
-                    w1[w1.length - 1].push([w2[0], w2[1]]);
+            else if (closest_task || furthest_task) {
+                if (similarity > difference_for_others) {
                     if (max_similarity == null || max_similarity < similarity) {
                         max_similarity = similarity;
                         max_similarity_item = [w2[0], w2[1]];
                     }
-                    if (min_similarity == null || min_similarity > similarity) {
+                    if (closer_images.length < options) {
+                        closer_images.push([w2[0], w2[1]]);
+                    }
+                }
+                else if (similarity < difference_for_others) {
+                    if (min_similarity == null || min_similarity < similarity) {
                         min_similarity = similarity;
                         min_similarity_item = [w2[0], w2[1]];
                     }
+                    if (further_images.length < options) {
+                        further_images.push([w2[0], w2[1]]);
+                    }
                 }
             }
+            if (
+                std_task && std_task_images.length === options ||
+                closest_task && (further_images.length === options && max_similarity_item) ||
+                furthest_task && (closer_images.length === options && min_similarity_item)
+            ) {
+                break;
+            }
         }
-        if (w1[w1.length - 1].length < options || max_similarity <= 2) {
+        if (!(
+            std_task && std_task_images.length === options ||
+            closest_task && (further_images.length === options && max_similarity_item) ||
+            furthest_task && (closer_images.length === options && min_similarity_item)
+        )) {
             continue;
         }
-        w1.push([max_similarity_item, min_similarity_item]);
+        if (std_task) {
+            w1[w1.length - 1].push(...std_task_images);
+        }
+        else if (closest_task) {
+            w1.push([max_similarity_item, ...further_images.slice(1)]);
+            w1.push(max_similarity_item);
+        }
+        else if (furthest_task) {
+            w1.push([min_similarity_item, ...closer_images.slice(1)]);
+            w1.push(min_similarity_item);
+        }
         yield (w1);
     }
     return null;
@@ -2638,8 +2670,8 @@ function state1() {
         ["ce_st1_pro_image_title_to_image", "<u>Title to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
         ["ce_st1_pro_image_image_to_tags", "<u>Image to Tags</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
         ["ce_st1_pro_image_tags_to_image", "<u>Tags to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
-        ["ce_st1_pro_image_image_to_closest_image", "<u>Image to Close Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
-        ["ce_st1_pro_image_image_to_furthest_image", "<u>Image to Further Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_image_to_closest_image", "<u>Image to Closest Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
+        ["ce_st1_pro_image_image_to_furthest_image", "<u>Image to Furthest Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
         ["", "", "hr1"],
         ["ce_st1_pro_image_voice_audio_title_to_image", "<u>Voice audio<br>Title to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
         ["ce_st1_pro_image_voice_audio_tags_to_image", "<u>Voice audio<br>Tags to Image</u> <sub>2</sub>", "combobox", Object.values(combo_enable_disable)],
@@ -3178,36 +3210,36 @@ function* state1_generator(taskArea) {
         return false;
     };
     let not_variants_checker2 = function (filename1, info1, filename2, info2) {
-        let to_compare = [
-            [info1[0].split(/[\s_,()\[\]\-\+]+/), info2[0].split(/[\s_,()\[\]\-\+]+/)],
-            [info1[1], info2[1]]
-        ];
-        let s1 = 0, s2 = 0;
-        for (let [item1_t, item2_t] of to_compare) {
-            let item1_splitted = item1_t;
-            let item2_splitted = item2_t;
-            for (let x of item1_splitted) {
-                if (x.length <= 2) {
-                    continue;
-                }
-                for (let y of item2_splitted) {
-                    if (y.length <= 2) {
-                        continue;
-                    }
-                    x = x.toLowerCase().replaceAll(/\W/g, '');
-                    y = y.toLowerCase().replaceAll(/\W/g, '');
-                    if (x.includes(y) || y.includes(x) || x.slice(0, 3) == y.slice(0, 3)) {
-                        s1 += 1;
-                    }
-                    else {
-                        s2 += 1;
-                    }
-                }
-            }
-        }
-        if (s1 > 0 && s1 >= s2) { // 50%
-            return true;
-        }
+        // let to_compare = [
+        //     [info1[0].split(/[\s_,()\[\]\-\+]+/), info2[0].split(/[\s_,()\[\]\-\+]+/)],
+        //     [info1[1], info2[1]]
+        // ];
+        // let s1 = 0, s2 = 0;
+        // for (let [item1_t, item2_t] of to_compare) {
+        //     let item1_splitted = item1_t;
+        //     let item2_splitted = item2_t;
+        //     for (let x of item1_splitted) {
+        //         if (x.length <= 2) {
+        //             continue;
+        //         }
+        //         for (let y of item2_splitted) {
+        //             if (y.length <= 2) {
+        //                 continue;
+        //             }
+        //             x = x.toLowerCase().replaceAll(/\W/g, '');
+        //             y = y.toLowerCase().replaceAll(/\W/g, '');
+        //             if (x.includes(y) || y.includes(x)) {
+        //                 s1 += 1;
+        //             }
+        //             else {
+        //                 s2 += 1;
+        //             }
+        //         }
+        //     }
+        // }
+        // if (s1 > 0 && s1 >= s2) {
+        //     return true;
+        // }
         return false;
     };
     let short_to_full_variant = new Map();
@@ -3282,6 +3314,12 @@ function* state1_generator(taskArea) {
     let images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
         st1_image_voice_hard_mode == combo_enable_disable.Enable,
         not_item_checker2, not_variants_checker2);
+    let images2_closest_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+        not_item_checker2, not_variants_checker2, 'closest');
+    let images2_furthest_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+        not_item_checker2, not_variants_checker2, 'furthest');
     let audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
         st1_image_voice_hard_mode == combo_enable_disable.Enable,
         not_item_checker2, not_variants_checker2);
@@ -3373,9 +3411,27 @@ function* state1_generator(taskArea) {
                     gen_next = images1_generator.next();
                 }
             }
+            else if (full_variant.includes('image-to-closest-image-2')) {
+                gen_next = images2_closest_generator.next();
+                while (gen_next.done ?? true) {
+                    images2_closest_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+                        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                        not_item_checker2, not_variants_checker2, 'closest');
+                    gen_next = images2_closest_generator.next();
+                }
+            }
+            else if (full_variant.includes('image-to-furthest-image-2')) {
+                gen_next = images2_furthest_generator.next();
+                while (gen_next.done ?? true) {
+                    images2_furthest_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+                        st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                        not_item_checker2, not_variants_checker2, 'furthest');
+                    gen_next = images2_furthest_generator.next();
+                }
+            }
             else if (full_variant.slice(-1) === '2') {
                 gen_next = images2_generator.next();
-                if (gen_next.done ?? true) {
+                while (gen_next.done ?? true) {
                     images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
                         st1_image_voice_hard_mode == combo_enable_disable.Enable,
                         not_item_checker2, not_variants_checker2);
@@ -3410,7 +3466,7 @@ function* state1_generator(taskArea) {
             }
             else if (full_variant.slice(-1) === '2') {
                 gen_next = audios2_generator.next();
-                if (gen_next.done ?? true) {
+                while (gen_next.done ?? true) {
                     audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
                         st1_image_voice_hard_mode == combo_enable_disable.Enable,
                         not_item_checker2, not_variants_checker2);
@@ -3441,9 +3497,10 @@ function* state1_generator(taskArea) {
             variant_data = gen_next.value;
             // [[word_capitalized, task1, task2, expected_capitalized, explanation, options_list], [word, definition], task_type]
         }
-        if (!noPush) {
+        if (!noPush || task_list.length === 0) {
             task_list.push([short_variant, full_variant, variant_data]);
         }
+        currentTaskIndex = Math.max(0, Math.min(currentTaskIndex, task_list.length - 1));
         noPush = false;
         let prev_n = st1_n, n_prev_task = null, current_task = task_list[currentTaskIndex];
         if (currentTaskIndex < st1_n) {
@@ -3615,22 +3672,12 @@ function* state1_generator(taskArea) {
                 else if (full_variant == 'audio-to-tags-2') {
                     v_variants.push('audio-to-title-2');
                 }
-                else if (full_variant == 'image-to-closest-image-2') {
-                    v_variants.push('image-to-furthest-image-2');
-                    v_variants.push('image-to-tags-2');
-                    v_variants.push('image-to-title-2');
-                }
-                else if (full_variant == 'image-to-furthest-image-2') {
-                    v_variants.push('image-to-closest-image-2');
-                    v_variants.push('image-to-tags-2');
-                    v_variants.push('image-to-title-2');
-                }
                 full_variant = randomChoice(v_variants.filter(x => full_to_short_variants.has(x)));
                 short_variant = full_to_short_variants.get(full_variant);
             }
             explanation = `Title: ${variant_data[1][0]}\nTags: ${variant_data[1][1].join(', ')}`;
             if (skip_mode === false) {
-                let choose_text = 'Choose:\n';
+                let choose_text = 'Choose:';
                 let options = randomShuffle(variant_data[2]);
                 let options_by_first = [], i = 0, options_r = [];
                 let images_used = false;
@@ -3672,10 +3719,10 @@ function* state1_generator(taskArea) {
                     images_used = true;
                 }
                 else if (full_variant.includes('to-closest-image')) {
-                    choose_text = 'Choose the close image:\n';
+                    choose_text = 'Choose the closest image:';
                     options = randomShuffle(variant_data[3]);
-                    explanation = `[Closest Image] Tags: ${variant_data[4][0][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
-                    expected = variant_data[4][0][0];
+                    explanation = `[Closest Image] Tags: ${variant_data[4][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
+                    expected = variant_data[4][0];
                     for (let x of options) {
                         let t = x[0];
                         if (t == expected) {
@@ -3688,10 +3735,10 @@ function* state1_generator(taskArea) {
                     images_used = true;
                 }
                 else if (full_variant.includes('to-furthest-image')) {
-                    choose_text = 'Choose the further image:\n';
+                    choose_text = 'Choose the furthest image:';
                     options = randomShuffle(variant_data[3]);
-                    explanation = `[Furthest Image] Tags: ${variant_data[4][1][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
-                    expected = variant_data[4][1][0];
+                    explanation = `[Furthest Image] Tags: ${variant_data[4][1][1].join(', ')}\n\n[Source Image] Tags: ${variant_data[1][1].join(', ')}\n`;
+                    expected = variant_data[4][0];
                     for (let x of options) {
                         let t = x[0];
                         if (t == expected) {
@@ -3704,13 +3751,12 @@ function* state1_generator(taskArea) {
                     images_used = true;
                 }
                 if (full_variant.includes('to-image') || full_variant.includes('to-closest-image') || full_variant.includes('to-furthest-image')) {
-                    text += choose_text.slice(0, -2);
+                    text += choose_text.slice(0, -1);
                     images_used = true;
                 }
                 else {
                     options = options_by_first;
-                    text += choose_text;
-                    text += textToLines(convertOptionsToString(options_by_first), 10000, 1, true);
+                    text += choose_text.slice(0, -1);
                 }
                 text += '\n';
                 updateChooser(options_r, images_used);
@@ -3926,7 +3972,7 @@ function* state1_generator(taskArea) {
 
         let additionalDivChildren = [];
         if (additionalDiv && !skip_mode && n_prev_task[1].indexOf('image-to') >= 0 && n_prev_task !== current_task) {
-            let image_path = n_prev_task[2][2];
+            let image_path = n_prev_task[1].slice(-1) === '2' ? n_prev_task[2][0] : n_prev_task[2][2];
             let imageShowButton = document.createElement('button');
             imageShowButton.classList.add('blackButton');
             imageShowButton.innerText = 'Show image for current task';
@@ -3993,21 +4039,29 @@ function* state1_generator(taskArea) {
             if (actual === '-RESTART-') {
                 auto_increase_counter = 0;
                 task_list = [];
+                currentTaskIndex = -1;
                 mistakeFlag = false;
                 skip_mode = true;
+                noPush = false;
                 st1_auto_mode = st1_auto_mode > 0 ? Math.max(st1_auto_mode, st1_n_max) : 0;
                 images1_generator = trialGetter('images1', '.jpg', state1_images1, st1_image_voice_options,
-                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
-                    not_item_checker, not_variants_checker);
-                audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
                 audios1_for_images_generator = trialGetter('images1', '.jpg', state1_audios1_for_images, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker, not_variants_checker);
+                audios1_all_generator = trialGetter('images1', '.jpg', state1_audios1_all, st1_image_voice_options,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                    not_item_checker, not_variants_checker);
                 images2_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker2, not_variants_checker2);
+                images2_closest_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                    not_item_checker2, not_variants_checker2, 'closest');
+                images2_furthest_generator = trialTagsGetter('images2', '.jpg', state1_images2, st1_image_voice_options,
+                    st1_image_voice_hard_mode == combo_enable_disable.Enable,
+                    not_item_checker2, not_variants_checker2, 'furthest');
                 audios2_generator = trialTagsGetter('audios2', '.mp3', state1_audios2, st1_image_voice_options,
                     st1_image_voice_hard_mode == combo_enable_disable.Enable,
                     not_item_checker2, not_variants_checker2);
