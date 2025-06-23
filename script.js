@@ -534,14 +534,14 @@ function* trialTagsGetter(
         }
         info.push([...(new Set(info[1].join(' ').toLowerCase().split(/[\s_,()\[\]\-\+]+/)))]);
         let real_filename = fn_prefix + '/' + filename.concat(fn_postfix);
-        list.push([real_filename, info, [[real_filename, info]]]);
+        list.push([real_filename, info, []]);
     }
     for (let w1 of randomShuffle(list)) {
         w1 = JSON.parse(JSON.stringify(w1));
 
-        let std_task_images = [];
+        let std_task_images = [[w1[0], w1[1]]];
 
-        let difference_for_others = hard_mode ? 3 : 4;
+        let difference_for_others = hard_mode ? 2 : 3;
         let max_similarity = null, max_similarity_item = null;
         let min_similarity = null, min_similarity_item = null;
         let further_images = []; let closer_images = [];
@@ -566,7 +566,7 @@ function* trialTagsGetter(
                         closer_images.push([w2[0], w2[1]]);
                     }
                 }
-                else if (similarity < difference_for_others) {
+                else if (similarity <= 0) {
                     if (min_similarity == null || min_similarity < similarity) {
                         min_similarity = similarity;
                         min_similarity_item = [w2[0], w2[1]];
