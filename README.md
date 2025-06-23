@@ -1,6 +1,6 @@
 # Cognitive-Exercises v6
 
-Repository size: ~540 MB.
+Repository size: ~1.10 GB.
 
 ## Exercises
 1. Multi N-Back: using short-term memory and working memory to solve tasks in N-Back mode.
